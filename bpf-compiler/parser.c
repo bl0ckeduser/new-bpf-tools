@@ -58,14 +58,16 @@ token_t peek()
 	return tokens[index];
 }
 
-token_t need(char type)
+#define need(X) need_call((X), __LINE__)
+
+token_t need_call(char type, int source_line)
 {
 	char buf[1024];
 	if (tokens[index++].type != type) {
 		fflush(stdout);
 		printf("\n");
-		sprintf(buf, "at index %d, needed a %s",
-			index - 1, tok_nam[type]);
+		sprintf(buf, "[line %d] at index %d, needed a %s",
+			source_line, index - 1, tok_nam[type]);
 		/* token index --> line, char 	array
 		 * would allow cool diagnostics like this:
 		 *		1 + 1
@@ -98,10 +100,22 @@ void parse(token_t *t)
 	putchar('\n');
 }
 
+void tok_display(token_t t)
+{
+	char buf[1024];
+	strncpy(buf, t.start, t.len);
+	buf[t.len] = 0;
+	printf("%s", buf);
+}
+
 void printout(exp_tree_t et)
 {
 	int i;
 	printf("(%s", tree_nam[et.head_type]);
+	if (et.tok && et.tok->start) {
+		printf(":");
+		tok_display(*et.tok);
+	}
 	for (i = 0; i < et.child_count; i++) {
 		printf(" ");
 		fflush(stdout);
@@ -116,6 +130,8 @@ exp_tree_t block()
 	int i, args;
 	exp_tree_t tree, subtree;
 	token_t tok;
+
+	printf("block() with index %d\n", index);
 
 	/* empty block */
 	if (peek().type == TOK_SEMICOLON) {
@@ -198,6 +214,8 @@ exp_tree_t expr()
 	exp_tree_t subtree3, subtree4;
 	token_t oper;
 	token_t tok;
+
+	printf("expr() with index %d\n", index);
 
 	if (peek().type == TOK_IDENT) {
 		/* "ident asg-op expr" pattern */
@@ -293,6 +311,8 @@ exp_tree_t sum_expr()
 	exp_tree_t tree, subtree, subtree2, root;
 	token_t oper;
 
+	printf("sum_expr() with index %d\n", index);
+
 	if (!valid_tree(subtree = mul_expr())) {
 		return null_tree;
 	}
@@ -310,8 +330,11 @@ exp_tree_t sum_expr()
 			default:
 				fail("invalid add-op");
 		}
-		++index;
+		++index; /* eat add-op */
 		add_child(&tree, subtree);
+		if (!(valid_tree(subtree2 = mul_expr())))
+			fail("sum_expr");
+		add_child(&tree, subtree2);
 	}
 	root = tree;
 	while (is_add_op(peek().type)) {
@@ -341,6 +364,8 @@ exp_tree_t mul_expr()
 {
 	exp_tree_t tree, subtree, subtree2, root;
 	token_t oper;
+
+	printf("mul_expr() with index %d\n", index);
 
 	if (!valid_tree(subtree = unary_expr())) {
 		return null_tree;
@@ -390,6 +415,8 @@ exp_tree_t unary_expr()
 	exp_tree_t tree = null_tree, subtree = null_tree;
 	exp_tree_t subtree2 = null_tree;
 	token_t tok;
+
+	printf("unary_expr() with index %d\n", index);
 
 	if (peek().type == TOK_MINUS) {
 		tree = new_exp_tree(NEGATIVE, NULL);
