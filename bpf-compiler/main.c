@@ -12,6 +12,8 @@ int main(int argc, char** argv)
 	char buf2[1024];
 	token_t* tokens;
 	int i;
+	exp_tree_t tree;
+	extern void optimize(exp_tree_t *et);
 
 	/* read in at most 1KB of code from stdin */
 	fread(buf, sizeof(char), 1024 * 1024, stdin);
@@ -26,7 +28,11 @@ int main(int argc, char** argv)
 		putchar('\n');
 	}
 
-	printout_tree(parse(tokens));
+	tree = parse(tokens);
+	printout_tree(tree);
+	putchar('\n');
+	optimize(&tree);
+	printout_tree(tree);
 	putchar('\n');
 
 	return 0;
