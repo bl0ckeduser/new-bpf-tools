@@ -1,6 +1,7 @@
 #include "tree.h"
 #include "tokenizer.h"
 #include <stdlib.h>
+#include <string.h>
 
 int valid_tree(exp_tree_t et)
 {
@@ -9,9 +10,18 @@ int valid_tree(exp_tree_t et)
 
 exp_tree_t new_exp_tree(unsigned int type, token_t* tok)
 {
+	token_t* tok_copy = NULL;
+
+	if (tok) {
+		tok_copy = malloc(sizeof(token_t));
+		if (!tok_copy)
+			fail("malloc tok_copy");
+		memcpy(tok_copy, tok, sizeof(token_t));
+	}
+
 	exp_tree_t tr;
 	tr.head_type = type;
-	tr.tok = tok;
+	tr.tok = tok_copy;
 	tr.child_count = 0;
 	tr.child_alloc = 64;
 	tr.child = malloc(64 * sizeof(exp_tree_t));
