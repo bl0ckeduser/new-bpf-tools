@@ -3,25 +3,7 @@
  * Bl0ckeduser, December 2012
  */
 
-/* TODO:
- *		- figure out a spec for the syntax-trees
- *		- produce real syntax trees rather than printouts
- */
-
-/*
-
-	Binary trees would probably
-	be a safe bet.
-	Can convert to N-ary afterwards.
-
-		=
-	/		\
-   x		+					
-		  /	  \						
-		  1    *
-			  /  \			
-			  2   3		
-*/
+/* TODO: fix parsing of e.g. '1 + 2 + 3' */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -121,7 +103,7 @@ void printout(exp_tree_t et)
 	for (i = 0; i < et.child_count; i++) {
 		printf(" ");
 		fflush(stdout);
-		printout(et.child[i]);
+		printout(*(et.child[i]));
 	}
 	printf(")");
 	fflush(stdout);

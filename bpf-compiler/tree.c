@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* FIXME: crazy mallocs and memcpys, no garbage collection */
+
 int valid_tree(exp_tree_t et)
 {
 	return et.head_type != NULL_TREE;
@@ -24,7 +26,7 @@ exp_tree_t new_exp_tree(unsigned int type, token_t* tok)
 	tr.tok = tok_copy;
 	tr.child_count = 0;
 	tr.child_alloc = 64;
-	tr.child = malloc(64 * sizeof(exp_tree_t));
+	tr.child = malloc(64 * sizeof(exp_tree_t *));
 	if (!tr.child)
 		fail("malloc tree children");
 	tr.child_count = 0;
@@ -34,6 +36,11 @@ exp_tree_t new_exp_tree(unsigned int type, token_t* tok)
 
 void add_child(exp_tree_t *dest, exp_tree_t src)
 {
+	exp_tree_t* tree_copy = NULL;
+
+	tree_copy = malloc(sizeof(exp_tree_t));
+	memcpy(tree_copy, &src, sizeof(exp_tree_t));
+
 	if (++dest->child_count >= dest->child_alloc) {
 		dest->child_alloc += 64;
 		dest->child = realloc(dest->child,
@@ -41,5 +48,5 @@ void add_child(exp_tree_t *dest, exp_tree_t src)
 		if (!dest->child)
 			fail("realloc tree children");
 	}
-	dest->child[dest->child_count - 1] = src;
+	dest->child[dest->child_count - 1] = tree_copy;
 }

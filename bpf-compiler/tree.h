@@ -61,7 +61,7 @@ typedef struct exp_tree {
 	token_t* tok;
 	unsigned int child_count;
 	unsigned int child_alloc;
-	struct exp_tree *child;
+	struct exp_tree **child;
 } exp_tree_t;
 
 static exp_tree_t null_tree = { NULL_TREE, NULL, 0, 0, NULL };

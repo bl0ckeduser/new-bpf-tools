@@ -1,0 +1,46 @@
+1 + 2 + 3
+
+1.	subtree: 1
+
+2.	root = tree:		+
+					  /
+	subtree: 		1
+
+3.	root = tree:		+
+			  	   	  /	   \
+			 	     1		+ <-- subtree
+
+4.	root = tree:		+
+			  	   	  /	   \
+			 	     1		+ <-- subtree
+						   /
+						  /
+						 2 <-- subtree2
+
+5.	root:				+
+			  	   	  /	   \
+			 	     1		+ <-- tree
+						   / \
+						  /   \
+						 2    + <-- subtree
+
+6.	root:				+
+			  	   	  /	   \
+			 	     1		+ <-- tree
+						   / \
+						  /   \
+						 2    + <-- subtree
+							/
+						   /
+						  3 <-- subtree2
+
+7.	root:				+
+			  	   	  /	   \
+			 	     1		+ 
+						   / \
+						  /   \
+						 2    + <-- tree
+							/
+						   /
+						  3
+
