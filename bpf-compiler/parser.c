@@ -71,7 +71,7 @@ token_t need_call(char type, int source_line)
 		return tokens[index - 1];
 }
 
-void parse(token_t *t)
+exp_tree_t parse(token_t *t)
 {
 	exp_tree_t program;
 	exp_tree_t *subtree;
@@ -93,26 +93,7 @@ void parse(token_t *t)
 		add_child(&program, subtree);
 	}
 
-	printout(program);
-
-	putchar('\n');
-}
-
-void printout(exp_tree_t et)
-{
-	int i;
-	printf("(%s", tree_nam[et.head_type]);
-	if (et.tok && et.tok->start) {
-		printf(":");
-		tok_display(*et.tok);
-	}
-	for (i = 0; i < et.child_count; i++) {
-		printf(" ");
-		fflush(stdout);
-		printout(*(et.child[i]));
-	}
-	printf(")");
-	fflush(stdout);
+	return program;
 }
 
 exp_tree_t block()

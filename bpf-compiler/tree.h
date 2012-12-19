@@ -74,5 +74,6 @@ extern void add_child(exp_tree_t *dest, exp_tree_t* src);
 extern exp_tree_t new_exp_tree(unsigned int type, token_t* tok);
 extern int valid_tree(exp_tree_t et);
 extern exp_tree_t *alloc_exptree(exp_tree_t et);
+extern void printout_tree(exp_tree_t et);
 
 #endif

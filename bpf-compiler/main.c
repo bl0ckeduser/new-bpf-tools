@@ -3,15 +3,14 @@
 #include <string.h>
 #include "tokenizer.h"
 #include "tokens.h"
+#include "tree.h"
+#include "parser.h"
 
 int main(int argc, char** argv)
 {
 	char buf[1024 * 1024];
 	char buf2[1024];
 	token_t* tokens;
-	extern token_t* tokenize(char *string);
-	extern void setup_tokenizer();
-	extern void parse(token_t *);
 	int i;
 
 	/* read in at most 1KB of code from stdin */
@@ -27,7 +26,9 @@ int main(int argc, char** argv)
 		putchar('\n');
 	}
 
-	parse(tokens);
+	printout_tree(parse(tokens));
+	putchar('\n');
+
 	return 0;
 }
 

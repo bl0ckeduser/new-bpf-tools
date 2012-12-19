@@ -1,7 +1,9 @@
 #include "tree.h"
 #include "tokenizer.h"
+#include "tokens.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 /* FIXME: crazy mallocs and memcpys, no garbage collection */
 
@@ -55,4 +57,21 @@ void add_child(exp_tree_t *dest, exp_tree_t* src)
 			fail("realloc tree children");
 	}
 	dest->child[dest->child_count - 1] = src;
+}
+
+void printout_tree(exp_tree_t et)
+{
+	int i;
+	printf("(%s", tree_nam[et.head_type]);
+	if (et.tok && et.tok->start) {
+		printf(":");
+		tok_display(*et.tok);
+	}
+	for (i = 0; i < et.child_count; i++) {
+		printf(" ");
+		fflush(stdout);
+		printout_tree(*(et.child[i]));
+	}
+	printf(")");
+	fflush(stdout);
 }
