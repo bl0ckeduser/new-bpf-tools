@@ -62,16 +62,16 @@ void add_child(exp_tree_t *dest, exp_tree_t* src)
 void printout_tree(exp_tree_t et)
 {
 	int i;
-	printf("(%s", tree_nam[et.head_type]);
+	fprintf(stderr, "(%s", tree_nam[et.head_type]);
 	if (et.tok && et.tok->start) {
-		printf(":");
-		tok_display(*et.tok);
+		fprintf(stderr, ":");
+		tok_display(stderr, *et.tok);
 	}
 	for (i = 0; i < et.child_count; i++) {
-		printf(" ");
-		fflush(stdout);
+		fprintf(stderr, " ");
+		fflush(stderr);
 		printout_tree(*(et.child[i]));
 	}
-	printf(")");
-	fflush(stdout);
+	fprintf(stderr, ")");
+	fflush(stderr);
 }

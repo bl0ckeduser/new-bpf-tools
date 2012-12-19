@@ -34,11 +34,11 @@ int is_instr(char type)
 			|| type == TOK_MY	|| type == TOK_OD;
 }
 
-void tok_display(token_t t)
+void tok_display(FILE *f, token_t t)
 {
 	char buf[1024];
 	strncpy(buf, t.start, t.len);
 	buf[t.len] = 0;
-	printf("%s", buf);
+	fprintf(f, "%s", buf);
 }
 

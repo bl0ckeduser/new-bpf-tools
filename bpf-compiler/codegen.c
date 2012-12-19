@@ -46,7 +46,6 @@ int sym_check(char* s)
 int sym_add(char *s)
 {
 	strcpy(symtab[syms], s);
-	printf("sym %d: %s\n", syms, s);
 	return syms++; 
 }
 

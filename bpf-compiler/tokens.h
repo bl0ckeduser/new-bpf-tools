@@ -2,6 +2,8 @@
 #define TOKENS_H
 
 #include "tokenizer.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 /* token types */
 
@@ -121,7 +123,7 @@ extern int is_asg_op(char type);
 extern int is_mul_op(char type);
 extern int is_comp_op(char type);
 extern int is_instr(char type);
-extern void tok_display(token_t);
+extern void tok_display(FILE *f, token_t t);
 
 #endif
 
