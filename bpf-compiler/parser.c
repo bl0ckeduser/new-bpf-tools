@@ -54,16 +54,19 @@ token_t need_call(char type, int source_line)
 	if (tokens[index++].type != type) {
 		fflush(stdout);
 		printf("\n");
-		sprintf(buf, "[line %d] at index %d, needed a %s",
-			source_line, index - 1, tok_nam[type]);
-		/* token index --> line, char 	array
-		 * would allow cool diagnostics like this:
+		printf("Parse error issued by parser.c:%d\n", source_line);
+		printf("Line %d, char %d: %s expected\n",
+			tokens[index - 1].from_line,
+			tokens[index - 1].from_char,
+			tok_nam[type]);
+		exit(1);
+		/*
+		 * TODO: cool diagnostics like this:
 		 *		1 + 1
 		 *			 ^
 		 * Syntax error: semicolon expected
 		 */
-		
-		fail(buf);
+
 	} else
 		return tokens[index - 1];
 }

@@ -9,8 +9,7 @@
  */
 
 /* TODO: cleanup some of the more mysterious
- *	     parts of the code;
- *		 token.from_line, token.from_char
+ *        parts of the code;
  */
 
 #include "tokenizer.h"
@@ -371,6 +370,8 @@ token_t* tokenize(char *buf)
 	int max;
 	int key;
 	int i;
+	int line = 1;
+	char *line_start = buf;
 
 	token_t *toks = malloc(64 * sizeof(token_t));
 	int tok_alloc = 64;
@@ -411,7 +412,8 @@ token_t* tokenize(char *buf)
 			}
 
 			/* add token to the tokens array */
-			if (c.token != TOK_WHITESPACE) {
+			if (c.token != TOK_WHITESPACE
+			 && c.token != TOK_NEWLINE) {
 				if (++tok_count > tok_alloc) {
 					tok_alloc = tok_count + 64;
 					toks = realloc(toks,
@@ -422,17 +424,26 @@ token_t* tokenize(char *buf)
 				toks[tok_count - 1].type = c.token;
 				toks[tok_count - 1].start = p;
 				toks[tok_count - 1].len = max;
+				toks[tok_count - 1].from_line = line;
+				toks[tok_count - 1].from_char = p - line_start + 1;
 			}
 
 			/* move forward in the string */
 			p += max;
 			if (max == 0)
 				++p;
+
+			if (c.token == TOK_NEWLINE) {
+				++line;
+				line_start = p;
+			}
 		}
 	}
 
 	toks[tok_count].start = NULL;
 	toks[tok_count].len = 0;
+	toks[tok_count].from_line = line;
+	toks[tok_count].from_char = p - line_start;
 
 	return toks;
 }
@@ -479,5 +490,6 @@ void setup_tokenizer()
 	add_token(t[tc++], ")", TOK_RPAREN);
 	add_token(t[tc++], ";", TOK_SEMICOLON);
 	add_token(t[tc++], ",", TOK_COMMA);
+	add_token(t[tc++], "\n", TOK_NEWLINE);
 }
 

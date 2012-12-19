@@ -43,7 +43,8 @@ enum {
 	TOK_RPAREN,
 	TOK_SEMICOLON,
 	TOK_ELSE,
-	TOK_COMMA
+	TOK_COMMA,
+	TOK_NEWLINE
 };
 
 static char* tok_nam[] = {
@@ -85,6 +86,7 @@ static char* tok_nam[] = {
 	"TOK_SEMICOLON",
 	"TOK_ELSE",
 	"TOK_COMMA",
+	"TOK_NEWLINE"
 };
 
 /* keywords */
