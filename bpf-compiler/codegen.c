@@ -1,4 +1,9 @@
 #include "tree.h"
+#include "codegen.h"
+#include <string.h>
+#include <stdio.h>
+
+extern void fail(char*);
 
 /* tree -> code generator */
 /* TODO: - implement several types of trees
@@ -71,11 +76,6 @@ int arith_op(int ty)
 			return 0;
 	}
 }
-
-typedef struct codegen {
-	int adr;
-	int bytes;
-} codegen_t;
 
 codegen_t codegen(exp_tree_t* tree)
 {

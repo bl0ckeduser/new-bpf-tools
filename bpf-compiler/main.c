@@ -5,6 +5,7 @@
 #include "tokens.h"
 #include "tree.h"
 #include "parser.h"
+#include "codegen.h"
 
 int main(int argc, char** argv)
 {
@@ -14,6 +15,7 @@ int main(int argc, char** argv)
 	int i;
 	exp_tree_t tree;
 	extern void optimize(exp_tree_t *et);
+	extern codegen_t codegen(exp_tree_t* tree);
 
 	/* read in at most 1KB of code from stdin */
 	fread(buf, sizeof(char), 1024 * 1024, stdin);

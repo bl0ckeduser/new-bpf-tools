@@ -262,9 +262,6 @@ exp_tree_t expr()
 		++index;	/* eat int token */
 		tree = new_exp_tree(INT_DECL, NULL);
 		tok = need(TOK_IDENT);
-		printf("int decl ");
-		tok_display(tok);
-		printf("\n");
 		subtree = new_exp_tree(VARIABLE, &tok);
 		add_child(&tree, alloc_exptree(subtree));
 		if (peek().type == TOK_ASGN) {
