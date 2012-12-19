@@ -28,6 +28,7 @@
 #include "tokenizer.h"
 #include "tokens.h"
 #include "tree.h"
+#include <string.h>
 
 /*
 	block := expr ';' | if (expr) block [else block] 
@@ -52,6 +53,7 @@ exp_tree_t expr();
 exp_tree_t sum_expr();
 exp_tree_t mul_expr();
 exp_tree_t unary_expr();
+void printout(exp_tree_t et);
 
 token_t peek()
 {
