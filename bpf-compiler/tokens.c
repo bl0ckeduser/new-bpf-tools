@@ -1,4 +1,6 @@
 #include "tokens.h"
+#include <string.h>
+#include <stdio.h>
 
 int is_add_op(char type)
 {
@@ -31,3 +33,12 @@ int is_instr(char type)
 			|| type == TOK_CMY	|| type == TOK_MX
 			|| type == TOK_MY	|| type == TOK_OD;
 }
+
+void tok_display(token_t t)
+{
+	char buf[1024];
+	strncpy(buf, t.start, t.len);
+	buf[t.len] = 0;
+	printf("%s", buf);
+}
+

@@ -22,10 +22,9 @@ int main(int argc, char** argv)
 
 	/* display the tokens */
 	for (i = 0; tokens[i].start; i++) {
-		strncpy(buf2, tokens[i].start, tokens[i].len);
-		buf2[tokens[i].len] = 0;
-		printf("%s: %s\n", tok_nam[tokens[i].type],
-			buf2);
+		printf("%d: %s: ", i, tok_nam[tokens[i].type]);
+		tok_display(tokens[i]);
+		putchar('\n');
 	}
 
 	parse(tokens);

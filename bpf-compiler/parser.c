@@ -95,14 +95,6 @@ void parse(token_t *t)
 	putchar('\n');
 }
 
-void tok_display(token_t t)
-{
-	char buf[1024];
-	strncpy(buf, t.start, t.len);
-	buf[t.len] = 0;
-	printf("%s", buf);
-}
-
 void printout(exp_tree_t et)
 {
 	int i;

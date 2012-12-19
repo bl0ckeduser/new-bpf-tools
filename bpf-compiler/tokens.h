@@ -1,6 +1,8 @@
 #ifndef TOKENS_H
 #define TOKENS_H
 
+#include "tokenizer.h"
+
 /* token types */
 
 enum {
@@ -117,6 +119,7 @@ extern int is_asg_op(char type);
 extern int is_mul_op(char type);
 extern int is_comp_op(char type);
 extern int is_instr(char type);
+extern void tok_display(token_t);
 
 #endif
 
