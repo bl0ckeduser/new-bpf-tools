@@ -171,7 +171,7 @@ int expr()
 {
 	printf("(expr ");
 	if (peek().type == TOK_IDENT) {
-		/* else: "ident asg-op expr" pattern */
+		/* "ident asg-op expr" pattern */
 		if(is_asg_op(tokens[index + 1].type)) {
 			index += 2;
 			printf("TOK_IDENT ASG-OP ");
@@ -209,14 +209,6 @@ int expr()
 		printf(")");
 		return 1;
 	}
-	/*
-		if(is_instr(peek().type)) {
-			if (!expr())
-				fail("instr expr");
-			printf(")");
-				return 1;
-		}
-	*/
 	printf("]");
 	return 0;
 }
