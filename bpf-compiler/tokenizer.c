@@ -83,7 +83,7 @@ trie* new_trie()
 
 /* Pattern compiler routine */
 
-int add_token(trie* t, char* tok, int key)
+void add_token(trie* t, char* tok, int key)
 {
 	int i, j;
 	int k;
