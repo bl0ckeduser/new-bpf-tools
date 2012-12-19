@@ -3,7 +3,16 @@
  * Bl0ckeduser, December 2012
  */
 
-/* TODO: fix parsing of e.g. '1 + 2 + 3' */
+/* TODO: fix parsing of following expressions:
+ *			1 + 2 + 3
+ *			1 + 2 * 3
+ *			3 * 4
+ *			3 * 4 * 5
+ *			++x
+ *			x++
+ *
+ *	(sum_expr / mul_expr / unary_expr code is broken)
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
