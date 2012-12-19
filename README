@@ -2,6 +2,9 @@ This a new [December 2012] set of programming tools for my
 ancient "BPF" virtual machine. This project is meant as a personal
 exercise in compiler programming.
 
+Implementations of my old VM:
+	https://sites.google.com/site/bl0ckeduserssoftware/past-projects
+	https://github.com/bl0ckeduser/blokvm
 
 bpf-asm
 =======
