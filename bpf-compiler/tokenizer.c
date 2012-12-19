@@ -19,6 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern void fail(char* mesg);
+extern void sanity_requires(int exp);
+
 typedef struct match_struct {
 	/* accept number, if any */
 	int token;

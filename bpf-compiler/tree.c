@@ -5,6 +5,8 @@
 
 /* FIXME: crazy mallocs and memcpys, no garbage collection */
 
+extern void fail(char* mesg);
+
 int valid_tree(exp_tree_t et)
 {
 	return et.head_type != NULL_TREE;

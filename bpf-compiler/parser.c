@@ -45,6 +45,7 @@ exp_tree_t sum_expr();
 exp_tree_t mul_expr();
 exp_tree_t unary_expr();
 void printout(exp_tree_t et);
+extern void fail(char* mesg);
 
 token_t peek()
 {

@@ -4,7 +4,7 @@
 #include "tokenizer.h"
 #include "tokens.h"
 
-main()
+int main(int argc, char** argv)
 {
 	char buf[1024];
 	char buf2[1024];
@@ -29,6 +29,7 @@ main()
 	}
 
 	parse(tokens);
+	return 0;
 }
 
 
