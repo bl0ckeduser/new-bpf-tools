@@ -6,7 +6,7 @@
 
 int main(int argc, char** argv)
 {
-	char buf[1024];
+	char buf[1024 * 1024];
 	char buf2[1024];
 	token_t* tokens;
 	extern token_t* tokenize(char *string);
@@ -14,8 +14,8 @@ int main(int argc, char** argv)
 	extern void parse(token_t *);
 	int i;
 
-	/* get a test line string from stdin */
-	fgets(buf, 1024, stdin);
+	/* read in at most 1KB of code from stdin */
+	fread(buf, sizeof(char), 1024 * 1024, stdin);
 
 	setup_tokenizer();
 	tokens = tokenize(buf);
