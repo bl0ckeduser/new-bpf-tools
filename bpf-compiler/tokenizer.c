@@ -399,7 +399,7 @@ token_t* tokenize(char *buf)
 		if (max == -1) {
 			/* matching from this offset failed */
 			printf("dafuq: %s\n", p);
-			break;	/* stop tokenizing, bye bye */
+			fail("tokenization failed");
 		} else {
 			/* spot keywords */
 			if (c.token == TOK_IDENT) {
