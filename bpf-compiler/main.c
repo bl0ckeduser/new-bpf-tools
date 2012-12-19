@@ -35,6 +35,8 @@ int main(int argc, char** argv)
 	printout_tree(tree);
 	putchar('\n');
 
+	codegen(&tree);
+
 	return 0;
 }
 

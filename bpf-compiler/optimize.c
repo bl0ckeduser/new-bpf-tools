@@ -3,6 +3,14 @@
 
 /* TODO: constant folding ? other stuff ? */
 
+int arith_type(int ty)
+{
+	return 	ty == ADD
+			|| ty == SUB
+			|| ty == MULT
+			|| ty == DIV;
+}
+
 void optimize(exp_tree_t *et)
 {
 	int i = 0;
@@ -18,7 +26,8 @@ void optimize(exp_tree_t *et)
 	 * becomes (MULT (NUMBER:2) (NUMBER:3) (NUMBER:4))
 	 */
 	if (et->child_count == 2 
-		&& et->child[1]->head_type == et->head_type)
+		&& et->child[1]->head_type == et->head_type
+		&& arith_type(et->head_type))
 	{
 		below = et->child[1];
 		et->child_count = 1;
