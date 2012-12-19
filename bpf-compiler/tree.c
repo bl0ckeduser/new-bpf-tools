@@ -7,6 +7,15 @@
 
 extern void fail(char* mesg);
 
+exp_tree_t *alloc_exptree(exp_tree_t et)
+{
+	exp_tree_t *p = malloc(sizeof(exp_tree_t));
+	if (!p)
+		fail("malloc et");
+	*p = et;
+	return p;
+}
+
 int valid_tree(exp_tree_t et)
 {
 	return et.head_type != NULL_TREE;
@@ -36,19 +45,14 @@ exp_tree_t new_exp_tree(unsigned int type, token_t* tok)
 	return tr;
 }
 
-void add_child(exp_tree_t *dest, exp_tree_t src)
+void add_child(exp_tree_t *dest, exp_tree_t* src)
 {
-	exp_tree_t* tree_copy = NULL;
-
-	tree_copy = malloc(sizeof(exp_tree_t));
-	memcpy(tree_copy, &src, sizeof(exp_tree_t));
-
 	if (++dest->child_count >= dest->child_alloc) {
 		dest->child_alloc += 64;
 		dest->child = realloc(dest->child,
-			dest->child_alloc * sizeof(exp_tree_t));
+			dest->child_alloc * sizeof(exp_tree_t *));
 		if (!dest->child)
 			fail("realloc tree children");
 	}
-	dest->child[dest->child_count - 1] = tree_copy;
+	dest->child[dest->child_count - 1] = src;
 }

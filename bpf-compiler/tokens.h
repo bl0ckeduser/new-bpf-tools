@@ -82,7 +82,7 @@ static char* tok_nam[] = {
 	"TOK_RPAREN",
 	"TOK_SEMICOLON",
 	"TOK_ELSE",
-	"TOK_COMMA"
+	"TOK_COMMA",
 };
 
 /* keywords */
