@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include "tokenizer.h"
 #include "tokens.h"
+#include "tree.h"
 
 /*
 	block := expr ';' | if (expr) block [else block] 
@@ -72,10 +73,17 @@ void need(char type)
 
 void parse(token_t *t)
 {
+	exp_tree_t program;
+	program = new_exp_tree(BLOCK, 0);
+
 	tokens = t;
 	index = 0;
-	while (block() && tokens[index].start)
+
+
+	while (block()
+		&& tokens[index].start)
 		;
+
 	putchar('\n');
 }
 
