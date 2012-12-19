@@ -4,7 +4,6 @@
  */
 
 /* TODO:
- *		- fix instruction compilation (draw et al.)
  *		- figure out a spec for the syntax-trees
  *		- produce real syntax trees rather than printouts
  */
@@ -35,7 +34,7 @@
 			| instr ( expr1, expr2, exprN )
 
 	expr := ident asg-op expr | sum_expr {comp-op sum_expr} 
-			| 'int' ident [ = expr ] | instr expr
+			| 'int' ident [ = expr ]
 
 	sum_expr := mul_expr { add-op mul_expr }+
 	mul_expr := unary_expr { mul-op unary_expr }+
@@ -82,6 +81,9 @@ void parse(token_t *t)
 
 int block()
 {
+	int i;
+	int args;
+
 	printf("(block ");
 	/* empty block */
 	if (peek().type == TOK_SEMICOLON) {
@@ -94,7 +96,7 @@ int block()
 		printf(" semicolon)");
 		return 1;
 	} else if(peek().type == TOK_IF) {
-		printf(" if ");
+		printf(" (if ");
 		++index;
 		need(TOK_LPAREN);
 		expr();
@@ -105,16 +107,16 @@ int block()
 			++index;
 			block();
 		}
-		printf(")");
+		printf("))");
 		return 1;
 	} else if(peek().type == TOK_WHILE) {
-		printf(" while ");
+		printf(" (while ");
 		++index;
 		need(TOK_LPAREN);
 		expr();
 		need(TOK_RPAREN);
 		block();
-		printf(")");
+		printf("))");
 		return 1;
 	} else if(peek().type == TOK_LBRACE) {
 		++index;
@@ -123,6 +125,41 @@ int block()
 			;
 		need(TOK_RBRACE);
 		printf(" '}' )");
+		return 1;
+	} else if (is_instr(peek().type)) {
+		printf(" (%s ", tok_nam[peek().type]);
+		switch(peek().type) {
+			case TOK_ECHO:
+			case TOK_CMX:
+			case TOK_CMY:
+			case TOK_MX:
+			case TOK_MY:
+				args = 1;
+				break;
+			case TOK_DRAW:
+				args = 8;
+				break;
+			case TOK_WAIT:
+				args = 2;
+				break;
+			case TOK_OD:
+				args = 0;
+				break;
+			default:
+				fail("illegal BPF instruction");
+		}
+		++index;
+		/* parenthesized, comma-separated
+	 	 * parameter-expression list */
+		need(TOK_LPAREN);
+		for (i = 0; i < args; i++) {
+			if (!expr())
+				fail("expression expected");
+			if (i < args - 1)
+				need(TOK_COMMA);
+		}
+		need(TOK_RPAREN);
+		printf("))");
 		return 1;
 	} else {
 		printf("]");
