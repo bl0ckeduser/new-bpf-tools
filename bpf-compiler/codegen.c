@@ -143,6 +143,18 @@ codegen_t codegen(exp_tree_t* tree)
 		return (codegen_t) { sto, 0 };
 	}
 
+	/* post-increment, post-decrement */
+	if (tree->head_type == POST_INC
+		|| tree->head_type == POST_DEC) {
+		name = get_tok_str(*(tree->child[0]->tok));
+		sym = sym_lookup(name);
+		sto = get_temp_storage();
+		printf("Do %d 10 2 %d\n", sto, sym);
+		printf("Do %d %d 1 1\n", sym,
+			tree->head_type == POST_INC ? 20 : 30);
+		return (codegen_t) { sto, 0 };
+	}
+
 	/* assignment */
 	if (tree->head_type == ASGN && tree->child_count == 2) {
 		new_temp_storage();
