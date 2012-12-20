@@ -56,8 +56,16 @@ void parse_fail(char *s)
 	int i;
 
 	/* neat diagnostic printout */
-	line = tokens[indx].from_line;
-	chr = tokens[indx].from_char;
+	if (tokens[indx].from_line
+		!= tokens[indx - 1].from_line) {
+		/* end of the line */
+		line = tokens[indx - 1].from_line;
+		chr = strstr(code_lines[line], "\n")
+			- code_lines[line] + 1;
+	} else {
+		line = tokens[indx].from_line;
+		chr = tokens[indx].from_char;
+	}
 	strncpy(buf, code_lines[line], 1024);
 	buf[1023] = 0;
 	for (i = 0; code_lines[line]; ++i)
@@ -71,7 +79,7 @@ void parse_fail(char *s)
 	putchar('^');
 	putchar('\n');
 
-	printf("line %d: %s", 
+	printf("line %d: %s\n", 
 		line,
 		s);
 	exit(1);	
@@ -87,7 +95,7 @@ token_t need_call(char type, int source_line)
 		fflush(stdout);
 		printf("\n");
 		--indx;
-		sprintf(buf, "%s expected\n", tok_desc[type]);
+		sprintf(buf, "%s expected", tok_desc[type]);
 		parse_fail(buf);
 	} else
 		return tokens[indx - 1];

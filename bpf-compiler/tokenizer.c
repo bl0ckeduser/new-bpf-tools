@@ -137,7 +137,6 @@ void add_token(trie* t, char* tok, int key)
 				next = new_trie();
 				t->map[' '] = next;
 				t->map['\t'] = next;
-				t->map['\n'] = next;
 				t = next;
 				++n;
 				break;
@@ -402,7 +401,6 @@ token_t* tokenize(char *buf)
 
 		if (max == -1) {
 			/* matching from this offset failed */
-			printf("dafuq: %s\n", p);
 			fail("tokenization failed");
 		} else {
 			/* spot keywords */
@@ -438,7 +436,7 @@ token_t* tokenize(char *buf)
 				++p;
 
 			if (c.token == TOK_NEWLINE) {
-				code_lines[line] = p; 
+				code_lines[line] = line_start;
 				++line;
 				line_start = p;
 			}
