@@ -48,6 +48,35 @@ token_t peek()
 
 #define need(X) need_call((X), __LINE__)
 
+void parse_fail(char *s)
+{
+	char buf[1024];
+	int line;
+	int chr;
+	int i;
+
+	/* neat diagnostic printout */
+	line = tokens[indx].from_line;
+	chr = tokens[indx].from_char;
+	strncpy(buf, code_lines[line], 1024);
+	buf[1023] = 0;
+	for (i = 0; code_lines[line]; ++i)
+		if (buf[i] == '\n') {
+			buf[i] = 0;
+			break;
+		}
+	puts(buf);
+	for (i = 1; i < chr; ++i)
+		putchar(' ');
+	putchar('^');
+	putchar('\n');
+
+	printf("line %d: %s", 
+		line,
+		s);
+	exit(1);	
+}
+
 token_t need_call(char type, int source_line)
 {
 	char buf[1024];
@@ -57,29 +86,9 @@ token_t need_call(char type, int source_line)
 	if (tokens[indx++].type != type) {
 		fflush(stdout);
 		printf("\n");
-		/* printf("Parse error issued by parser.c:%d\n", 
-			source_line); */
-		printf("line %d: %s expected\n",
-			line = tokens[indx - 1].from_line,
-			tok_desc[type]);
-
-		/* neat diagnostic printout */
-		chr = tokens[indx - 1].from_char;
-		strncpy(buf, code_lines[line], 1024);
-		buf[1023] = 0;
-		for (i = 0; code_lines[line]; ++i)
-			if (buf[i] == '\n') {
-				buf[i] = 0;
-				break;
-			}
-		puts(buf);
-		for (i = 1; i < chr; ++i)
-			putchar(' ');
-		putchar('^');
-		putchar('\n');
-
-		exit(1);
-
+		--indx;
+		sprintf(buf, "%s expected\n", tok_desc[type]);
+		parse_fail(buf);
 	} else
 		return tokens[indx - 1];
 }
@@ -172,13 +181,13 @@ exp_tree_t block()
 				args = 0;
 				break;
 			default:
-				fail("illegal BPF instruction");
+				parse_fail("illegal BPF instruction");
 		}
 		++indx;	/* eat instruction */
 		need(TOK_LPAREN);
 		for (i = 0; i < args; i++) {
 			if (!valid_tree(subtree = expr()))
-				fail("expression expected");
+				parse_fail("expression expected");
 			add_child(&tree, alloc_exptree(subtree));
 			if (i < args - 1)
 				need(TOK_COMMA);
@@ -222,11 +231,11 @@ exp_tree_t expr()
 				case TOK_ASGN:
 					break;
 				default:
-					fail("invalid asg-op");
+					parse_fail("invalid assignment operator");
 			}
 			indx += 2;	/* eat ident, asg-op */
 			if (!valid_tree(subtree3 = expr()))
-				fail("needed expression after ident asg-op");
+				parse_fail("expression expected");
 			if (oper.type == TOK_ASGN)
 				add_child(&tree, alloc_exptree(subtree3));
 			else {
@@ -262,12 +271,12 @@ exp_tree_t expr()
 					tree = new_exp_tree(NEQL, NULL);
 					break;
 				default:
-					fail("invalid comparison operator");
+					parse_fail("invalid comparison operator");
 			}
 			++indx;	/* eat comp-op */
 			add_child(&tree, alloc_exptree(subtree));
 			if (!valid_tree(subtree2 = sum_expr()))
-				fail("sum_expr expected");
+				parse_fail("expression expected");
 			add_child(&tree, alloc_exptree(subtree2));
 		}
 		return tree;
@@ -281,7 +290,7 @@ exp_tree_t expr()
 		if (peek().type == TOK_ASGN) {
 			++indx;	/* eat = */
 			if (!valid_tree(subtree2 = expr()))
-				fail("int ident = expr");
+				parse_fail("expected expression after =");
 			add_child(&tree, alloc_exptree(subtree2));
 		}
 		return tree;
@@ -318,7 +327,7 @@ exp_tree_t sum_expr()
 
 	while (1) {
 		if (!valid_tree(et1 = mul_expr()))
-			fail("expected valid mul-expr");
+			parse_fail("expression expected");
 
 		if (!is_add_op((oper = peek()).type)) {
 			add_child(tree, alloc_exptree(et1));
@@ -375,7 +384,7 @@ exp_tree_t mul_expr()
 
 	while (1) {
 		if (!valid_tree(et1 = unary_expr()))
-			fail("expected valid unary-expr");
+			parse_fail("expression expected");
 
 		if (!is_mul_op((oper = peek()).type)) {
 			add_child(tree, alloc_exptree(et1));
