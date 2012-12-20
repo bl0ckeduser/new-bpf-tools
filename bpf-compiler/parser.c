@@ -51,21 +51,34 @@ token_t peek()
 token_t need_call(char type, int source_line)
 {
 	char buf[1024];
+	int line;
+	int chr;
+	int i;
 	if (tokens[indx++].type != type) {
 		fflush(stdout);
 		printf("\n");
-		printf("Parse error issued by parser.c:%d\n", source_line);
-		printf("Line %d, char %d: %s expected\n",
-			tokens[indx - 1].from_line,
-			tokens[indx - 1].from_char,
+		/* printf("Parse error issued by parser.c:%d\n", 
+			source_line); */
+		printf("line %d: %s expected\n",
+			line = tokens[indx - 1].from_line,
 			tok_nam[type]);
+
+		/* neat diagnostic printout */
+		chr = tokens[indx - 1].from_char;
+		strncpy(buf, code_lines[line], 1024);
+		buf[1023] = 0;
+		for (i = 0; code_lines[line]; ++i)
+			if (buf[i] == '\n') {
+				buf[i] = 0;
+				break;
+			}
+		puts(buf);
+		for (i = 1; i < chr; ++i)
+			putchar(' ');
+		putchar('^');
+		putchar('\n');
+
 		exit(1);
-		/*
-		 * TODO: cool diagnostics like this:
-		 *		1 + 1
-		 *			 ^
-		 * Syntax error: semicolon expected
-		 */
 
 	} else
 		return tokens[indx - 1];

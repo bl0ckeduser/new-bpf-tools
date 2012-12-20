@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+char *code_lines[1024];
 extern void fail(char* mesg);
 extern void sanity_requires(int exp);
 
@@ -377,6 +378,8 @@ token_t* tokenize(char *buf)
 	int tok_alloc = 64;
 	int tok_count = 0;
 
+	*code_lines = buf;
+
 	for (p = buf; *p;) {
 		max = -1;
 		key = 0;
@@ -435,6 +438,7 @@ token_t* tokenize(char *buf)
 				++p;
 
 			if (c.token == TOK_NEWLINE) {
+				code_lines[line] = p; 
 				++line;
 				line_start = p;
 			}
@@ -445,6 +449,7 @@ token_t* tokenize(char *buf)
 	toks[tok_count].len = 0;
 	toks[tok_count].from_line = line;
 	toks[tok_count].from_char = p - line_start;
+	code_lines[line] = line_start;
 
 	return toks;
 }

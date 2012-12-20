@@ -11,6 +11,8 @@ typedef struct token {
 	int from_char;
 } token_t;
 
+extern char *code_lines[1024];
+
 extern token_t* tokenize(char *string);
 extern void setup_tokenizer();
 
