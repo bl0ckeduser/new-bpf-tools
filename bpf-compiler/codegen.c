@@ -89,9 +89,18 @@ int sym_check(char* s)
 	return 0;
 }
 
+int nameless_perm_storage()
+{
+	if (syms >= 245)
+		fail("out of permanent registers");
+	return syms++;
+}
+
 int sym_add(char *s)
 {
 	strcpy(symtab[syms], s);
+	if (syms >= 245)
+		fail("out of permanent registers");
 	return syms++; 
 }
 
@@ -134,6 +143,16 @@ codegen_t codegen(exp_tree_t* tree)
 	codegen_t cod;
 	char buf[1024];
 	char *bp1, *bp2;
+	int while_start;
+
+	if (tree->head_type == BLOCK
+		|| tree->head_type == IF
+		|| tree->head_type == WHILE
+		|| tree->head_type == ASGN) {
+		/* clear expression stack */
+		new_temp_storage();
+	}
+	
 
 	/* block */
 	if (tree->head_type == BLOCK) {
@@ -145,7 +164,6 @@ codegen_t codegen(exp_tree_t* tree)
 
 	/* variable declaration, with optional assignment */
 	if (tree->head_type == INT_DECL) {
-		new_temp_storage();
 		name = get_tok_str(*(tree->child[0]->tok));
 		if (!sym_check(name))
 			sym = sym_add(name);
@@ -211,17 +229,16 @@ codegen_t codegen(exp_tree_t* tree)
 
 	/* assignment */
 	if (tree->head_type == ASGN && tree->child_count == 2) {
-		new_temp_storage();
 		cod = codegen(tree->child[1]);
 		sym = sym_lookup(get_tok_str(*(tree->child[0]->tok)));
 		sprintf(buf, "Do %d 10 2 %d\n", sym, cod.adr);
 		push_line(buf);
-		return (codegen_t) { sto, 5 + cod.bytes };
+		return (codegen_t) { sym, 5 + cod.bytes };
 	}
 
 	/* if */
 	if (tree->head_type == IF) {
-		new_temp_storage();
+		/* the conditional */
 		cod = codegen(tree->child[0]);
 		sto = get_temp_storage();
 		sprintf(buf, "Do %d 10 1 ", sto);
@@ -252,10 +269,41 @@ codegen_t codegen(exp_tree_t* tree)
 			sprintf(buf, "PtrFrom %d\n", sto);
 			push_line(buf);
 			cod = codegen(tree->child[2]);
+			/* backpatch 2 */
 			sprintf(buf, "%d", 7 + cod.bytes);
 			strcpy(bp2, buf);
 			bytesize += cod.bytes;
 		}
+
+		return (codegen_t){ 0, bytesize };
+	}
+
+	/* while */
+	if (tree->head_type == WHILE) {
+		/* use permanent storage for the
+		 * while conditional jump pointer */
+		while_start = nameless_perm_storage();
+		sprintf(buf, "PtrTo %d\n", while_start);
+		push_line(buf);
+		/* the conditional */
+		cod = codegen(tree->child[0]);
+		sto = get_temp_storage();
+		sprintf(buf, "Do %d 10 1 ", sto);
+		push_line(buf);
+		bp1 = push_compiled_token("_");
+		push_compiled_token("\n");
+		sprintf(buf, "zbPtrTo %d 0 %d\n", cod.adr, sto);
+		push_line(buf);
+		bytesize += codegen(tree->child[1]).bytes;
+		/* jump back to before the conditional */
+		sprintf(buf, "PtrFrom %d\n", while_start);
+		push_line(buf);
+		bytesize += 2;
+		/* backpatch 1 */
+		sprintf(buf, "%d", bytesize);
+		strcpy(bp1, buf);
+
+		bytesize += 9 + cod.bytes;
 
 		return (codegen_t){ 0, bytesize };
 	}
