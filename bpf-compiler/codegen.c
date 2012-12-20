@@ -1,4 +1,5 @@
 #include "tree.h"
+#include "tokens.h"
 #include "codegen.h"
 #include <string.h>
 #include <stdio.h>
@@ -145,6 +146,52 @@ codegen_t codegen(exp_tree_t* tree)
 	char buf[1024];
 	char *bp1, *bp2;
 	int while_start;
+	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
+	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
+	exp_tree_t *new, *new2;
+	exp_tree_t *temp;
+
+	/* 
+	 * BPF integer comparisons / bool system...
+	 * This system considers an expression "true" whenever
+	 * it is <= 0. This is because we use a "zbPtrTo var1, 0, var2"
+	 * instruction for conditional branching. 
+	 */
+
+	/* Rewrite a <= b as a - b */
+	if (tree->head_type == LTE) {
+		tree->head_type = SUB;
+	}
+
+	/* Rewrite a < b as a - b + 1 */
+	if (tree->head_type == LT) {
+		new = alloc_exptree(new_exp_tree(ADD, NULL));
+		new2 = alloc_exptree(new_exp_tree(SUB, NULL));
+		add_child(new2, tree->child[0]);
+		add_child(new2, tree->child[1]);
+		add_child(new, new2);
+		add_child(new, alloc_exptree(one_tree));
+		*tree = *new;
+	}
+
+	/* Rewrite a >= b as b - a */
+	if (tree->head_type == GTE) {
+		temp = tree->child[0];
+		tree->child[0] = tree->child[1];
+		tree->child[1] = temp;
+		tree->head_type = SUB;
+	}
+
+	/* Rewrite a > b as b - a + 1 */
+	if (tree->head_type == GT) {
+		new = alloc_exptree(new_exp_tree(ADD, NULL));
+		new2 = alloc_exptree(new_exp_tree(SUB, NULL));
+		add_child(new2, tree->child[1]);
+		add_child(new2, tree->child[0]);
+		add_child(new, new2);
+		add_child(new, alloc_exptree(one_tree));
+		*tree = *new;
+	}
 
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
@@ -154,7 +201,6 @@ codegen_t codegen(exp_tree_t* tree)
 		new_temp_storage();
 	}
 	
-
 	/* block */
 	if (tree->head_type == BLOCK) {
 		/* codegen expressions in block */
