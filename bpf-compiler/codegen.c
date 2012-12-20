@@ -30,6 +30,7 @@ void new_temp_storage() {
 int label_count = 0;
 char *label_bp[256];	/* label backpatches */
 int byte_count = 0;
+int program_ptr;
 
 char **code_text;
 int code_toks = 0;
@@ -140,7 +141,13 @@ int arith_op(int ty)
 
 void run_codegen(exp_tree_t *tree)
 {
+	int sto;
+	char buf[1024];
 	extern void count_labels(exp_tree_t tree);
+	program_ptr = sto = nameless_perm_storage();
+	sprintf(buf, "PtrTo %d\n", sto);
+	byte_count -= 2;	/* hack */
+	push_line(buf);
 	count_labels(*tree);
 	codegen(tree);
 }
@@ -158,7 +165,9 @@ void count_labels(exp_tree_t tree)
 		name = get_tok_str(*(tree.tok));
 		if (!sym_check(name))
 			sym = sym_add(name);
-		sprintf(buf, "Do %d 10 1 ",
+		sprintf(buf, "Do %d 10 2 %d\n", sym, program_ptr);
+		push_line(buf);
+		sprintf(buf, "Do %d 20 1 ",
 			sym);
 		push_line(buf);
 		label_bp[sym] = push_compiled_token("_");
