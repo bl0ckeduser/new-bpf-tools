@@ -13,7 +13,7 @@
 /*
 	block := expr ';' | if (expr) block [else block] 
 			| while (expr) block | '{' { expr ';' } '}' 
-			| instr ( expr1, expr2, exprN )
+			| instr ( expr1, expr2, exprN ) ';'
 
 	expr := ident asg-op expr | sum_expr [comp-op sum_expr]
 			| 'int' ident [ = expr ]
@@ -171,6 +171,7 @@ exp_tree_t block()
 				need(TOK_COMMA);
 		}
 		need(TOK_RPAREN);
+		need(TOK_SEMICOLON);
 		return tree;
 	} else {
 		return null_tree;
@@ -295,7 +296,7 @@ exp_tree_t sum_expr()
 			et2 = new_exp_tree(ADD, NULL);
 		break;
 		case TOK_MINUS:
-			et2 = new_exp_tree(ADD, NULL);
+			et2 = new_exp_tree(SUB, NULL);
 		break;
 	}
 	++indx;	/* eat add-op */
@@ -315,7 +316,7 @@ exp_tree_t sum_expr()
 				et2 = new_exp_tree(ADD, NULL);
 			break;
 			case TOK_MINUS:
-				et2 = new_exp_tree(ADD, NULL);
+				et2 = new_exp_tree(SUB, NULL);
 			break;
 		}
 		++indx;	/* eat add-op */
