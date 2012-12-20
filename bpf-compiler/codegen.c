@@ -166,7 +166,9 @@ void count_labels(exp_tree_t tree)
 	}
 	for (i = 0; i < tree.child_count; ++i)
 		if (tree.child[i]->head_type == BLOCK
-		||	tree.child[i]->head_type == LABEL)
+		||	tree.child[i]->head_type == LABEL
+		||	tree.child[i]->head_type == IF
+		||	tree.child[i]->head_type == WHILE)
 			count_labels(*(tree.child[i]));
 }
 
