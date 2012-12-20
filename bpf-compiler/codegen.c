@@ -8,6 +8,7 @@ extern void fail(char*);
 /* tree -> code generator */
 /* TODO: - implement all the trees
  *	 - == comparison...
+ *	 - eliminate repetitions
  */
 
 int temp_register = 245;
@@ -168,10 +169,22 @@ codegen_t codegen(exp_tree_t* tree)
 		if (!sym_check(name))
 			sym = sym_add(name);
 		if (tree->child_count == 2) {
-			cod = codegen(tree->child[1]);
-			sprintf(buf, "Do %d 10 2 %d\n", sym, cod.adr);
-			push_line(buf);
-			return (codegen_t){ 0, cod.bytes + 5 };
+			if (tree->child[1]->head_type == NUMBER) {
+				sprintf(buf, "Do %d 10 1 %s\n", sym,
+					get_tok_str(*(tree->child[1]->tok)));
+				push_line(buf);
+				return (codegen_t){ 0, 5 };
+			} else if (tree->child[1]->head_type == VARIABLE) {
+				sto = sym_lookup(get_tok_str(*(tree->child[i]->tok)));
+				sprintf(buf, "Do %d 10 2 %d\n", sym, sto);
+				push_line(buf);
+				return (codegen_t){ 0, 5 };
+			} else {
+				cod = codegen(tree->child[1]);
+				sprintf(buf, "Do %d 10 2 %d\n", sym, cod.adr);
+				push_line(buf);
+				return (codegen_t){ 0, cod.bytes + 5 };
+			}
 		}
 		return (codegen_t){ 0, 0 };
 	}
@@ -229,11 +242,23 @@ codegen_t codegen(exp_tree_t* tree)
 
 	/* assignment */
 	if (tree->head_type == ASGN && tree->child_count == 2) {
-		cod = codegen(tree->child[1]);
 		sym = sym_lookup(get_tok_str(*(tree->child[0]->tok)));
-		sprintf(buf, "Do %d 10 2 %d\n", sym, cod.adr);
-		push_line(buf);
-		return (codegen_t) { sym, 5 + cod.bytes };
+		if (tree->child[1]->head_type == NUMBER) {
+			sprintf(buf, "Do %d 10 1 %s\n", sym,
+				get_tok_str(*(tree->child[1]->tok)));
+			push_line(buf);
+			return (codegen_t){ sym, 5 };
+		} else if (tree->child[1]->head_type == VARIABLE) {
+			sto = sym_lookup(get_tok_str(*(tree->child[i]->tok)));
+			sprintf(buf, "Do %d 10 2 %d\n", sym, sto);
+			push_line(buf);
+			return (codegen_t){ sym, 5 };
+		} else {
+			cod = codegen(tree->child[1]);
+			sprintf(buf, "Do %d 10 2 %d\n", sym, cod.adr);
+			push_line(buf);
+			return (codegen_t){ sym, cod.bytes + 5 };
+		}
 	}
 
 	/* if */
