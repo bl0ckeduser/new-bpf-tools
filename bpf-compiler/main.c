@@ -25,18 +25,18 @@ int main(int argc, char** argv)
 	tokens = tokenize(buf);
 
 	/* display the tokens */
-	for (i = 0; tokens[i].start; i++) {
+	/* for (i = 0; tokens[i].start; i++) {
 		fprintf(stderr, "%d: %s: ", i, tok_nam[tokens[i].type]);
 		tok_display(stderr, tokens[i]);
 		fputc('\n', stderr);
-	}
+	} */
 
 	tree = parse(tokens);
-	printout_tree(tree);
-	fputc('\n', stderr);
 	optimize(&tree);
-	printout_tree(tree);
-	fputc('\n', stderr);
+	
+	/* printout_tree(tree);
+	 * fputc('\n', stderr);
+	 */
 
 	codegen(&tree);
 	print_code();
