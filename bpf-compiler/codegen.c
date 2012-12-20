@@ -7,10 +7,7 @@ extern void fail(char*);
 
 /* tree -> code generator */
 /* TODO: - implement all the trees
- *		  - always give compiled code byte size
- *			(needed to implement if/if-else/while codegen)
- *		  - don't barf the code straight out to stdout,
- *			because that makes backpatching impossible !
+ *	 - == comparison...
  */
 
 int temp_register = 245;
