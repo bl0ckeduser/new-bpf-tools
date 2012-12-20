@@ -11,3 +11,6 @@ clown *= clown + 1;
 echo(clown + 2);
 
 	;	;
+
+echo(-3 + 5);
+echo(-123);

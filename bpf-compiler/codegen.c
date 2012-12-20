@@ -7,8 +7,7 @@
 extern void fail(char*);
 
 /* tree -> code generator */
-/* TODO: - implement all the trees
- *	 - == comparison...
+/* TODO: - implement ==
  *	 - eliminate repetitions
  */
 
@@ -379,12 +378,34 @@ codegen_t codegen(exp_tree_t* tree)
 		return (codegen_t){ 0, bytesize };
 	}
 
+	/* negative sign */
+	if (tree->head_type == NEGATIVE) {
+		sto = get_temp_storage();
+		cod = codegen(tree->child[0]);
+		sprintf(buf, "Do %d 10 1 0\n", sto);
+		push_line(buf);
+		sprintf(buf, "Do %d 30 2 %d\n", sto, cod.adr);
+		push_line(buf);
+		return (codegen_t) {sto, 10 + cod.bytes };
+	}
+
 	/* number */
 	if (tree->head_type == NUMBER) {
 		sto = get_temp_storage();
 		sprintf(buf, "Do %d 10 1 %s\n", 
 			sto,
 			get_tok_str(*(tree->tok)));
+		push_line(buf);
+		return (codegen_t) { sto, 5 };
+	}
+
+	/* variable */
+	if (tree->head_type == VARIABLE) {
+		sto = get_temp_storage();
+		sym = sym_lookup(get_tok_str(*(tree->tok)));
+		sprintf(buf, "Do %d 10 2 %d\n", 
+			sto,
+			sym);
 		push_line(buf);
 		return (codegen_t) { sto, 5 };
 	}
