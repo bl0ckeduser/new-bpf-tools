@@ -91,6 +91,48 @@ static char* tok_nam[] = {
 	"TOK_NEWLINE"
 };
 
+static char* tok_desc[] = {
+	"if",
+	"while",
+	"int declaration",
+	"echo instruction",
+	"draw instruction",
+	"wait instruction",
+	"cmx instruction",
+	"cmy instruction",
+	"mx instruction",
+	"my instruction",
+	"outputdraw instruction",
+	"integer",
+	"+",
+	"-",
+	"/",
+	"*",
+	"=",
+	"==",
+	">",
+	"<",
+	">=",
+	"<=",
+	"!=",
+	"+=",
+	"-=",
+	"/=",
+	"*=",
+	"whitepsace",
+	"identifier",
+	"++",
+	"--",
+	"{",
+	"}",
+	"(",
+	")",
+	";",
+	"else",
+	",",
+	"newline"
+};
+
 /* keywords */
 
 struct bpf_kw {

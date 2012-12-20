@@ -61,7 +61,7 @@ token_t need_call(char type, int source_line)
 			source_line); */
 		printf("line %d: %s expected\n",
 			line = tokens[indx - 1].from_line,
-			tok_nam[type]);
+			tok_desc[type]);
 
 		/* neat diagnostic printout */
 		chr = tokens[indx - 1].from_char;
