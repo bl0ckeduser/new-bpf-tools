@@ -6,8 +6,9 @@
 extern void fail(char*);
 
 /* tree -> code generator */
-/* TODO: - implement several types of trees
+/* TODO: - implement all the trees
  *		  - always give compiled code byte size
+ *			(needed to implement if/if-else/while codegen)
  */
 
 int temp_register = 245;
@@ -128,6 +129,18 @@ codegen_t codegen(exp_tree_t* tree)
 		 */
 
 		return (codegen_t){ 0, 0 };
+	}
+
+	/* pre-increment, pre-decrement */
+	if (tree->head_type == INC
+		|| tree->head_type == DEC) {
+		name = get_tok_str(*(tree->child[0]->tok));
+		sym = sym_lookup(name);
+		sto = get_temp_storage();
+		printf("Do %d %d 1 1\n", sym,
+			tree->head_type == INC ? 20 : 30);
+		printf("Do %d 10 2 %d\n", sto, sym);
+		return (codegen_t) { sto, 0 };
 	}
 
 	/* assignment */
