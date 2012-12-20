@@ -9,7 +9,7 @@ do
 	mkdir autotest-tmp
 	SRC_FILE=autotest-tmp/test-temp.c
 	echo "#include <stdio.h>" >$SRC_FILE
-	echo 'void echo(int n) { printf("%d\\n", n); }' >>$SRC_FILE
+	/bin/echo "void echo(int n) { printf(\"%d\\n\", n); }" >>$SRC_FILE
 	echo "int main(int argc, char **argv) {" >>$SRC_FILE
 	cat $x >>$SRC_FILE
 	echo 'argc = argc; ' >>$SRC_FILE	# hurr durr
