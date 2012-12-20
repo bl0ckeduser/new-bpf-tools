@@ -405,6 +405,7 @@ token_t* tokenize(char *buf)
 			/* spot keywords */
 			if (c.token == TOK_IDENT) {
 				strncpy(buf2, p, max);
+				buf2[max] = 0;
 				for (i = 0; i < KW_COUNT; i++) {
 					if (!strcmp(buf2, kw_tab[i].str))
 						c.token = kw_tab[i].tok;
