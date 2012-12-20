@@ -46,7 +46,9 @@ enum {
 	TOK_SEMICOLON,
 	TOK_ELSE,
 	TOK_COMMA,
-	TOK_NEWLINE
+	TOK_NEWLINE,
+	TOK_GOTO,
+	TOK_COLON
 };
 
 static char* tok_nam[] = {
@@ -88,7 +90,9 @@ static char* tok_nam[] = {
 	"TOK_SEMICOLON",
 	"TOK_ELSE",
 	"TOK_COMMA",
-	"TOK_NEWLINE"
+	"TOK_NEWLINE",
+	"TOK_GOTO",
+	"TOK_COLON"
 };
 
 static char* tok_desc[] = {
@@ -130,7 +134,9 @@ static char* tok_desc[] = {
 	";",
 	"else",
 	",",
-	"newline"
+	"newline",
+	"goto",
+	":"
 };
 
 /* keywords */
@@ -140,7 +146,7 @@ struct bpf_kw {
 	char tok;
 };
 
-#define KW_COUNT 12
+#define KW_COUNT 13
 
 static struct bpf_kw kw_tab[] = 
 {
@@ -155,7 +161,8 @@ static struct bpf_kw kw_tab[] =
 	{ "mx", TOK_MX },
 	{ "my", TOK_MY },
 	{ "outputdraw", TOK_OD },
-	{ "else", TOK_ELSE }
+	{ "else", TOK_ELSE },
+	{ "goto", TOK_GOTO }
 };
 
 /* routines */

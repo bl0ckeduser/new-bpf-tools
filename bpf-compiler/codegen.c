@@ -27,6 +27,10 @@ void new_temp_storage() {
 	temp_register = 245;
 }
 
+int label_count = 0;
+char *label_bp[256];	/* label backpatches */
+int byte_count = 0;
+
 char **code_text;
 int code_toks = 0;
 int code_toks_alloc = 0;
@@ -70,6 +74,8 @@ char* push_compiled_token(char *tok)
 			fail("realloc codegen tokens");
 	}
 	strcpy(code_text[code_toks - 1], tok);
+	if (strcmp(tok, "\n"))
+		++byte_count;
 	return code_text[code_toks - 1];
 }
 
@@ -108,7 +114,7 @@ int sym_add(char *s)
 int sym_lookup(char* s)
 {
 	char buf[1024];
-	int i =0;
+	int i = 0;
 	for (i = 0; i < syms; i++)
 		if (!strcmp(symtab[i], s))
 			return i;
@@ -130,6 +136,38 @@ int arith_op(int ty)
 		default:
 			return 0;
 	}
+}
+
+void run_codegen(exp_tree_t *tree)
+{
+	extern void count_labels(exp_tree_t tree);
+	count_labels(*tree);
+	codegen(tree);
+}
+
+/* count labels and setup their symbols and
+ * initial code */
+void count_labels(exp_tree_t tree)
+{
+	int i, sym;
+	char buf[1024];
+	char *name;
+
+	if (tree.head_type == LABEL) {
+		++label_count;
+		name = get_tok_str(*(tree.tok));
+		if (!sym_check(name))
+			sym = sym_add(name);
+		sprintf(buf, "Do %d 10 1 ",
+			sym);
+		push_line(buf);
+		label_bp[sym] = push_compiled_token("_");
+		push_compiled_token("\n");
+	}
+	for (i = 0; i < tree.child_count; ++i)
+		if (tree.child[i]->head_type == BLOCK
+		||	tree.child[i]->head_type == LABEL)
+			count_labels(*(tree.child[i]));
 }
 
 codegen_t codegen(exp_tree_t* tree)
@@ -410,6 +448,23 @@ codegen_t codegen(exp_tree_t* tree)
 		return (codegen_t) { sto, 5 };
 	}
 
+	/* label */
+	if (tree->head_type == LABEL) {
+		sym = sym_lookup(get_tok_str(*(tree->tok)));
+		sprintf(buf, "%d", byte_count);
+		/* more backpatch magic */
+		strcpy(label_bp[sym], buf);
+		return (codegen_t) { 0, 0 };
+	}
+
+	/* goto */
+	if (tree->head_type == GOTO) {
+		sym = sym_lookup(get_tok_str(*(tree->tok)));
+		sprintf(buf, "PtrFrom %d\n", sym);
+		push_line(buf);
+		return (codegen_t) { 0, 2 };
+	}
+
 	/* arithmetic */
 	if ((arith = arith_op(tree->head_type)) && tree->child_count) {
 		sto = get_temp_storage();
@@ -437,5 +492,9 @@ codegen_t codegen(exp_tree_t* tree)
 
 	printf("Sorry, I can't codegen %s yet\n",
 		tree_nam[tree->head_type]);
+	printf("Tree: ");
+	fflush(stdout);
+	printout_tree(*tree);
+	putchar('\n');
 	exit(1);
 }

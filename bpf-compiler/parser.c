@@ -14,6 +14,8 @@
 	block := expr ';' | if (expr) block [else block] 
 			| while (expr) block | '{' { expr ';' } '}' 
 			| instr ( expr1, expr2, exprN ) ';'
+			| ident ':'
+			| goto ident ';'
 
 	expr := ident asg-op expr | sum_expr [comp-op sum_expr]
 			| 'int' ident [ = expr ]
@@ -137,6 +139,17 @@ exp_tree_t block()
 		++indx;	/* eat semicolon */
 		return new_exp_tree(BLOCK, NULL);
 	}
+	/* label ? */
+	if (peek().type == TOK_IDENT) {
+		tok = peek();
+		tree = new_exp_tree(LABEL, &tok);
+		++indx;	/* eat label name */
+		if (peek().type == TOK_COLON) {
+			++indx;	/* eat : */
+			return tree;
+		}
+		else --indx;
+	}
 	if (valid_tree(tree = expr())) {
 		need(TOK_SEMICOLON);
 		return tree;
@@ -203,6 +216,10 @@ exp_tree_t block()
 		need(TOK_RPAREN);
 		need(TOK_SEMICOLON);
 		return tree;
+	} else if (peek().type == TOK_GOTO) {
+		++indx;	/* eat goto */
+		tok = need(TOK_IDENT);
+		return new_exp_tree(GOTO, &tok);
 	} else {
 		return null_tree;
 	}

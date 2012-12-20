@@ -495,5 +495,6 @@ void setup_tokenizer()
 	add_token(t[tc++], ";", TOK_SEMICOLON);
 	add_token(t[tc++], ",", TOK_COMMA);
 	add_token(t[tc++], "\n", TOK_NEWLINE);
+	add_token(t[tc++], ":", TOK_COLON);
 }
 

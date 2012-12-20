@@ -15,7 +15,7 @@ int main(int argc, char** argv)
 	int i;
 	exp_tree_t tree;
 	extern void optimize(exp_tree_t *et);
-	extern codegen_t codegen(exp_tree_t* tree);
+	extern void run_codegen(exp_tree_t* tree);
 	extern void push_line(char *lin);
 	extern void print_code(void);
 
@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 	 * fputc('\n', stderr);
 	 */
 
-	codegen(&tree);
+	run_codegen(&tree);
 	print_code();
 
 	return 0;
