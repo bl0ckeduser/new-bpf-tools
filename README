@@ -4,7 +4,7 @@ This project is meant as a personal exercise in compiler programming.
 
 Implementations of the "BPF" VM:
 	https://sites.google.com/site/bl0ckeduserssoftware/past-projects
-	https://github.com/bl0ckeduser/blokvm
+	https://github.com/bl0ckeduser/blokvm [broken ?]
 
 bpf-asm
 =======
@@ -13,6 +13,7 @@ An assembler. complete.
 bpf-compiler
 ============
 Pseudo-BASIC-with-C-like syntax compiler. work in progress.
+(At a fairly advanced stage of completion.)
 
 The compiler's codegen could be written to generate code for a more
 interesting VM or maybe even a real computer. Or the compiler could be 

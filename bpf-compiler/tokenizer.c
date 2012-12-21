@@ -364,7 +364,6 @@ token_t* tokenize(char *buf)
 	char buf2[1024];
 	char *p;
 	int max;
-	int key;
 	int i;
 	int line = 1;
 	char *line_start = buf;
@@ -377,7 +376,6 @@ token_t* tokenize(char *buf)
 
 	for (p = buf; *p;) {
 		max = -1;
-		key = 0;
 
 		/* 
 		 * Choose the matching pattern
@@ -390,7 +388,6 @@ token_t* tokenize(char *buf)
 				if (m.pos - p > max) {
 					c = m;
 					max = m.pos - p;
-					key = tc;
 				}
 			}
 		}
