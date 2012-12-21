@@ -218,7 +218,7 @@ codegen_t codegen(exp_tree_t* tree)
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	exp_tree_t *new, *new2;
 	exp_tree_t *temp;
-	extern int adr_read_microcode(int sto, int read);
+	extern int adr_microcode(int sto, int read, int set);
 
 	/* 
 	 * BPF integer comparisons / bool system...
@@ -378,7 +378,7 @@ codegen_t codegen(exp_tree_t* tree)
 			push_line(buf);
 			return (codegen_t){ sym, 5 };
 		} else if (tree->child[1]->head_type == VARIABLE) {
-			sto = sym_lookup(get_tok_str(*(tree->child[i]->tok)));
+			sto = sym_lookup(get_tok_str(*(tree->child[1]->tok)));
 			sprintf(buf, "Do %d 10 2 %d\n", sym, sto);
 			push_line(buf);
 			return (codegen_t){ sym, 5 };

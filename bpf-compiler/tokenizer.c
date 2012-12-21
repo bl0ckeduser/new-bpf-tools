@@ -49,8 +49,6 @@ typedef struct trie_struct {
 
 void add_link(trie* from, trie* to)
 {
-	int i;
-
 	if (++from->links > from->link_alloc)
 		from->link = realloc(from->link, 
 			(from->link_alloc += 5) * sizeof(trie *));
@@ -87,7 +85,6 @@ trie* new_trie()
 void add_token(trie* t, char* tok, int key)
 {
 	int i, j;
-	int k;
 	int c;
 	trie *hist[1024];
 	trie *next;
@@ -257,7 +254,6 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int btm,
 	match_t* choice;	/* final choice */	
 
 	int len = strlen(tok) + 1;
-	int init = btm;
 
 	int last_inc;
 

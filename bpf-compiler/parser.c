@@ -92,9 +92,6 @@ void parse_fail(char *s)
 token_t need_call(char type, int source_line)
 {
 	char buf[1024];
-	int line;
-	int chr;
-	int i;
 	if (tokens[indx++].type != type) {
 		fflush(stdout);
 		printf("\n");
@@ -256,7 +253,7 @@ exp_tree_t block()
 exp_tree_t expr()
 {
 	exp_tree_t tree, subtree, subtree2;
-	exp_tree_t subtree3, subtree4;
+	exp_tree_t subtree3;
 	exp_tree_t lv;
 	token_t oper;
 	token_t tok;

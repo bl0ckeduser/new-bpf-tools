@@ -10,14 +10,13 @@
 int main(int argc, char** argv)
 {
 	char* buf;
-	char buf2[1024];
 	token_t* tokens;
-	int i;
 	exp_tree_t tree;
 	extern void optimize(exp_tree_t *et);
 	extern void run_codegen(exp_tree_t* tree);
 	extern void push_line(char *lin);
 	extern void print_code(void);
+	extern void fail(char*);
 
 	if (!(buf = malloc(1024 * 1024)))
 		fail("alloc program buffer");
