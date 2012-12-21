@@ -264,8 +264,7 @@ codegen_t codegen(exp_tree_t* tree)
 
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
-		|| tree->head_type == WHILE
-		|| tree->head_type == ASGN) {
+		|| tree->head_type == WHILE) {
 		/* clear expression stack */
 		new_temp_storage();
 	}
@@ -407,7 +406,7 @@ codegen_t codegen(exp_tree_t* tree)
 		cod2 = codegen(tree->child[1]);
 		bytesize += cod.bytes + cod2.bytes + 10;
 		bytesize += adr_microcode(sto, cod2.adr, 1);
-		return (codegen_t) { read, bytesize };
+		return (codegen_t) { cod2.adr, bytesize };
 	}
 
 	/* if */
