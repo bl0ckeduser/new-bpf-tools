@@ -31,6 +31,7 @@ void new_temp_storage() {
 
 int label_count = 0;
 char *label_bp[256];	/* label backpatches */
+char *label_bp_2[256];
 int byte_count = 0;
 int program_ptr;
 
@@ -187,13 +188,18 @@ void count_labels(exp_tree_t tree)
 		name = get_tok_str(*(tree.tok));
 		if (!sym_check(name))
 			sym = sym_add(name);
-		sprintf(buf, "Do %d 10 2 %d\n", sym, program_ptr);
-		push_line(buf);
-		sprintf(buf, "Do %d 20 1 ",
-			sym);
+		sprintf(buf, "Do %d 20 1 ", sym);
 		push_line(buf);
 		label_bp[sym] = push_compiled_token("_");
 		push_compiled_token("\n");
+		sprintf(buf, "Do %d 40 1 255\n", sym);
+		push_line(buf);
+		sprintf(buf, "Do %d 20 1 ", sym);
+		push_line(buf);
+		label_bp_2[sym] = push_compiled_token("_");
+		push_compiled_token("\n");
+		sprintf(buf, "Do %d 20 2 %d\n", sym, program_ptr);
+		push_line(buf);
 	}
 	for (i = 0; i < tree.child_count; ++i)
 		if (tree.child[i]->head_type == BLOCK
@@ -545,9 +551,11 @@ codegen_t codegen(exp_tree_t* tree)
 	/* label */
 	if (tree->head_type == LABEL) {
 		sym = sym_lookup(tree->tok);
-		sprintf(buf, "%d", byte_count);
 		/* more backpatch magic */
+		sprintf(buf, "%d", encode(byte_count).mult);
 		strcpy(label_bp[sym], buf);
+		sprintf(buf, "%d", encode(byte_count).mod);
+		strcpy(label_bp_2[sym], buf);
 		return (codegen_t) { 0, 0 };
 	}
 
