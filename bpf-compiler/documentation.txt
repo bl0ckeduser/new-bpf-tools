@@ -8,8 +8,8 @@
 			
 
 The language compiled by this compiler is essentially a simple BASIC
-with C-inspired syntax and features and built-in support for the blokvm
-instructions. Please see the examples in the "test" directory. 
+with C-inspired syntax and features and built-in support for the 
+blokvm instructions. Please see the examples in the "test" directory.
 
 Below is a quick overview of the language syntax. < > symbols denote
 an optional part in a construction.
@@ -66,8 +66,6 @@ an optional part in a construction.
 		table[index]
 		variable
 
-	Array lvalues are not implemented yet.
-
 6. C-style increments and decrements
 	The operand is any lvalue.
 	e.g.
@@ -78,6 +76,12 @@ an optional part in a construction.
 	e.g.
 		echo(1 + 2 * 3);
 		wait(1, 2);
+
+
+Some tips: be careful not to overuse array expressions. They are expensive
+in bytes of memory and bytes of program code, because I have to use a special
+routine to make them work since the VM doesn't provide indirection / array
+indexing facilities.
 
 .............................................................................
 
