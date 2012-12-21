@@ -264,7 +264,8 @@ codegen_t codegen(exp_tree_t* tree)
 
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
-		|| tree->head_type == WHILE) {
+		|| tree->head_type == WHILE
+		|| tree->head_type == BPF_INSTR) {
 		/* clear expression stack */
 		new_temp_storage();
 	}
