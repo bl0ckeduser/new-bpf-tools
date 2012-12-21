@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include "SDL.h"
 
+#define clean_exit(X) exit_code = X; goto clean_up;
+
 /* getpixel() is from the SDL docs */
 
 /*
@@ -57,6 +59,7 @@ int main(int argc, char** argv)
 	char spec[1024];
 	char* arg;
 	char* str;
+	int exit_code = 0;
 
 	char *oper_names[256] = {NULL};
 	int arg_count[256];
@@ -177,7 +180,7 @@ int main(int argc, char** argv)
 			}
 		if (opcode == -1) {
 			printf("Unknown operator '%s'\n", oper);
-			break;
+			clean_exit(1);
 		}
 		fputc(opcode, out);
 
@@ -186,7 +189,7 @@ int main(int argc, char** argv)
 			arg = strtok(NULL, " ");
 			if (!arg || !isnumstring(arg) || atoi(arg) > 255 || atoi(arg) < 0) {
 				printf("Illegal data\n");
-				break;
+				clean_exit(1);
 			}
 			fputc(atoi(arg), out);
 		}
@@ -195,10 +198,11 @@ int main(int argc, char** argv)
 	/* final "End" opcode */
 	fputc(255, out);
 
+clean_up:
 	fclose(out);
 	fclose(in);
 	SDL_FreeSurface(image);
 	SDL_FreeSurface(mask);
 
-	return 0;
+	return exit_code;
 }
