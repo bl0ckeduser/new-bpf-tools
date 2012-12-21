@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv)
 {
-	char buf[1024 * 1024];
+	char* buf;
 	char buf2[1024];
 	token_t* tokens;
 	int i;
@@ -18,6 +18,9 @@ int main(int argc, char** argv)
 	extern void run_codegen(exp_tree_t* tree);
 	extern void push_line(char *lin);
 	extern void print_code(void);
+
+	if (!(buf = malloc(1024 * 1024)))
+		fail("alloc program buffer");
 
 	/* read in at most 1KB of code from stdin */
 	fread(buf, sizeof(char), 1024 * 1024, stdin);
@@ -41,6 +44,8 @@ int main(int argc, char** argv)
 
 	run_codegen(&tree);
 	print_code();
+
+	free(buf);
 
 	return 0;
 }
