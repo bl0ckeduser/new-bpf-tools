@@ -48,7 +48,9 @@ enum {
 	TOK_COMMA,
 	TOK_NEWLINE,
 	TOK_GOTO,
-	TOK_COLON
+	TOK_COLON,
+	TOK_LBRACK,
+	TOK_RBRACK
 };
 
 static char* tok_nam[] = {
@@ -92,7 +94,9 @@ static char* tok_nam[] = {
 	"TOK_COMMA",
 	"TOK_NEWLINE",
 	"TOK_GOTO",
-	"TOK_COLON"
+	"TOK_COLON",
+	"TOK_LBRACK",
+	"TOK_RBRACK"
 };
 
 static char* tok_desc[] = {
@@ -136,7 +140,9 @@ static char* tok_desc[] = {
 	",",
 	"newline",
 	"goto",
-	":"
+	":",
+	"[",
+	"]"
 };
 
 /* keywords */

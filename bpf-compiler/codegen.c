@@ -7,7 +7,7 @@
 extern void fail(char*);
 
 /* tree -> code generator */
-/* TODO: - implement ==
+/* TODO: - implement ==, !=
  *	 - eliminate repetitions
  */
 
@@ -307,8 +307,9 @@ codegen_t codegen(exp_tree_t* tree)
 	}
 
 	/* pre-increment, pre-decrement */
-	if (tree->head_type == INC
-		|| tree->head_type == DEC) {
+	if ((tree->head_type == INC
+		|| tree->head_type == DEC)
+		&& tree->child[0]->head_type == VARIABLE) {
 		name = get_tok_str(*(tree->child[0]->tok));
 		sym = sym_lookup(name);
 		sto = get_temp_storage();
@@ -321,8 +322,9 @@ codegen_t codegen(exp_tree_t* tree)
 	}
 
 	/* post-increment, post-decrement */
-	if (tree->head_type == POST_INC
-		|| tree->head_type == POST_DEC) {
+	if ((tree->head_type == POST_INC
+		|| tree->head_type == POST_DEC)
+		&& tree->child[0]->head_type == VARIABLE) {
 		name = get_tok_str(*(tree->child[0]->tok));
 		sym = sym_lookup(name);
 		sto = get_temp_storage();
@@ -335,7 +337,8 @@ codegen_t codegen(exp_tree_t* tree)
 	}
 
 	/* assignment */
-	if (tree->head_type == ASGN && tree->child_count == 2) {
+	if (tree->head_type == ASGN && tree->child_count == 2
+		&& tree->child[0]->head_type == VARIABLE) {
 		sym = sym_lookup(get_tok_str(*(tree->child[0]->tok)));
 		if (tree->child[1]->head_type == NUMBER) {
 			sprintf(buf, "Do %d 10 1 %s\n", sym,

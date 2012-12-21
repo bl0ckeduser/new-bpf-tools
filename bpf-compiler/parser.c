@@ -17,15 +17,17 @@
 			| ident ':'
 			| goto ident ';'
 
-	expr := ident asg-op expr | sum_expr [comp-op sum_expr]
-			| 'int' ident [ = expr ]
+	lvalue := ident [ '[' expr ']' ]
+
+	expr := lvalue asg-op expr | sum_expr [comp-op sum_expr]
+			| 'int' ident [ (= expr) | ( '[' integer ']' ) ]
 
 	sum_expr := mul_expr { add-op mul_expr }+
 	mul_expr := unary_expr { mul-op unary_expr }+
 
 	unary_expr := ([ - ] ( ident | integer | unary_expr ) ) 
-				|  '(' expr ')' | ident ++ | ident --
-				| ++ ident | -- ident
+				|  '(' expr ')' | lvalue ++ | lvalue --
+				| ++ lvalue | -- lvalue
 */
 
 token_t *tokens;
@@ -126,6 +128,32 @@ exp_tree_t parse(token_t *t)
 	}
 
 	return program;
+}
+
+exp_tree_t lval()
+{
+	token_t tok = peek();
+	exp_tree_t tree, subtree;
+
+	if (tok.type == TOK_IDENT) {
+		/* array expression: identifier[index] */
+		if(tokens[indx + 1].type == TOK_LBRACK) {
+			tree = new_exp_tree(ARRAY, NULL);
+			add_child(&tree,
+				alloc_exptree(new_exp_tree(VARIABLE, &tok)));
+			indx += 2;	/* eat the identifier and the [ */
+			if (!valid_tree(subtree = expr()))
+				parse_fail("expression expected");
+			add_child(&tree, alloc_exptree(subtree));
+			need(TOK_RBRACK);
+			return tree;	
+		/* identifier alone */		
+		} else {
+			++indx;	/* eat the identifier */
+			return new_exp_tree(VARIABLE, &tok);
+		}
+	} else
+		return null_tree;
 }
 
 exp_tree_t block()
@@ -229,17 +257,16 @@ exp_tree_t expr()
 {
 	exp_tree_t tree, subtree, subtree2;
 	exp_tree_t subtree3, subtree4;
+	exp_tree_t lv;
 	token_t oper;
 	token_t tok;
 
-	if (peek().type == TOK_IDENT) {
-		/* "ident asg-op expr" pattern */
-		if(is_asg_op(tokens[indx + 1].type)) {
+	if (valid_tree(lv = lval())) {
+		/* "lvalue asg-op expr" pattern */
+		if(is_asg_op(peek().type)) {
 			tree = new_exp_tree(ASGN, NULL);
-			tok = peek();
-			subtree2 = new_exp_tree(VARIABLE, &tok);
-			add_child(&tree, alloc_exptree(subtree2));
-			oper = tokens[indx + 1];
+			add_child(&tree, alloc_exptree(lv));
+			oper = peek();
 			switch (oper.type) {
 				case TOK_PLUSEQ:
 					subtree = new_exp_tree(ADD, NULL);
@@ -258,18 +285,19 @@ exp_tree_t expr()
 				default:
 					parse_fail("invalid assignment operator");
 			}
-			indx += 2;	/* eat ident, asg-op */
+			indx++;	/* eat asg-op */
 			if (!valid_tree(subtree3 = expr()))
 				parse_fail("expression expected");
 			if (oper.type == TOK_ASGN)
 				add_child(&tree, alloc_exptree(subtree3));
 			else {
-				add_child(&subtree, alloc_exptree(subtree2));
+				add_child(&subtree, alloc_exptree(lv));
 				add_child(&subtree, alloc_exptree(subtree3));
 				add_child(&tree, alloc_exptree(subtree));
 			}
 			return tree;
-		}
+		} else
+			--indx;
 	}
 	if (valid_tree(subtree = sum_expr())) {
 		if (!is_comp_op(peek().type)) {
@@ -317,6 +345,13 @@ exp_tree_t expr()
 			if (!valid_tree(subtree2 = expr()))
 				parse_fail("expected expression after =");
 			add_child(&tree, alloc_exptree(subtree2));
+		} else if(peek().type == TOK_LBRACK) {
+			++indx;	/* eat [ */
+			tok = need(TOK_INTEGER);
+			need(TOK_RBRACK);
+			add_child(&tree, 
+				alloc_exptree(new_exp_tree(NUMBER, &tok)));
+			tree.head_type = ARRAY_DECL;
 		}
 		return tree;
 	}
@@ -459,8 +494,8 @@ exp_tree_t unary_expr()
 				break;
 			}
 			++indx;	/* eat operator */
-			tok = need(TOK_IDENT);
-			subtree2 = new_exp_tree(VARIABLE, &tok);
+			if (!valid_tree(subtree2 = lval()))
+				parse_fail("lvalue expected");
 			add_child(&subtree, alloc_exptree(subtree2));	
 		if (valid_tree(tree)) {
 			add_child(&tree, alloc_exptree(subtree));
@@ -470,20 +505,13 @@ exp_tree_t unary_expr()
 	}
 
 	tok = peek();
-	if (tok.type == TOK_IDENT
+	if (valid_tree(subtree = lval())
 	||  tok.type == TOK_INTEGER) {
-		switch(tok.type) {
-			case TOK_IDENT:
-				subtree = new_exp_tree(VARIABLE, &tok);
-				break;
-			case TOK_INTEGER:
+
+		if (tok.type == TOK_INTEGER) {
 				subtree = new_exp_tree(NUMBER, &tok);
-				break;
-		}
-
-		++indx;	/* eat variable or number */
-
-		if (tokens[indx - 1].type == TOK_IDENT) {
+				++indx;	/* eat number */
+		} else {
 			if (peek().type == TOK_PLUSPLUS) {
 				++indx;	/* eat ++ */
 				subtree2 = new_exp_tree(POST_INC, NULL);

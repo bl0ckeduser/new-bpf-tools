@@ -30,6 +30,8 @@ enum {		/* head_type */
 	POST_DEC,
 	LABEL,
 	GOTO,
+	ARRAY,
+	ARRAY_DECL,
 	/* special */
 	NULL_TREE
 };
@@ -60,6 +62,8 @@ static char* tree_nam[] = {
 	"POST_DEC",
 	"LABEL",
 	"GOTO",
+	"ARRAY",
+	"ARRAY_DECL",
 	"NULL_TREE"
 };
 
