@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#define EXPR_STACK_OFFS 230
+
 extern void fail(char*);
 
 /* tree -> code generator */
@@ -11,7 +13,7 @@ extern void fail(char*);
  *	 - eliminate repetitions
  */
 
-int temp_register = 245;
+int temp_register = EXPR_STACK_OFFS;
 
 char symtab[256][32] = {""};
 int syms = 0;
@@ -24,7 +26,7 @@ int get_temp_storage() {
 }
 
 void new_temp_storage() {
-	temp_register = 245;
+	temp_register = EXPR_STACK_OFFS;
 }
 
 int label_count = 0;
