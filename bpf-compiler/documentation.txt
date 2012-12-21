@@ -1,0 +1,214 @@
+		  ==================================
+  		  Some documentation on the compiler
+		  ==================================
+
+			   ------------
+			   The language
+			   ------------
+			
+
+The language compiled by this compiler is essentially a simple BASIC
+with C-inspired syntax and features and built-in support for the blokvm
+instructions. Please see the examples in the "test" directory. 
+
+Below is a quick overview of the language syntax. < > symbols denote
+an optional part in a construction.
+
+1. Code blocks
+	i. empty block
+		;
+	ii. single-instruction block
+		e.g. x += 1;
+	iii. multi-instruction blocks
+		e.g.
+		{
+			x += 1;
+			y = x + 2;
+			if (x > 2)
+				++y;
+		}
+
+2. Variable declarations
+	i. integers
+		int variable_name < = expression >;
+	ii. arrays
+		int array_name[integer];
+
+2. Control flow
+	i. if statement
+		if (expr)
+			block1
+		< else
+			block2 >
+	ii. while statement
+		while (expr)
+			block
+
+3. Arithmetic
+	Operands are any kind of expression: number, variable, array
+	index, etc.
+	e.g. 
+		1 + 2 * 3 		(evaluates to 7)
+		(1 + 2) * 3		(evaluates to 9)
+		z - x * x + 123		(evalutes to something)	
+		
+4. Assignment operators
+	Left operand is an lvalue, right operand is an expression.
+	e.g.
+		x += 3;
+		foo += foo * bar;
+		variable = 123;
+		array[12] = 34;
+		z -= 56;
+
+5. lvalues (essentially, objects to which you can assign values)
+	e.g.
+		table[index]
+		variable
+
+	Array lvalues are not implemented yet.
+
+6. C-style increments and decrements
+	The operand is any lvalue.
+	e.g.
+		++foo;		tab[bobobo]--;
+		--bar;		mystery++;
+
+7. BPF instructions [not fully implemented yet]
+	e.g.
+		echo(1 + 2 * 3);
+		wait(1, 2);
+
+.............................................................................
+
+		      -----------------------------
+		      Compilation / running process
+		      -----------------------------
+
+Considering the following example program:
+
+	int t = 5;
+	int a = 1;
+	int b = 0;
+
+	while (t-- > 0) {
+		echo(a += b);
+		echo(b += a);
+	}
+
+The first phase of compilation is converting the program to a sequence 
+of tokens. The relevant code is in tokenizer.c and is invoked thus in main.c:
+
+	setup_tokenizer();
+	tokens = tokenize(buf);
+
+Here is the resulting token-stream for the program:
+
+	0: TOK_INT: int
+	1: TOK_IDENT: t
+	2: TOK_ASGN: =
+	3: TOK_INTEGER: 5
+	4: TOK_SEMICOLON: ;
+	5: TOK_INT: int
+	6: TOK_IDENT: a
+	7: TOK_ASGN: =
+	8: TOK_INTEGER: 1
+	9: TOK_SEMICOLON: ;
+	10: TOK_INT: int
+	11: TOK_IDENT: b
+	12: TOK_ASGN: =
+	13: TOK_INTEGER: 0
+	14: TOK_SEMICOLON: ;
+	15: TOK_WHILE: while
+	16: TOK_LPAREN: (
+	17: TOK_IDENT: t
+	18: TOK_MINUSMINUS: --
+	19: TOK_GT: >
+	20: TOK_INTEGER: 0
+	21: TOK_RPAREN: )
+	22: TOK_LBRACE: {
+	23: TOK_ECHO: echo
+	24: TOK_LPAREN: (
+	25: TOK_IDENT: a
+	26: TOK_PLUSEQ: +=
+	27: TOK_IDENT: b
+	28: TOK_RPAREN: )
+	29: TOK_SEMICOLON: ;
+	30: TOK_ECHO: echo
+	31: TOK_LPAREN: (
+	32: TOK_IDENT: b
+	33: TOK_PLUSEQ: +=
+	34: TOK_IDENT: a
+	35: TOK_RPAREN: )
+	36: TOK_SEMICOLON: ;
+	37: TOK_RBRACE: }
+
+The next two steps are making a parse-tree out of this and simplifying 
+this parse tree. These passes are accomplished by the files parser.c 
+and optimize.c respectively. They are invoked thusly:
+
+	tree = parse(tokens);
+	optimize(&tree);
+
+Here is the optimized parse-tree for the program:
+
+	(BLOCK (INT_DECL (VARIABLE:t) (NUMBER:5)) (INT_DECL (VARIABLE:a) 
+	(NUMBER:1)) (INT_DECL (VARIABLE:b) (NUMBER:0)) (WHILE (GT 
+	(POST_DEC (VARIABLE:t)) (NUMBER:0)) (BLOCK (BPF_INSTR:echo 
+	(ASGN (VARIABLE:a) (ADD (VARIABLE:a) (VARIABLE:b)))) 
+	(BPF_INSTR:echo (ASGN (VARIABLE:b) (ADD (VARIABLE:b) 
+	(VARIABLE:a)))))))
+
+Finally, the code generator turns this tree into BPF instructions ready 
+to be converted to bytes by the fairly simple "assembler" program:
+
+	PtrTo 0
+	Do 1 10 1 5
+	Do 2 10 1 1
+	Do 3 10 1 0
+	PtrTo 4
+	Do 231 10 1 0
+	Do 232 10 2 1
+	Do 1 30 1 1
+	Do 231 30 2 232
+	Do 230 10 2 231
+	Do 230 20 1 1
+	Do 233 10 1 36 
+	zbPtrTo 230 0 233
+	Do 230 10 2 2
+	Do 230 20 2 3
+	Do 2 10 2 230
+	Echo 2
+	Do 230 10 2 3
+	Do 230 20 2 2
+	Do 3 10 2 230
+	Echo 3
+	PtrFrom 4
+
+The compiler program accepts program source as standard input and
+gives back the assembly as standard output. So here are the shell
+commands to compile the program "test/if.c" to a binary file ready to
+be run in the VM:
+
+  $ ./a.out <test/fib.c >fib.asm
+  $ ../bpf-asm/bpfasm ../bpf-asm/black.bmp ../bpf-asm/black.bmp fib.asm fib.BPF
+
+Finally, the compiled binary file can be run in the VM:
+
+  $ bpfvm fib.BPF 
+  reading fib.BPF
+  1
+  1
+  2
+  3
+  5
+  8
+  13
+  21
+  34
+  55
+  $ 
+	
+Note that the script "compile-run.sh" does all the above steps
+automatically given a source file as argument.
+
