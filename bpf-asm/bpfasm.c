@@ -118,23 +118,23 @@ int main(int argc, char** argv)
 	mask = SDL_LoadBMP(argv[2]);
 
 	if (!(out = fopen(argv[4], "w"))) {
-		printf("Could not open output binary\n");
+		printf("bpfasm: could not open output binary\n");
 		exit(1);
 	}
 
 	if (!(in = fopen(argv[3], "r"))) {
-		printf("Could not open source code\n");
+		printf("bpfasm: could not open source code\n");
 		exit(1);
 	}
 
 	if (!image || !mask) {
-		printf("Graphics loading failed\n");
+		printf("bpfasm: graphics loading failed\n");
 		exit(1);
 	}
 
 	if(image->w < 255 || image->h < 255
 	|| mask->w < 255 || mask->h < 255) {
-		printf("Graphics wrong size\n");
+		printf("bpfasm: graphics wrong size\n");
 		exit(1);
 	}
 
@@ -179,7 +179,7 @@ int main(int argc, char** argv)
 				break;
 			}
 		if (opcode == -1) {
-			printf("Unknown operator '%s'\n", oper);
+			printf("bpfasm: unknown operator '%s'\n", oper);
 			clean_exit(1);
 		}
 		fputc(opcode, out);
@@ -188,7 +188,7 @@ int main(int argc, char** argv)
 		for (i = 0; i < arg_count[opcode]; i++) {
 			arg = strtok(NULL, " ");
 			if (!arg || !isnumstring(arg) || atoi(arg) > 255 || atoi(arg) < 0) {
-				printf("Illegal data\n");
+				printf("bpfasm: illegal data: '%s'\n", arg);
 				clean_exit(1);
 			}
 			fputc(atoi(arg), out);
