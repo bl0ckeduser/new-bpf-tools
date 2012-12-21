@@ -25,7 +25,7 @@
 	sum_expr := mul_expr { add-op mul_expr }+
 	mul_expr := unary_expr { mul-op unary_expr }+
 
-	unary_expr := ([ - ] ( ident | integer | unary_expr ) ) 
+	unary_expr := ([ - ] ( lvalue | integer | unary_expr ) ) 
 				|  '(' expr ')' | lvalue ++ | lvalue --
 				| ++ lvalue | -- lvalue
 */
@@ -260,6 +260,7 @@ exp_tree_t expr()
 	exp_tree_t lv;
 	token_t oper;
 	token_t tok;
+	int save = indx;
 
 	if (valid_tree(lv = lval())) {
 		/* "lvalue asg-op expr" pattern */
@@ -297,7 +298,7 @@ exp_tree_t expr()
 			}
 			return tree;
 		} else
-			--indx;
+			indx = save;
 	}
 	if (valid_tree(subtree = sum_expr())) {
 		if (!is_comp_op(peek().type)) {
