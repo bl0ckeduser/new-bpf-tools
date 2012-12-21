@@ -194,10 +194,12 @@ codegen_t codegen(exp_tree_t* tree)
 	char buf[1024];
 	char *bp1, *bp2;
 	int while_start;
+	int read;
 	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	exp_tree_t *new, *new2;
 	exp_tree_t *temp;
+	extern int adr_read_microcode(int sto, int read);
 
 	/* 
 	 * BPF integer comparisons / bool system...
@@ -280,6 +282,17 @@ codegen_t codegen(exp_tree_t* tree)
 				return (codegen_t){ 0, cod.bytes + 5 };
 			}
 		}
+		return (codegen_t){ 0, 0 };
+	}
+
+	/* array declaration */
+	if (tree->head_type == ARRAY_DECL) {
+		name = get_tok_str(*(tree->child[0]->tok));
+		if (!sym_check(name))
+			(void)sym_add(name);
+		sto = atoi(get_tok_str(*(tree->child[1]->tok)));
+		for (i = 0; i < sto - 1; i++)
+			(void)nameless_perm_storage();
 		return (codegen_t){ 0, 0 };
 	}
 
@@ -479,6 +492,23 @@ codegen_t codegen(exp_tree_t* tree)
 		return (codegen_t) { 0, 2 };
 	}
 
+	/* array value fetching */
+	if (tree->head_type == ARRAY) {
+		sto = get_temp_storage();	/* microcode input register */
+		read = get_temp_storage();	/* microcode output register */
+		sym = sym_lookup(get_tok_str(*(tree->child[0]->tok)));
+		/* get index expression */
+		cod = codegen(tree->child[1]);
+		/* compute complete address of array cell */
+		sprintf(buf, "Do %d 10 1 %d\n", sto, sym);
+		push_line(buf);
+		sprintf(buf, "Do %d 20 2 %d\n", sto, cod.adr);
+		push_line(buf);
+		bytesize += cod.bytes + 10;
+		bytesize += adr_read_microcode(sto, read);
+		return (codegen_t) { read, bytesize };
+	}
+
 	/* arithmetic */
 	if ((arith = arith_op(tree->head_type)) && tree->child_count) {
 		sto = get_temp_storage();
@@ -512,3 +542,54 @@ codegen_t codegen(exp_tree_t* tree)
 	putchar('\n');
 	exit(1);
 }
+
+/* special routines */
+
+int adr_read_microcode(int sto, int read)
+{
+	int i;
+	char buf[128];
+	int temp1, temp2, temp3;
+	temp1 = get_temp_storage();	/* 232 */
+	temp2 = get_temp_storage();	/* 231 */
+	temp3 = get_temp_storage();	/* 230 */
+
+	/* AdrGet hack for BPF 1.0
+	 * originally coded July 16, 2008 by blockeduser
+	 */
+
+	sprintf(buf, "Do %d 10 1 255\n", temp1);
+	push_line(buf);
+	sprintf(buf, "Do %d 40 1 7\n", temp1);
+	push_line(buf);
+	sprintf(buf, "Do %d 20 1 12\n", temp1);
+	push_line(buf);
+
+	sprintf(buf, "Do %d 10 2 %d\n", temp2, sto);
+	push_line(buf);
+	sprintf(buf, "Do %d 30 1 1\n", temp2);
+	push_line(buf);
+	sprintf(buf, "Do %d 40 1 7\n", temp2);
+	push_line(buf);
+	sprintf(buf, "Do %d 20 1 12\n", temp2);
+	push_line(buf);
+	sprintf(buf, "PtrTo %d\n", temp3);
+	push_line(buf);
+	sprintf(buf, "Do %d 20 2 %d\n", temp2, temp3);
+	push_line(buf);
+	sprintf(buf, "Do %d 20 2 %d\n", temp1, temp3);
+	push_line(buf);
+	sprintf(buf, "PtrFrom %d\n", temp2);
+	push_line(buf);
+
+	i = 0;
+	while(i++ < 255)
+	{
+		sprintf(buf, "Do %d 10 2 %d\n", read, i);
+		push_line(buf);
+		sprintf(buf, "PtrFrom %d\n", temp1);
+		push_line(buf);
+	}
+}
+
+
