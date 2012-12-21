@@ -7,6 +7,8 @@
 #define EXPR_STACK_SIZE 32
 
 extern void fail(char*);
+extern void compiler_fail(char *message, token_t *token,
+	int in_line, int in_chr);
 
 /* tree -> code generator */
 /* TODO: - implement ==, !=
@@ -107,12 +109,17 @@ char* get_tok_str(token_t t)
 	return buf;
 }
 
-int sym_check(char* s)
+int sym_check(token_t* tok)
 {
 	int i;
+	char *s = get_tok_str(*tok);
+	char buf[128];
+
 	for (i = 0; i < 256; i++)
-		if (!strcmp(symtab[i], s))
-			return 1;
+		if (!strcmp(symtab[i], s)) {
+			sprintf(buf, "symbol `%s' defined twice", s);
+			compiler_fail(buf, tok, 0, 0);
+		}
 	return 0;
 }
 
@@ -123,8 +130,9 @@ int nameless_perm_storage()
 	return syms++;
 }
 
-int sym_add(char *s)
+int sym_add(token_t *tok)
 {
+	char *s = get_tok_str(*tok);
 	strcpy(symtab[syms], s);
 	if (syms >= 255 - EXPR_STACK_SIZE)
 		fail("out of permanent registers");
@@ -136,8 +144,6 @@ int sym_lookup(token_t* tok)
 	char buf[1024];
 	char *s = get_tok_str(*tok);
 	int i = 0;
-	extern void compiler_fail(char *message,
-		 token_t *token, int in_line, int in_chr);
 
 	for (i = 0; i < syms; i++)
 		if (!strcmp(symtab[i], s))
@@ -185,9 +191,8 @@ void count_labels(exp_tree_t tree)
 
 	if (tree.head_type == LABEL) {
 		++label_count;
-		name = get_tok_str(*(tree.tok));
-		if (!sym_check(name))
-			sym = sym_add(name);
+		if (!sym_check(tree.tok))
+			sym = sym_add(tree.tok);
 		sprintf(buf, "Do %d 20 1 ", sym);
 		push_line(buf);
 		label_bp[sym] = push_compiled_token("_");
@@ -290,9 +295,8 @@ codegen_t codegen(exp_tree_t* tree)
 
 	/* variable declaration, with optional assignment */
 	if (tree->head_type == INT_DECL) {
-		name = get_tok_str(*(tree->child[0]->tok));
-		if (!sym_check(name))
-			sym = sym_add(name);
+		if (!sym_check(tree->child[0]->tok))
+			sym = sym_add(tree->child[0]->tok);
 		if (tree->child_count == 2) {
 			if (tree->child[1]->head_type == NUMBER) {
 				sprintf(buf, "Do %d 10 1 %s\n", sym,
@@ -316,9 +320,8 @@ codegen_t codegen(exp_tree_t* tree)
 
 	/* array declaration */
 	if (tree->head_type == ARRAY_DECL) {
-		name = get_tok_str(*(tree->child[0]->tok));
-		if (!sym_check(name))
-			(void)sym_add(name);
+		if (!sym_check(tree->child[0]->tok))
+			(void)sym_add(tree->child[0]->tok);
 		sto = atoi(get_tok_str(*(tree->child[1]->tok)));
 		for (i = 0; i < sto - 1; i++)
 			(void)nameless_perm_storage();
