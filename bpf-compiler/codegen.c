@@ -504,7 +504,7 @@ codegen_t codegen(exp_tree_t* tree)
 		sprintf(buf, "%d", encode(bytesize).mod);
 		strcpy(bp1b, buf);
 
-		bytesize += 19 + cod.bytes;
+		bytesize += 21 + cod.bytes;
 
 		return (codegen_t){ 0, bytesize };
 	}
