@@ -52,14 +52,13 @@ token_t peek()
 
 #define need(X) need_call((X), __LINE__)
 
-void parse_fail(char *s)
+void parse_fail(char *message)
 {
-	char buf[1024];
-	int line;
-	int chr;
-	int i;
+	token_t tok;
+	int line, chr;
+	extern void compiler_fail(char *message,
+		 token_t *token, int in_line, int in_chr);
 
-	/* neat diagnostic printout */
 	if (tokens[indx].from_line
 		!= tokens[indx - 1].from_line) {
 		/* end of the line */
@@ -70,23 +69,8 @@ void parse_fail(char *s)
 		line = tokens[indx].from_line;
 		chr = tokens[indx].from_char;
 	}
-	strncpy(buf, code_lines[line], 1024);
-	buf[1023] = 0;
-	for (i = 0; code_lines[line]; ++i)
-		if (buf[i] == '\n') {
-			buf[i] = 0;
-			break;
-		}
-	puts(buf);
-	for (i = 1; i < chr; ++i)
-		putchar(' ');
-	putchar('^');
-	putchar('\n');
 
-	printf("line %d: %s\n", 
-		line,
-		s);
-	exit(1);	
+	compiler_fail(message, NULL, line, chr);
 }
 
 token_t need_call(char type, int source_line)

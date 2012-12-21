@@ -130,15 +130,19 @@ int sym_add(char *s)
 	return syms++; 
 }
 
-int sym_lookup(char* s)
+int sym_lookup(token_t* tok)
 {
 	char buf[1024];
+	char *s = get_tok_str(*tok);
 	int i = 0;
+	extern void compiler_fail(char *message,
+		 token_t *token, int in_line, int in_chr);
+
 	for (i = 0; i < syms; i++)
 		if (!strcmp(symtab[i], s))
 			return i;
 	sprintf(buf, "unknown symbol `%s'", s);
-	fail(buf);
+	compiler_fail(buf, tok, 0, 0);
 }
 
 int arith_op(int ty)
@@ -290,7 +294,7 @@ codegen_t codegen(exp_tree_t* tree)
 				push_line(buf);
 				return (codegen_t){ 0, 5 };
 			} else if (tree->child[1]->head_type == VARIABLE) {
-				sto = sym_lookup(get_tok_str(*(tree->child[1]->tok)));
+				sto = sym_lookup(tree->child[1]->tok);
 				sprintf(buf, "Do %d 10 2 %d\n", sym, sto);
 				push_line(buf);
 				return (codegen_t){ 0, 5 };
@@ -320,7 +324,7 @@ codegen_t codegen(exp_tree_t* tree)
 		name = get_tok_str(*(tree->tok));
 		if (!strcmp(name, "echo")) {
 			if(tree->child[0]->head_type == VARIABLE) {
-				sym = sym_lookup(get_tok_str(*(tree->child[0]->tok)));
+				sym = sym_lookup(tree->child[0]->tok);
 				sprintf(buf, "Echo %d\n", sym);
 				push_line(buf);
 				return (codegen_t){ 0, 2 };
@@ -342,8 +346,7 @@ codegen_t codegen(exp_tree_t* tree)
 	if ((tree->head_type == INC
 		|| tree->head_type == DEC)
 		&& tree->child[0]->head_type == VARIABLE) {
-		name = get_tok_str(*(tree->child[0]->tok));
-		sym = sym_lookup(name);
+		sym = sym_lookup(tree->child[0]->tok);
 		sto = get_temp_storage();
 		sprintf(buf, "Do %d %d 1 1\n", sym,
 			tree->head_type == INC ? 20 : 30);
@@ -357,8 +360,7 @@ codegen_t codegen(exp_tree_t* tree)
 	if ((tree->head_type == POST_INC
 		|| tree->head_type == POST_DEC)
 		&& tree->child[0]->head_type == VARIABLE) {
-		name = get_tok_str(*(tree->child[0]->tok));
-		sym = sym_lookup(name);
+		sym = sym_lookup(tree->child[0]->tok);
 		sto = get_temp_storage();
 		sprintf(buf, "Do %d 10 2 %d\n", sto, sym);
 		push_line(buf);
@@ -371,14 +373,14 @@ codegen_t codegen(exp_tree_t* tree)
 	/* simple varaible assignment */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == VARIABLE) {
-		sym = sym_lookup(get_tok_str(*(tree->child[0]->tok)));
+		sym = sym_lookup(tree->child[0]->tok);
 		if (tree->child[1]->head_type == NUMBER) {
 			sprintf(buf, "Do %d 10 1 %s\n", sym,
 				get_tok_str(*(tree->child[1]->tok)));
 			push_line(buf);
 			return (codegen_t){ sym, 5 };
 		} else if (tree->child[1]->head_type == VARIABLE) {
-			sto = sym_lookup(get_tok_str(*(tree->child[1]->tok)));
+			sto = sym_lookup(tree->child[1]->tok);
 			sprintf(buf, "Do %d 10 2 %d\n", sym, sto);
 			push_line(buf);
 			return (codegen_t){ sym, 5 };
@@ -394,8 +396,7 @@ codegen_t codegen(exp_tree_t* tree)
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == ARRAY) {
 		sto = get_temp_storage();	/* microcode store register */
-		sym = sym_lookup(get_tok_str(*(tree->child[0]->
-			child[0]->tok)));
+		sym = sym_lookup(tree->child[0]->child[0]->tok);
 		/* get index expression */
 		cod = codegen(tree->child[0]->child[1]);
 		/* compute complete address of array cell */
@@ -533,7 +534,7 @@ codegen_t codegen(exp_tree_t* tree)
 	/* variable */
 	if (tree->head_type == VARIABLE) {
 		sto = get_temp_storage();
-		sym = sym_lookup(get_tok_str(*(tree->tok)));
+		sym = sym_lookup(tree->tok);
 		sprintf(buf, "Do %d 10 2 %d\n", 
 			sto,
 			sym);
@@ -543,7 +544,7 @@ codegen_t codegen(exp_tree_t* tree)
 
 	/* label */
 	if (tree->head_type == LABEL) {
-		sym = sym_lookup(get_tok_str(*(tree->tok)));
+		sym = sym_lookup(tree->tok);
 		sprintf(buf, "%d", byte_count);
 		/* more backpatch magic */
 		strcpy(label_bp[sym], buf);
@@ -552,7 +553,7 @@ codegen_t codegen(exp_tree_t* tree)
 
 	/* goto */
 	if (tree->head_type == GOTO) {
-		sym = sym_lookup(get_tok_str(*(tree->tok)));
+		sym = sym_lookup(tree->tok);
 		sprintf(buf, "PtrFrom %d\n", sym);
 		push_line(buf);
 		return (codegen_t) { 0, 2 };
@@ -562,7 +563,7 @@ codegen_t codegen(exp_tree_t* tree)
 	if (tree->head_type == ARRAY) {
 		sto = get_temp_storage();	/* microcode input register */
 		read = get_temp_storage();	/* microcode output register */
-		sym = sym_lookup(get_tok_str(*(tree->child[0]->tok)));
+		sym = sym_lookup(tree->child[0]->tok);
 		/* get index expression */
 		cod = codegen(tree->child[1]);
 		/* compute complete address of array cell */
@@ -586,7 +587,7 @@ codegen_t codegen(exp_tree_t* tree)
 				push_line(buf);
 				bytesize += 5;
 			} else if(tree->child[i]->head_type == VARIABLE) {
-				sym = sym_lookup(get_tok_str(*(tree->child[i]->tok)));
+				sym = sym_lookup(tree->child[i]->tok);
 				sprintf(buf, "Do %d %d 2 %d\n", sto, oper, sym);
 				push_line(buf);
 				bytesize += 5;
@@ -600,11 +601,10 @@ codegen_t codegen(exp_tree_t* tree)
 		return (codegen_t){ sto, bytesize };
 	}
 
-	printf("Sorry, I can't codegen this tree yet\n");
-	printf("Tree: ");
-	fflush(stdout);
+	fprintf(stderr, "Sorry, I can't yet codegen this tree: \n");
+	fflush(stderr);
 	printout_tree(*tree);
-	putchar('\n');
+	fputc('\n', stderr);
 	exit(1);
 }
 
