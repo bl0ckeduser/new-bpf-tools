@@ -38,6 +38,22 @@ char **code_text;
 int code_toks = 0;
 int code_toks_alloc = 0;
 
+/* number = mult * 255 + mod 
+ * range of possible values: 0 to 65280 */
+typedef struct encoded_int {
+	int mult;
+	int mod;
+} encoded_int_t;
+
+encoded_int_t encode(int n) {
+	int m = 0;
+	while (n > 255) {
+		n -= 255;
+		++m;
+	}
+	return (encoded_int_t){ m, n };
+}
+
 void print_code()
 {
 	int i;
@@ -192,9 +208,10 @@ codegen_t codegen(exp_tree_t* tree)
 	int arith;
 	char *name;
 	int bytesize = 0;
-	codegen_t cod;
+	codegen_t cod, cod2;
 	char buf[1024];
-	char *bp1, *bp2;
+	char *bp1, *bp1b;
+	char *bp2, *bp2b;
 	int while_start;
 	int read;
 	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
@@ -351,7 +368,7 @@ codegen_t codegen(exp_tree_t* tree)
 		return (codegen_t) { sto, 10 };
 	}
 
-	/* assignment */
+	/* simple varaible assignment */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == VARIABLE) {
 		sym = sym_lookup(get_tok_str(*(tree->child[0]->tok)));
@@ -373,6 +390,26 @@ codegen_t codegen(exp_tree_t* tree)
 		}
 	}
 
+	/* array assignment */
+	if (tree->head_type == ASGN && tree->child_count == 2
+		&& tree->child[0]->head_type == ARRAY) {
+		sto = get_temp_storage();	/* microcode store register */
+		sym = sym_lookup(get_tok_str(*(tree->child[0]->
+			child[0]->tok)));
+		/* get index expression */
+		cod = codegen(tree->child[0]->child[1]);
+		/* compute complete address of array cell */
+		sprintf(buf, "Do %d 10 1 %d\n", sto, sym);
+		push_line(buf);
+		sprintf(buf, "Do %d 20 2 %d\n", sto, cod.adr);
+		push_line(buf);
+		/* right operand */
+		cod2 = codegen(tree->child[1]);
+		bytesize += cod.bytes + cod2.bytes + 10;
+		bytesize += adr_microcode(sto, cod2.adr, 1);
+		return (codegen_t) { read, bytesize };
+	}
+
 	/* if */
 	if (tree->head_type == IF) {
 		/* the conditional */
@@ -382,33 +419,52 @@ codegen_t codegen(exp_tree_t* tree)
 		push_line(buf);
 		bp1 = push_compiled_token("_");
 		push_compiled_token("\n");
+		sprintf(buf, "Do %d 40 1 255\n", sto);
+		push_line(buf);
+		sprintf(buf, "Do %d 20 1 ", sto);
+		push_line(buf);
+		bp1b = push_compiled_token("_");
+		push_compiled_token("\n");
 		sprintf(buf, "zbPtrTo %d 0 %d\n", cod.adr, sto);
 		push_line(buf);
 		bytesize += codegen(tree->child[1]).bytes;
 		if (tree->child_count == 3) {
-			bytesize += 9;
+			bytesize += 24;
 		}
 		/* backpatch 1 */
-		sprintf(buf, "%d", bytesize);
+		sprintf(buf, "%d", encode(bytesize).mult);
 		strcpy(bp1, buf);
+		sprintf(buf, "%d", encode(bytesize).mod);
+		strcpy(bp1b, buf);
 
-		bytesize += 9 + cod.bytes;
+		bytesize += 19 + cod.bytes;
 
 		/* else ? */
 		if (tree->child_count == 3) {
 			sto = get_temp_storage();
+			sym = get_temp_storage();
 			sprintf(buf, "PtrTo %d\n", sto);
 			push_line(buf);
-			sprintf(buf, "Do %d 20 1 ", sto);
+			sprintf(buf, "Do %d 10 1 ", sym);
 			push_line(buf);
 			bp2 = push_compiled_token("_");
 			push_compiled_token("\n");
+			sprintf(buf, "Do %d 40 1 255\n", sym);
+			push_line(buf);
+			sprintf(buf, "Do %d 20 1 ", sym);
+			push_line(buf);
+			bp2b = push_compiled_token("_");
+			push_compiled_token("\n");
+			sprintf(buf, "Do %d 20 2 %d\n", sto, sym);
+			push_line(buf);
 			sprintf(buf, "PtrFrom %d\n", sto);
 			push_line(buf);
 			cod = codegen(tree->child[2]);
 			/* backpatch 2 */
-			sprintf(buf, "%d", 7 + cod.bytes);
+			sprintf(buf, "%d", encode(22 + cod.bytes).mult);
 			strcpy(bp2, buf);
+			sprintf(buf, "%d", encode(22 + cod.bytes).mod);
+			strcpy(bp2b, buf);
 			bytesize += cod.bytes;
 		}
 
@@ -429,6 +485,12 @@ codegen_t codegen(exp_tree_t* tree)
 		push_line(buf);
 		bp1 = push_compiled_token("_");
 		push_compiled_token("\n");
+		sprintf(buf, "Do %d 40 1 255\n", sto);
+		push_line(buf);
+		sprintf(buf, "Do %d 20 1 ", sto);
+		push_line(buf);
+		bp1b = push_compiled_token("_");
+		push_compiled_token("\n");
 		sprintf(buf, "zbPtrTo %d 0 %d\n", cod.adr, sto);
 		push_line(buf);
 		bytesize += codegen(tree->child[1]).bytes;
@@ -437,10 +499,12 @@ codegen_t codegen(exp_tree_t* tree)
 		push_line(buf);
 		bytesize += 2;
 		/* backpatch 1 */
-		sprintf(buf, "%d", bytesize);
+		sprintf(buf, "%d", encode(bytesize).mult);
 		strcpy(bp1, buf);
+		sprintf(buf, "%d", encode(bytesize).mod);
+		strcpy(bp1b, buf);
 
-		bytesize += 9 + cod.bytes;
+		bytesize += 19 + cod.bytes;
 
 		return (codegen_t){ 0, bytesize };
 	}
@@ -507,7 +571,7 @@ codegen_t codegen(exp_tree_t* tree)
 		sprintf(buf, "Do %d 20 2 %d\n", sto, cod.adr);
 		push_line(buf);
 		bytesize += cod.bytes + 10;
-		bytesize += adr_read_microcode(sto, read);
+		bytesize += adr_microcode(sto, read, 0);
 		return (codegen_t) { read, bytesize };
 	}
 
@@ -536,8 +600,7 @@ codegen_t codegen(exp_tree_t* tree)
 		return (codegen_t){ sto, bytesize };
 	}
 
-	printf("Sorry, I can't codegen %s yet\n",
-		tree_nam[tree->head_type]);
+	printf("Sorry, I can't codegen this tree yet\n");
 	printf("Tree: ");
 	fflush(stdout);
 	printout_tree(*tree);
@@ -547,7 +610,7 @@ codegen_t codegen(exp_tree_t* tree)
 
 /* special routines */
 
-int adr_read_microcode(int sto, int read)
+int adr_microcode(int sto, int read, int set)
 {
 	int i;
 	char buf[128];
@@ -556,8 +619,8 @@ int adr_read_microcode(int sto, int read)
 	temp2 = get_temp_storage();	/* 231 */
 	temp3 = get_temp_storage();	/* 230 */
 
-	/* AdrGet hack for BPF 1.0
-	 * originally coded July 16, 2008 by blockeduser
+	/* AdrSet / AdrGet hack for BPF 1.0
+	 * originally coded July 15-16, 2008 by blockeduser
 	 */
 
 	sprintf(buf, "Do %d 10 1 255\n", temp1);
@@ -587,11 +650,16 @@ int adr_read_microcode(int sto, int read)
 	i = 0;
 	while(i++ < 255)
 	{
-		sprintf(buf, "Do %d 10 2 %d\n", read, i);
+		if (set)
+			sprintf(buf, "Do %d 10 2 %d\n", i, read);
+		else
+			sprintf(buf, "Do %d 10 2 %d\n", read, i);
 		push_line(buf);
 		sprintf(buf, "PtrFrom %d\n", temp1);
 		push_line(buf);
 	}
+
+	return 1834;	/* 1834 bytes of compiled code */
 }
 
 
