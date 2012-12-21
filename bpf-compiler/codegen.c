@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define EXPR_STACK_OFFS 230
+#define EXPR_STACK_SIZE 32
 
 extern void fail(char*);
 
@@ -13,7 +13,7 @@ extern void fail(char*);
  *	 - eliminate repetitions
  */
 
-int temp_register = EXPR_STACK_OFFS;
+int temp_register = 255 - EXPR_STACK_SIZE;
 
 char symtab[256][32] = {""};
 int syms = 0;
@@ -26,7 +26,7 @@ int get_temp_storage() {
 }
 
 void new_temp_storage() {
-	temp_register = EXPR_STACK_OFFS;
+	temp_register = 255 - EXPR_STACK_SIZE;
 }
 
 int label_count = 0;
@@ -117,7 +117,7 @@ int sym_check(char* s)
 
 int nameless_perm_storage()
 {
-	if (syms >= 245)
+	if (syms >= 255 - EXPR_STACK_SIZE)
 		fail("out of permanent registers");
 	return syms++;
 }
@@ -125,7 +125,7 @@ int nameless_perm_storage()
 int sym_add(char *s)
 {
 	strcpy(symtab[syms], s);
-	if (syms >= 245)
+	if (syms >= 255 - EXPR_STACK_SIZE)
 		fail("out of permanent registers");
 	return syms++; 
 }
