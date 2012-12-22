@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 	= arg_count[25] = 1;
 
 	oper_names[15] = "Wait";
-	arg_count[15] = 1;
+	arg_count[15] = 2;
 
 	oper_names[11] = "Echo";
 	arg_count[11] = 1;
@@ -143,7 +143,7 @@ int main(int argc, char** argv)
 		for (i = 0; i < 255; i++) {
 			for (j = 0; j < 255; j++) {
 				surf = k ? mask : image;
-				pixel = getpixel(surf, i, j);
+				pixel = getpixel(surf, j, i);
 				SDL_GetRGB(pixel, surf->format, &r, &g, &b);
 				fputc(r, out);
 				fputc(g, out);
