@@ -245,7 +245,6 @@ void count_labels(exp_tree_t tree)
 {
 	int i, sym;
 	char buf[1024];
-	char *name;
 
 	if (tree.head_type == LABEL) {
 		++label_count;
