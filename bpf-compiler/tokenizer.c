@@ -108,6 +108,7 @@ void add_token(trie* t, char* tok, int key)
 					t->map[j] = next;
 				for(j = 'A'; j <= 'Z'; j++)
 					t->map[j] = next;
+				t->map['_'] = next;
 				t = next;
 				++n;
 				break;
@@ -120,6 +121,7 @@ void add_token(trie* t, char* tok, int key)
 					t->map[j] = next;
 				for(j = '0'; j <= '9'; j++)
 					t->map[j] = next;
+				t->map['_'] = next;
 				t = next;
 				++n;
 				break;
