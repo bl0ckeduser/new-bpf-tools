@@ -72,10 +72,25 @@ an optional part in a construction.
 		++foo;		tab[bobobo]--;
 		--bar;		mystery++;
 
-7. BPF instructions [not fully implemented yet]
+7. BPF instructions
 	e.g.
 		echo(1 + 2 * 3);
 		wait(1, 2);
+		cmx(foo);
+		my(foo);
+		outputdraw();
+		draw(a, 2, c, b * f, 3, 4, 5, 1, 1);
+
+	Please see the BPF VM spec for further info on these.
+	Note: mx et al. expect an lvalue as their argument;
+	at the moment, array lvalues are not supported for
+	this kind of operation -- compiler will give diagnostic
+	"That's too tough for me ATM". You can always just use
+	a dummy variable, I guess, like this:
+		int stor;
+		mx(stor);
+		array[i] = stor;
+	I'll try to do this rewriting automatically at one point.
 
 8. Relational operators
 		exprA == exprB

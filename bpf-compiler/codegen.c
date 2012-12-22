@@ -1,7 +1,6 @@
 /* Syntax tree -> BPF VM bytecode generator */
 
 /* TODO: - eliminate repetitions, make routines for them (DRY)
- *        - code all the direct instructions...
  *        - try porting this to a real architecture one day ? 
  */
 
@@ -15,6 +14,7 @@
 
 int temp_register = 255 - EXPR_STACK_SIZE;
 char symtab[256][32] = {""};
+char *instr_arg[32];
 int syms = 0;
 int label_count = 0;
 char *label_bp[256];	/* label backpatches */
@@ -215,6 +215,8 @@ void run_codegen(exp_tree_t *tree)
 	int sto;
 	char buf[1024];
 	extern void count_labels(exp_tree_t tree);
+	int i;
+
 	program_ptr = sto = nameless_perm_storage();
 	sprintf(buf, "PtrTo %d\n", sto);
 	/*
@@ -226,6 +228,11 @@ void run_codegen(exp_tree_t *tree)
 	byte_count -= 2;
 	push_line(buf);
 	count_labels(*tree);
+
+	for (i = 0; i < 32; i++)
+		if (!(instr_arg[i] = malloc(32)))
+			fail("malloc instr arg string");
+
 	codegen(tree);
 }
 
@@ -417,23 +424,48 @@ codegen_t codegen(exp_tree_t* tree)
 	/* direct instruction */
 	if (tree->head_type == BPF_INSTR) {
 		name = get_tok_str(*(tree->tok));
-		if (!strcmp(name, "echo")) {
-			if(tree->child[0]->head_type == VARIABLE) {
-				sym = sym_lookup(tree->child[0]->tok);
-				sprintf(buf, "Echo %d\n", sym);
-				push_line(buf);
-				return (codegen_t){ 0, 2 };
-			} else {
-				cod = codegen(tree->child[0]);
-				sprintf(buf, "Echo %d\n", cod.adr);
-				push_line(buf);
-				return (codegen_t){ 0, cod.bytes + 2 };
+		for (i = 0; i < INSTR_COUNT; i++) {
+			if (!strcmp(name, instr_info[i].name)) {
+				bytesize = 1 + instr_info[i].arg_count;
+				fprintf(stderr, "%s: %d bytes\n", name, bytesize);
+				for (j = 0; j < instr_info[i].arg_count; j++) {
+					if(tree->child[j]->head_type == VARIABLE
+						&& instr_info[i].arg_type[j] > 0) {
+						/* variable address expected, either to
+						 * read from (1) or to assign to (2) */
+						sym = sym_lookup(tree->child[j]->tok);
+						sprintf(buf, "%d", sym);
+						strcpy(instr_arg[j], buf);
+					} else if(instr_info[i].arg_type[j] == 0) {
+						if (tree->child[j]->head_type == NUMBER)
+							strcpy(instr_arg[j], get_tok_str
+								(*(tree->child[j]->tok)));
+						else
+							compiler_fail("number literal expected",
+								tree->child[j]->tok, 0, 0);					
+					} else if( instr_info[i].arg_type[j] == 2
+						&& tree->child[j]->head_type == ARRAY) {
+						/* operate on memory location... tricky,
+						 * since not directly provided by VM.
+						 * could implemented using the synthetic
+						 * indirection hack one day 
+						 */
+						compiler_fail("That's too tough for me ATM",
+							tree->child[j]->tok, 0, 0);
+					} else {
+						cod = codegen(tree->child[j]);
+						sprintf(buf, "%d", cod.adr);
+						strcpy(instr_arg[j], buf);
+						bytesize += cod.bytes;
+					}
+				}
+				push_compiled_token(instr_info[i].instr);
+				for (j = 0; j < instr_info[i].arg_count; j++)
+					push_compiled_token(instr_arg[j]);
+				push_compiled_token("\n");
+				return (codegen_t) {0, bytesize};
 			}
 		}
-		/* TODO: more instructions. Won't be simple
-		 * because some parameters have to be addresses,
-		 * some have to be numbers.
-		 */
 	}
 
 	/* pre-increment, pre-decrement of variable lvalue */
