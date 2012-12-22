@@ -67,7 +67,7 @@ an optional part in a construction.
 		variable
 
 6. C-style increments and decrements
-	The operand is any lvalue. [not yet implemented for array lvalues]
+	The operand is any lvalue.
 	e.g.
 		++foo;		tab[bobobo]--;
 		--bar;		mystery++;

@@ -311,6 +311,8 @@ codegen_t codegen(exp_tree_t* tree)
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	exp_tree_t *new, *new2;
 	exp_tree_t *temp;
+	exp_tree_t fake_tree;
+	exp_tree_t fake_tree_2;
 	extern int adr_microcode(int sto, int read, int set);
 
 	/* 
@@ -438,7 +440,7 @@ codegen_t codegen(exp_tree_t* tree)
 		 */
 	}
 
-	/* pre-increment, pre-decrement */
+	/* pre-increment, pre-decrement of variable lvalue */
 	if ((tree->head_type == INC
 		|| tree->head_type == DEC)
 		&& tree->child[0]->head_type == VARIABLE) {
@@ -449,7 +451,23 @@ codegen_t codegen(exp_tree_t* tree)
 		return (codegen_t) { sym, 5 };
 	}
 
-	/* post-increment, post-decrement */
+	/* pre-increment, pre-decrement of array lvalue */
+	if ((tree->head_type == INC
+		|| tree->head_type == DEC)
+		&& tree->child[0]->head_type == ARRAY) {
+		/* rewrite ++bob[haha] as (bob[haha] += 1); 
+		 * and go codegen that */
+		fake_tree_2 = new_exp_tree(tree->head_type == 
+			INC ? ADD : SUB, NULL);
+		add_child(&fake_tree_2, tree->child[0]);
+		add_child(&fake_tree_2, alloc_exptree(one_tree));
+		fake_tree = new_exp_tree(ASGN, NULL);
+		add_child(&fake_tree, tree->child[0]);
+		add_child(&fake_tree, alloc_exptree(fake_tree_2));
+		return codegen(&fake_tree);
+	}
+
+	/* post-increment, post-decrement of variable lvalue */
 	if ((tree->head_type == POST_INC
 		|| tree->head_type == POST_DEC)
 		&& tree->child[0]->head_type == VARIABLE) {
@@ -464,6 +482,23 @@ codegen_t codegen(exp_tree_t* tree)
 			tree->head_type == POST_INC ? 20 : 30);
 		push_line(buf);
 		return (codegen_t) { sto, 10 };
+	}
+
+	/* post-decrement, post-decrement of array lvalue */
+	if ((tree->head_type == POST_INC
+		|| tree->head_type == POST_DEC)
+		&& tree->child[0]->head_type == ARRAY) {
+		/* given bob[haha]++,
+		 * codegen bob[haha], keep its value,
+		 * codegen ++bob[haha]; 
+		 * and give back the kept value */
+		cod = codegen(tree->child[0]);
+		bytesize += cod.bytes;
+		fake_tree = new_exp_tree(tree->head_type == 
+			POST_INC ? INC : DEC, NULL);
+		add_child(&fake_tree, tree->child[0]);
+		bytesize += codegen(&fake_tree).bytes;
+		return (codegen_t) { cod.adr, bytesize};
 	}
 
 	/* simple variable assignment */
