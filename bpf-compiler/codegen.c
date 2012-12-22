@@ -443,13 +443,10 @@ codegen_t codegen(exp_tree_t* tree)
 		|| tree->head_type == DEC)
 		&& tree->child[0]->head_type == VARIABLE) {
 		sym = sym_lookup(tree->child[0]->tok);
-		sto = get_temp_storage();
 		sprintf(buf, "Do %d %d 1 1\n", sym,
 			tree->head_type == INC ? 20 : 30);
 		push_line(buf);
-		sprintf(buf, "Do %d 10 2 %d\n", sto, sym);
-		push_line(buf);
-		return (codegen_t) { sto, 10 };
+		return (codegen_t) { sym, 5 };
 	}
 
 	/* post-increment, post-decrement */
