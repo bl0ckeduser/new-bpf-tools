@@ -11,8 +11,7 @@ extern void compiler_fail(char *message, token_t *token,
 	int in_line, int in_chr);
 
 /* tree -> code generator */
-/* TODO: - implement ==, !=
- *	 - eliminate repetitions
+/* TODO: - eliminate repetitions
  */
 
 int temp_register = 255 - EXPR_STACK_SIZE;
@@ -217,10 +216,11 @@ void count_labels(exp_tree_t tree)
 codegen_t codegen(exp_tree_t* tree)
 {
 	int sto;
-	int i;
+	int i, j, k;
 	int sym;
 	int oper;
 	int arith;
+	int t1, t2, t3, t4, t5;
 	char *name;
 	int bytesize = 0;
 	codegen_t cod, cod2;
@@ -610,6 +610,60 @@ codegen_t codegen(exp_tree_t* tree)
 			}
 		}
 		return (codegen_t){ sto, bytesize };
+	}
+
+	/* == and != */
+	if (tree->head_type == EQL || tree->head_type == NEQL) {
+		t1 = get_temp_storage();
+		t2 = get_temp_storage();
+		t3 = get_temp_storage();
+		t4 = get_temp_storage();
+		t5 = get_temp_storage();
+		
+		/* t3 = a - b */
+		/* t4 = b - a */
+		for (i = 0; i < 2; i++) {
+			for (j = 0; j < tree->child_count; j++) {
+				oper = j ? 30 : 10;
+				sto = i ? t4 : t3;
+				k = i ? 1 - j : j;
+				if (tree->child[k]->head_type == NUMBER) {
+					sprintf(buf, "Do %d %d 1 %s\n", sto, oper,
+						get_tok_str(*(tree->child[k]->tok)));
+					push_line(buf);
+					bytesize += 5;
+				} else if(tree->child[k]->head_type == VARIABLE) {
+					sym = sym_lookup(tree->child[k]->tok);
+					sprintf(buf, "Do %d %d 2 %d\n", sto, oper, sym);
+					push_line(buf);
+					bytesize += 5;
+				} else {
+					cod = codegen(tree->child[k]);
+					sprintf(buf, "Do %d %d 2 %d\n", sto, oper, 
+						cod.adr);
+					push_line(buf);
+					bytesize += 5 + cod.bytes;
+				}
+			}
+		}
+
+		sprintf(buf, "Do %d 10 1 9\n", t1);
+		push_line(buf);
+		sprintf(buf, "Do %d 10 1 5\n", t2);
+		push_line(buf);
+		sprintf(buf, "Do %d 10 1 %d\n", t5, 
+			tree->head_type == EQL);
+		push_line(buf);
+		sprintf(buf, "zbPtrTo %d 0 %d\n", t3, t1);
+		push_line(buf);
+		sprintf(buf, "zbPtrTo %d 0 %d\n", t4, t2);
+		push_line(buf);
+		sprintf(buf, "Do %d 10 1 %d\n",
+			t5, tree->head_type != EQL);
+		push_line(buf);
+		bytesize += 28;
+
+		return (codegen_t){ t5, bytesize };
 	}
 
 	fprintf(stderr, "Sorry, I can't yet codegen this tree: \n");
