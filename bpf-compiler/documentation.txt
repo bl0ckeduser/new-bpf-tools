@@ -67,7 +67,7 @@ an optional part in a construction.
 		variable
 
 6. C-style increments and decrements
-	The operand is any lvalue.
+	The operand is any lvalue. [not yet implemented for array lvalues]
 	e.g.
 		++foo;		tab[bobobo]--;
 		--bar;		mystery++;
@@ -77,11 +77,27 @@ an optional part in a construction.
 		echo(1 + 2 * 3);
 		wait(1, 2);
 
+8. Relational operators
+		exprA == exprB
+		exprA != exprB
+		exprA >= exprB
+		exprA <= exprB
+		exprA > exprB
+		exprA < exprB
+These work fine as in C, but note that C's convention of "nonzero true, 
+zero false" is not use by this compiler. Instead, the convention here is that
+"expr" is true iff expr <= 0. If you write code that does not depend on such 
+conventions there will be no portability or confusion problem.
 
 Some tips: be careful not to overuse array expressions. They are expensive
 in bytes of memory and bytes of program code, because I have to use a special
 routine to make them work since the VM doesn't provide indirection / array
 indexing facilities.
+
+[This compiler assumes VM behaviour about which the specification is 
+ambiguous. This behaviour is that "PtrTo X" will store to X the address 
+of the beggining of the following instruction rather than the address of its 
+own beggining.]
 
 .............................................................................
 
@@ -214,5 +230,7 @@ Finally, the compiled binary file can be run in the VM:
   $ 
 	
 Note that the script "compile-run.sh" does all the above steps
-automatically given a source file as argument.
+automatically given a source file as argument. [It assumes that the
+compiler is compiled as "a.out"].
+
 
