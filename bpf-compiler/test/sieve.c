@@ -11,7 +11,7 @@ while (k < MAX)
 k = 1;
 while(k++ < MAX){
     n = 2;
-    while((n*k) <= MAX){
+    while(n * k <= MAX){
         sieve[n*k] = 1;
         n++;
     }
