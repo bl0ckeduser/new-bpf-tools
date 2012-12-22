@@ -427,7 +427,6 @@ codegen_t codegen(exp_tree_t* tree)
 		for (i = 0; i < INSTR_COUNT; i++) {
 			if (!strcmp(name, instr_info[i].name)) {
 				bytesize = 1 + instr_info[i].arg_count;
-				fprintf(stderr, "%s: %d bytes\n", name, bytesize);
 				for (j = 0; j < instr_info[i].arg_count; j++) {
 					if(tree->child[j]->head_type == VARIABLE
 						&& instr_info[i].arg_type[j] > 0) {
