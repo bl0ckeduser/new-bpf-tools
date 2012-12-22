@@ -9,7 +9,7 @@
  */
 
 /* TODO: cleanup some of the more mysterious
- *        parts of the code;
+ *       parts of the code...
  */
 
 #include "tokenizer.h"
@@ -102,7 +102,7 @@ void add_token(trie* t, char* tok, int key)
 		hist[n] = t;
 
 		switch (c) {
-			case 'A':		/* special: set of all letters */
+			case 'A':	/* special: set of all letters */
 				next = new_trie();
 				for(j = 'a'; j <= 'z'; j++)
 					t->map[j] = next;
@@ -111,8 +111,8 @@ void add_token(trie* t, char* tok, int key)
 				t = next;
 				++n;
 				break;
-			case 'B':		/* special: set of all letters 
-							   + all digits */
+			case 'B':	/* special: set of all letters 
+					   + all digits */
 				next = new_trie();
 				for(j = 'a'; j <= 'z'; j++)
 					t->map[j] = next;
@@ -123,21 +123,21 @@ void add_token(trie* t, char* tok, int key)
 				t = next;
 				++n;
 				break;
-			case 'D':		/* special: set of all digits */
+			case 'D':	/* special: set of all digits */
 				next = new_trie();
 				for(j = '0'; j <= '9'; j++)
 					t->map[j] = next;
 				t = next;
 				++n;
 				break;
-			case 'W':		/* special: whitespace */
+			case 'W':	/* special: whitespace */
 				next = new_trie();
 				t->map[' '] = next;
 				t->map['\t'] = next;
 				t = next;
 				++n;
 				break;
-			case '?':		/* optional character */
+			case '?':	/* optional character */
 				sanity_requires(n > 0);
 
 				/* 
@@ -147,8 +147,8 @@ void add_token(trie* t, char* tok, int key)
 				 */
 				add_link(hist[n - 1], t);
 				break;
-			case '+':		/* character can repeat
-						   any number of times */
+			case '+':	/* character can repeat
+					   any number of times */
 				sanity_requires(n > 0);
 
 				/* 
@@ -176,8 +176,8 @@ void add_token(trie* t, char* tok, int key)
 				t = hist[n];
 
 				break;
-			case '*':		/* optional character
-						   with repetition allowed */
+			case '*':	/* optional character
+					   with repetition allowed */
 				sanity_requires(n > 0);
 
 				/* same as +, except that the
@@ -195,11 +195,11 @@ void add_token(trie* t, char* tok, int key)
 				add_link(hist[n - 1], t);
 
 				break;
-			case '\\':		/* escape to normal text */
+			case '\\':	/* escape to normal text */
 				if (++i == len)
 					fail("backslash expected char");
 				c = new_tok[i];
-			default:		/* normal text */
+			default:	/* normal text */
 				if (!t->map[c])
 					t->map[c] = new_trie();
 				t = t->map[c];
@@ -231,13 +231,13 @@ match_t match(trie* automaton, char* full_text, char* where)
 	return match_algo(automaton, full_text, where, 0, 0, NULL, 0);
 }
 
-/* trie* t				:	matching automaton
- * char* full_tok		:	full text
- * char* tok			: 	where we are now
- * int btm				: 	internal. initially, give 0
- * int vd				:	internal, initially, give 0
- * trie* led			:	internal. start with NULL
- * int ledi				:	internal. start with 0
+/* trie* t		:	matching automaton
+ * char* full_tok	:	full text
+ * char* tok		: 	where we are now
+ * int btm		: 	internal. initially, give 0
+ * int vd		:	internal, initially, give 0
+ * trie* led		:	internal. start with NULL
+ * int ledi		:	internal. start with 0
  */	
 match_t match_algo(trie* t, char* full_tok, char* tok, int btm, 
 	int vd, trie* led, int ledi)
@@ -247,10 +247,10 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int btm,
 	char c;
 
 	/* greedy choice algorithm */
-	int record;			/* longest match */
-	match_t m;			/* match register */
+	int record;		/* longest match */
+	match_t m;		/* match register */
 	match_t ml[10];		/* match list */
-	int mc = 0;			/* match count */
+	int mc = 0;		/* match count */
 	match_t* choice;	/* final choice */	
 
 	int len = strlen(tok) + 1;
@@ -277,7 +277,8 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int btm,
 
 			/* Try all the epsilon nodes */
 			for (j = 0; j < t->links; j++)
-				if ((m = match_algo(t, full_tok, tok + i, j + 2, 
+				if ((m = match_algo(t, full_tok, tok + i, 
+					j + 2, 
 					vd + 1, led, ledi)).token)
 					ml[mc++] = m;
 
@@ -289,18 +290,20 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int btm,
 					record = 0;
 					choice = NULL;
 					for (j = 0; j < mc; j++)
-						if (ml[j].pos - full_tok >= record) {
+						if (ml[j].pos - full_tok 
+						 >= record) {
 							choice = &ml[j];
-							record = ml[j].pos - full_tok;
+							record = ml[j].pos 
+							 - full_tok;
 						}
 					if (!choice) fail("greedy choice");
 					return *choice;
 			}
 			else if (mc == 1) /* No ambiguity, no time wasted 
-								  choosing */
+					     choosing */
 				return *ml;
 			else	/* For non-matches (they are never pushed
-					   to the decision list) */
+				   to the decision list) */
 				return m;
 		}
 
@@ -320,10 +323,10 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int btm,
 			if (!(led && t->link[btm - 2] == led
 			    && (int)(&tok[i] - full_tok) == ledi)) {
 
-				/* t->links == 1 is special */
+				/* t->links == 1 is special (???) */
 				if (t->links > 1) {
-					led = t;	/* Last Epsilon departure
-							       node */
+					led = t; /* Last Epsilon departure
+						    node */
 					ledi = (int)(&tok[i] - full_tok);
 				}
 
@@ -420,7 +423,8 @@ token_t* tokenize(char *buf)
 				toks[tok_count - 1].start = p;
 				toks[tok_count - 1].len = max;
 				toks[tok_count - 1].from_line = line;
-				toks[tok_count - 1].from_char = p - line_start + 1;
+				toks[tok_count - 1].from_char = p - 
+					line_start + 1;
 			}
 
 			/* move forward in the string */

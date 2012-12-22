@@ -5,7 +5,8 @@
 #include <string.h>
 #include <stdio.h>
 
-/* FIXME: crazy mallocs and memcpys, no garbage collection */
+/* FIXME: crazy mallocs and memcpys, no garbage collection (!)
+ *        a modern OS should clean up, but nevertheless, yeah */
 
 extern void fail(char* mesg);
 
@@ -75,3 +76,4 @@ void printout_tree(exp_tree_t et)
 	fprintf(stderr, ")");
 	fflush(stderr);
 }
+

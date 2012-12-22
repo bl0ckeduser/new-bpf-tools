@@ -11,23 +11,29 @@
 #include <string.h>
 
 /*
-	block := expr ';' | if (expr) block [else block] 
-			| while (expr) block | '{' { expr ';' } '}' 
-			| instr ( expr1, expr2, exprN ) ';'
-			| ident ':'
-			| goto ident ';'
+	block := expr ';' 
+		| if (expr) block [else block] 
+		| while (expr) block | '{' { expr ';' } '}' 
+		| instr ( expr1, expr2, exprN ) ';'
+		| ident ':'
+		| goto ident ';'
 
 	lvalue := ident [ '[' expr ']' ]
 
-	expr := lvalue asg-op expr | sum_expr [comp-op sum_expr]
-			| 'int' ident [ (= expr) | ( '[' integer ']' ) ]
+	expr := lvalue asg-op expr 
+		| sum_expr [comp-op sum_expr]
+		| 'int' ident [ (= expr) 
+		| ( '[' integer ']' ) ]
 
-	sum_expr := mul_expr { add-op mul_expr }+
-	mul_expr := unary_expr { mul-op unary_expr }+
+	sum_expr := mul_expr { add-op mul_expr }
+	mul_expr := unary_expr { mul-op unary_expr }
 
 	unary_expr := ([ - ] ( lvalue | integer | unary_expr ) ) 
-				|  '(' expr ')' | lvalue ++ | lvalue --
-				| ++ lvalue | -- lvalue
+			|  '(' expr ')' 
+			| lvalue ++ 
+			| lvalue --
+			| ++ lvalue 
+			| -- lvalue
 */
 
 token_t *tokens;
@@ -52,6 +58,7 @@ token_t peek()
 
 #define need(X) need_call((X), __LINE__)
 
+/* generate a pretty error when parsing fails */
 void parse_fail(char *message)
 {
 	token_t tok;
@@ -73,6 +80,10 @@ void parse_fail(char *message)
 	compiler_fail(message, NULL, line, chr);
 }
 
+/*
+ * Fail if the next token isn't of the desired type.
+ * Otherwise, return it.
+ */
 token_t need_call(char type, int source_line)
 {
 	char buf[1024];
@@ -86,6 +97,7 @@ token_t need_call(char type, int source_line)
 		return tokens[indx - 1];
 }
 
+/* main parsing loop */
 exp_tree_t parse(token_t *t)
 {
 	exp_tree_t program;
@@ -93,14 +105,14 @@ exp_tree_t parse(token_t *t)
 	program = new_exp_tree(BLOCK, NULL);
 	int i;
 
+	/* count the tokens */
 	for (i = 0; t[i].start; ++i)
 		;
-
 	tok_count = i;
 
+	/* the loop */
 	tokens = t;
 	indx = 0;
-
 	while (tokens[indx].start) {
 		subtree = alloc_exptree(block());
 		if (!valid_tree(*subtree))
@@ -265,7 +277,8 @@ exp_tree_t expr()
 				case TOK_ASGN:
 					break;
 				default:
-					parse_fail("invalid assignment operator");
+					parse_fail
+					 ("invalid assignment operator");
 			}
 			indx++;	/* eat asg-op */
 			if (!valid_tree(subtree3 = expr()))
@@ -306,7 +319,8 @@ exp_tree_t expr()
 					tree = new_exp_tree(NEQL, NULL);
 					break;
 				default:
-					parse_fail("invalid comparison operator");
+					parse_fail
+					 ("invalid comparison operator");
 			}
 			++indx;	/* eat comp-op */
 			add_child(&tree, alloc_exptree(subtree));
@@ -541,3 +555,4 @@ exp_tree_t unary_expr()
 
 	return null_tree;
 }
+

@@ -2,6 +2,7 @@
 #include "tokens.h"
 #include <string.h>
 
+/* pretty compiler-failure errors */
 void compiler_fail(char *message, token_t *token,
 	int in_line, int in_chr)
 {

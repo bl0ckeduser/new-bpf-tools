@@ -4,14 +4,16 @@
 #include <string.h>
 #include <stdio.h>
 
+/* syntax tree -> BPF VM bytecode generator */
+
 #define EXPR_STACK_SIZE 32
 
 extern void fail(char*);
 extern void compiler_fail(char *message, token_t *token,
 	int in_line, int in_chr);
 
-/* tree -> code generator */
 /* TODO: - eliminate repetitions
+ *	 - increments for array lvalues
  */
 
 int temp_register = 255 - EXPR_STACK_SIZE;
@@ -19,6 +21,12 @@ int temp_register = 255 - EXPR_STACK_SIZE;
 char symtab[256][32] = {""};
 int syms = 0;
 
+/* 
+ * Get a register address to be used temporarily.
+ * for example, to evaluate the expression
+ *	x + y * z
+ * two temporary registers are needed.
+ */
 int get_temp_storage() {
 	if (temp_register > 255) {
 		fail("expression stack overflow");
@@ -26,6 +34,11 @@ int get_temp_storage() {
 	return temp_register++;
 }
 
+/*
+ * Reset the temporary registers stack.
+ * This is done essentially for any new
+ * statement.
+ */
 void new_temp_storage() {
 	temp_register = 255 - EXPR_STACK_SIZE;
 }
@@ -56,6 +69,12 @@ encoded_int_t encode(int n) {
 	return (encoded_int_t){ m, n };
 }
 
+/*
+ * Output the final codegen'd BPF assembly,
+ * fit to be sent to the assembler program.
+ * An array is used to allow backpatching
+ * during code generation.
+ */
 void print_code()
 {
 	int i;
@@ -67,6 +86,10 @@ void print_code()
 	printf("\n"); 
 }
 
+/*
+ * Push a compiled line of assembly
+ * to the final code array.
+ */
 void push_line(char *lin)
 {
 	extern char* push_compiled_token(char *tok);
@@ -79,6 +102,14 @@ void push_line(char *lin)
 	} while((p = strtok(NULL, " ")));
 }
 
+/*
+ * Push a single compiled token to the
+ * final code array. This routine is used
+ * to push dummy tokens that are later
+ * backpatched. It returns a pointer to
+ * the address of the token in the 
+ * final code array.
+ */
 char* push_compiled_token(char *tok)
 {
 	int i;
@@ -100,6 +131,7 @@ char* push_compiled_token(char *tok)
 	return code_text[code_toks - 1];
 }
 
+/* Extract the raw string from a token */
 char* get_tok_str(token_t t)
 {
 	static char buf[1024];
@@ -108,6 +140,7 @@ char* get_tok_str(token_t t)
 	return buf;
 }
 
+/* check if a symbol is already defined */
 int sym_check(token_t* tok)
 {
 	int i;
@@ -122,6 +155,11 @@ int sym_check(token_t* tok)
 	return 0;
 }
 
+/*
+ * Allocate a permanent storage register without
+ * giving it a symbol name. Useful for special 
+ * registers created by the compiler. 
+ */
 int nameless_perm_storage()
 {
 	if (syms >= 255 - EXPR_STACK_SIZE)
@@ -129,6 +167,10 @@ int nameless_perm_storage()
 	return syms++;
 }
 
+/*
+ * Create a new symbol, obtaining its permanent
+ * storage address.
+ */ 
 int sym_add(token_t *tok)
 {
 	char *s = get_tok_str(*tok);
@@ -138,6 +180,7 @@ int sym_add(token_t *tok)
 	return syms++; 
 }
 
+/* lookup storage address of a symbol */
 int sym_lookup(token_t* tok)
 {
 	char buf[1024];
@@ -151,6 +194,7 @@ int sym_lookup(token_t* tok)
 	compiler_fail(buf, tok, 0, 0);
 }
 
+/* tree type -> arithmetic operation code */
 int arith_op(int ty)
 {
 	switch (ty) {
@@ -167,6 +211,7 @@ int arith_op(int ty)
 	}
 }
 
+/* Starting point of the codegen */
 void run_codegen(exp_tree_t *tree)
 {
 	int sto;
@@ -174,14 +219,30 @@ void run_codegen(exp_tree_t *tree)
 	extern void count_labels(exp_tree_t tree);
 	program_ptr = sto = nameless_perm_storage();
 	sprintf(buf, "PtrTo %d\n", sto);
-	byte_count -= 2;	/* hack */
+	/*
+	 * [This makes an assumption about the
+	 * VM's implementation of PtrTo about
+	 * which the VM spec is ambiguous
+	 * (see documentation.txt)]
+	 */
+	byte_count -= 2;
 	push_line(buf);
 	count_labels(*tree);
 	codegen(tree);
 }
 
-/* count labels and setup their symbols and
- * initial code */
+/* 
+ * Look for labels and setup their symbols and
+ * initial code. The initial code is a bunch
+ * of assignments at the beggining of the
+ * compiled program that store the program
+ * offsets of each label to their symbol-
+ * addresses. These offsets get backpatched
+ * in when the main pass of the codegen
+ * encounters the labels again after having
+ * had generated N bytes of code coming
+ * before them.
+ */
 void count_labels(exp_tree_t tree)
 {
 	int i, sym;
@@ -213,6 +274,23 @@ void count_labels(exp_tree_t tree)
 			count_labels(*(tree.child[i]));
 }
 
+/*
+ * The core codegen routine. It returns
+ * a codegen_t structure which contains
+ *	- adr   : the temporary register
+ *	 	  at which the runtime evaluation
+ *		  value of the tree is stored
+ *		  (if the tree is an expression
+ *		  with a value);
+ *	- bytes : the number of bytes of
+ *		  generated code the tree
+ *		  has been responsible for.
+ *		  For example, the code for an
+ *		  else-less "if" skips forward by
+ *		  the number of bytes in its
+ *		  block subtree if its conditional
+ *		  is false. 
+ */
 codegen_t codegen(exp_tree_t* tree)
 {
 	int sto;
@@ -295,8 +373,10 @@ codegen_t codegen(exp_tree_t* tree)
 
 	/* variable declaration, with optional assignment */
 	if (tree->head_type == INT_DECL) {
+		/* create the storage and symbol */
 		if (!sym_check(tree->child[0]->tok))
 			sym = sym_add(tree->child[0]->tok);
+		/* write the code for the assignment, if any */
 		if (tree->child_count == 2) {
 			if (tree->child[1]->head_type == NUMBER) {
 				sprintf(buf, "Do %d 10 1 %s\n", sym,
@@ -320,8 +400,15 @@ codegen_t codegen(exp_tree_t* tree)
 
 	/* array declaration */
 	if (tree->head_type == ARRAY_DECL) {
+		/* make a symbol named after the array
+		 * at its index 0 */
 		if (!sym_check(tree->child[0]->tok))
 			(void)sym_add(tree->child[0]->tok);
+		/* make nameless storage for the subsequent
+		 * indices -- when we deal with an expression
+		 * such as array[index] we only need to know
+		 * the starting point of the array and the
+		 * value "index" evaluates to */
 		sto = atoi(get_tok_str(*(tree->child[1]->tok)));
 		for (i = 0; i < sto - 1; i++)
 			(void)nameless_perm_storage();
@@ -371,6 +458,9 @@ codegen_t codegen(exp_tree_t* tree)
 		&& tree->child[0]->head_type == VARIABLE) {
 		sym = sym_lookup(tree->child[0]->tok);
 		sto = get_temp_storage();
+		/* store the variable's value to temp
+		 * storage then bump it and return
+		 * the temp storage */
 		sprintf(buf, "Do %d 10 2 %d\n", sto, sym);
 		push_line(buf);
 		sprintf(buf, "Do %d %d 1 1\n", sym,
@@ -379,21 +469,24 @@ codegen_t codegen(exp_tree_t* tree)
 		return (codegen_t) { sto, 10 };
 	}
 
-	/* simple varaible assignment */
+	/* simple variable assignment */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == VARIABLE) {
 		sym = sym_lookup(tree->child[0]->tok);
 		if (tree->child[1]->head_type == NUMBER) {
+			/* optimized code for number operand */
 			sprintf(buf, "Do %d 10 1 %s\n", sym,
 				get_tok_str(*(tree->child[1]->tok)));
 			push_line(buf);
 			return (codegen_t){ sym, 5 };
 		} else if (tree->child[1]->head_type == VARIABLE) {
+			/* optimized code for variable operand */
 			sto = sym_lookup(tree->child[1]->tok);
 			sprintf(buf, "Do %d 10 2 %d\n", sym, sto);
 			push_line(buf);
 			return (codegen_t){ sym, 5 };
 		} else {
+			/* general case */
 			cod = codegen(tree->child[1]);
 			sprintf(buf, "Do %d 10 2 %d\n", sym, cod.adr);
 			push_line(buf);
@@ -422,8 +515,11 @@ codegen_t codegen(exp_tree_t* tree)
 
 	/* if */
 	if (tree->head_type == IF) {
-		/* the conditional */
+		/* codegen the conditional */
 		cod = codegen(tree->child[0]);
+		/* now write the code that stores
+		 * the jump offset to a temporary
+	 	 * register "sto" */
 		sto = get_temp_storage();
 		sprintf(buf, "Do %d 10 1 ", sto);
 		push_line(buf);
@@ -435,13 +531,14 @@ codegen_t codegen(exp_tree_t* tree)
 		push_line(buf);
 		bp1b = push_compiled_token("_");
 		push_compiled_token("\n");
+		/* branch if the conditional is false */
 		sprintf(buf, "zbPtrTo %d 0 %d\n", cod.adr, sto);
 		push_line(buf);
 		bytesize += codegen(tree->child[1]).bytes;
 		if (tree->child_count == 3) {
 			bytesize += 24;
 		}
-		/* backpatch 1 */
+		/* backpatch in the jump offset */
 		sprintf(buf, "%d", encode(bytesize).mult);
 		strcpy(bp1, buf);
 		sprintf(buf, "%d", encode(bytesize).mod);
@@ -453,6 +550,9 @@ codegen_t codegen(exp_tree_t* tree)
 		if (tree->child_count == 3) {
 			sto = get_temp_storage();
 			sym = get_temp_storage();
+			/* in the first block, write
+			 * code that jumps over the "else"
+			 * block */
 			sprintf(buf, "PtrTo %d\n", sto);
 			push_line(buf);
 			sprintf(buf, "Do %d 10 1 ", sym);
@@ -470,7 +570,7 @@ codegen_t codegen(exp_tree_t* tree)
 			sprintf(buf, "PtrFrom %d\n", sto);
 			push_line(buf);
 			cod = codegen(tree->child[2]);
-			/* backpatch 2 */
+			/* backpatch */
 			sprintf(buf, "%d", encode(22 + cod.bytes).mult);
 			strcpy(bp2, buf);
 			sprintf(buf, "%d", encode(22 + cod.bytes).mod);
@@ -490,6 +590,7 @@ codegen_t codegen(exp_tree_t* tree)
 		push_line(buf);
 		/* the conditional */
 		cod = codegen(tree->child[0]);
+		/* store jump offset */
 		sto = get_temp_storage();
 		sprintf(buf, "Do %d 10 1 ", sto);
 		push_line(buf);
@@ -501,14 +602,15 @@ codegen_t codegen(exp_tree_t* tree)
 		push_line(buf);
 		bp1b = push_compiled_token("_");
 		push_compiled_token("\n");
+		/* conditonal branch */
 		sprintf(buf, "zbPtrTo %d 0 %d\n", cod.adr, sto);
 		push_line(buf);
 		bytesize += codegen(tree->child[1]).bytes;
-		/* jump back to before the conditional */
+		/* loop back to right before the conditional */
 		sprintf(buf, "PtrFrom %d\n", while_start);
 		push_line(buf);
 		bytesize += 2;
-		/* backpatch 1 */
+		/* backpatch in the jump offset size */
 		sprintf(buf, "%d", encode(bytesize).mult);
 		strcpy(bp1, buf);
 		sprintf(buf, "%d", encode(bytesize).mod);
@@ -589,6 +691,8 @@ codegen_t codegen(exp_tree_t* tree)
 
 	/* arithmetic */
 	if ((arith = arith_op(tree->head_type)) && tree->child_count) {
+		/* (with optimized code for number and variable operands
+		 * that avoids wasting temporary registes) */
 		sto = get_temp_storage();
 		for (i = 0; i < tree->child_count; i++) {
 			oper = i ? arith : 10;
@@ -604,7 +708,8 @@ codegen_t codegen(exp_tree_t* tree)
 				bytesize += 5;
 			} else {
 				cod = codegen(tree->child[i]);
-				sprintf(buf, "Do %d %d 2 %d\n", sto, oper, cod.adr);
+				sprintf(buf, "Do %d %d 2 %d\n", sto, oper,
+					cod.adr);
 				push_line(buf);
 				bytesize += 5 + cod.bytes;
 			}
@@ -628,18 +733,22 @@ codegen_t codegen(exp_tree_t* tree)
 				sto = i ? t4 : t3;
 				k = i ? 1 - j : j;
 				if (tree->child[k]->head_type == NUMBER) {
-					sprintf(buf, "Do %d %d 1 %s\n", sto, oper,
-						get_tok_str(*(tree->child[k]->tok)));
+					sprintf(buf, "Do %d %d 1 %s\n",
+					  sto, oper,
+					  get_tok_str(*(tree->child[k]->tok)));
 					push_line(buf);
 					bytesize += 5;
-				} else if(tree->child[k]->head_type == VARIABLE) {
+				} else if(tree->child[k]->head_type 
+					== VARIABLE) {
 					sym = sym_lookup(tree->child[k]->tok);
-					sprintf(buf, "Do %d %d 2 %d\n", sto, oper, sym);
+					sprintf(buf, "Do %d %d 2 %d\n", 
+						sto, oper, sym);
 					push_line(buf);
 					bytesize += 5;
 				} else {
 					cod = codegen(tree->child[k]);
-					sprintf(buf, "Do %d %d 2 %d\n", sto, oper, 
+					sprintf(buf, "Do %d %d 2 %d\n", 
+						sto, oper, 
 						cod.adr);
 					push_line(buf);
 					bytesize += 5 + cod.bytes;
@@ -675,6 +784,7 @@ codegen_t codegen(exp_tree_t* tree)
 
 /* special routines */
 
+/* synthetic indirection */
 int adr_microcode(int sto, int read, int set)
 {
 	int i;

@@ -42,10 +42,11 @@ int main(int argc, char** argv)
 	 */
 
 	run_codegen(&tree);
+
+	/* write out the final compiled assembly */
 	print_code();
 
 	free(buf);
-
 	return 0;
 }
 
