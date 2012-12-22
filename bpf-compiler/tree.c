@@ -1,12 +1,14 @@
+/* Tree helper routines */
+
+/* FIXME: crazy mallocs and memcpys, no garbage collection (!)
+ *        a modern OS should clean up, but nevertheless, yeah */
+
 #include "tree.h"
 #include "tokenizer.h"
 #include "tokens.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
-/* FIXME: crazy mallocs and memcpys, no garbage collection (!)
- *        a modern OS should clean up, but nevertheless, yeah */
 
 extern void fail(char* mesg);
 

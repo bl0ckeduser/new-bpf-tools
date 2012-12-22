@@ -1,7 +1,7 @@
+/* General-use routines */
+
 #include <stdlib.h>
 #include <stdio.h>
-
-/* General-use routines */
 
 void fail(char* mesg)
 {

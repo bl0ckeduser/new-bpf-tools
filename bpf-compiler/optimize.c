@@ -1,8 +1,10 @@
+/* Optimize the syntax tree */
+
+/* TODO: constant folding ? other stuff ? */
+
 #include "tree.h"
 #include "tokens.h"
 #include <stdio.h>
-
-/* TODO: constant folding ? other stuff ? */
 
 int arith_type(int ty)
 {
@@ -35,5 +37,5 @@ void optimize(exp_tree_t *et)
 			add_child(et, below->child[i]);
 		}
 	}
-
 }
+

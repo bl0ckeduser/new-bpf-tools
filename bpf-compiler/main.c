@@ -1,3 +1,10 @@
+/* 
+ * New compiler targeting my old "BPF" VM
+ * (could target something cooler one day)
+ * by Bl0ckeduser, December 2012
+ * Enjoy !
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,32 +25,34 @@ int main(int argc, char** argv)
 	extern void print_code(void);
 	extern void fail(char*);
 
+	/* Read in at most 1KB of code from stdin */
 	if (!(buf = malloc(1024 * 1024)))
 		fail("alloc program buffer");
-
-	/* read in at most 1KB of code from stdin */
 	fread(buf, sizeof(char), 1024 * 1024, stdin);
 
 	setup_tokenizer();
 	tokens = tokenize(buf);
 
+#ifdef DEBUG
 	/* display the tokens */
-	/* for (i = 0; tokens[i].start; i++) {
+	for (i = 0; tokens[i].start; i++) {
 		fprintf(stderr, "%d: %s: ", i, tok_nam[tokens[i].type]);
 		tok_display(stderr, tokens[i]);
 		fputc('\n', stderr);
-	} */
+	}
+#endif
 
 	tree = parse(tokens);
 	optimize(&tree);
 	
-	/* printout_tree(tree);
-	 * fputc('\n', stderr);
-	 */
+#ifdef DEBUG
+	printout_tree(tree);
+	fputc('\n', stderr);
+#endif
 
 	run_codegen(&tree);
 
-	/* write out the final compiled assembly */
+	/* Write out the final compiled assembly */
 	print_code();
 
 	free(buf);

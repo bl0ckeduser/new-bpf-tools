@@ -1,8 +1,9 @@
+/* Pretty compiler-failure error */
+
 #include "tokenizer.h"
 #include "tokens.h"
 #include <string.h>
 
-/* pretty compiler-failure errors */
 void compiler_fail(char *message, token_t *token,
 	int in_line, int in_chr)
 {
@@ -10,8 +11,6 @@ void compiler_fail(char *message, token_t *token,
 	int line;
 	int chr;
 	int i;
-
-	/* neat diagnostic printout */
 
 	line = in_line ? in_line : token->from_line;
 	chr = in_line ? in_chr : token->from_char;

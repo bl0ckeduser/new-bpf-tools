@@ -1,25 +1,49 @@
+/* Syntax tree -> BPF VM bytecode generator */
+
+/* TODO: - eliminate repetitions, make routines for them (DRY)
+ *        - code all the direct instructions...
+ *        - try porting this to a real architecture one day ? 
+ */
+
+#define EXPR_STACK_SIZE 32
+
 #include "tree.h"
 #include "tokens.h"
 #include "codegen.h"
 #include <string.h>
 #include <stdio.h>
 
-/* syntax tree -> BPF VM bytecode generator */
-
-#define EXPR_STACK_SIZE 32
+int temp_register = 255 - EXPR_STACK_SIZE;
+char symtab[256][32] = {""};
+int syms = 0;
+int label_count = 0;
+char *label_bp[256];	/* label backpatches */
+char *label_bp_2[256];
+int byte_count = 0;
+int program_ptr;
+char **code_text;
+int code_toks = 0;
+int code_toks_alloc = 0;
 
 extern void fail(char*);
 extern void compiler_fail(char *message, token_t *token,
 	int in_line, int in_chr);
 
-/* TODO: - eliminate repetitions
- *	 - increments for array lvalues
- */
+/* number = mult * 255 + mod 
+ * range of possible values: 0 to 65280 */
+typedef struct encoded_int {
+	int mult;
+	int mod;
+} encoded_int_t;
 
-int temp_register = 255 - EXPR_STACK_SIZE;
-
-char symtab[256][32] = {""};
-int syms = 0;
+encoded_int_t encode(int n) {
+	int m = 0;
+	while (n > 255) {
+		n -= 255;
+		++m;
+	}
+	return (encoded_int_t){ m, n };
+}
 
 /* 
  * Get a register address to be used temporarily.
@@ -41,32 +65,6 @@ int get_temp_storage() {
  */
 void new_temp_storage() {
 	temp_register = 255 - EXPR_STACK_SIZE;
-}
-
-int label_count = 0;
-char *label_bp[256];	/* label backpatches */
-char *label_bp_2[256];
-int byte_count = 0;
-int program_ptr;
-
-char **code_text;
-int code_toks = 0;
-int code_toks_alloc = 0;
-
-/* number = mult * 255 + mod 
- * range of possible values: 0 to 65280 */
-typedef struct encoded_int {
-	int mult;
-	int mod;
-} encoded_int_t;
-
-encoded_int_t encode(int n) {
-	int m = 0;
-	while (n > 255) {
-		n -= 255;
-		++m;
-	}
-	return (encoded_int_t){ m, n };
 }
 
 /*
@@ -140,7 +138,7 @@ char* get_tok_str(token_t t)
 	return buf;
 }
 
-/* check if a symbol is already defined */
+/* Check if a symbol is already defined */
 int sym_check(token_t* tok)
 {
 	int i;
@@ -180,7 +178,7 @@ int sym_add(token_t *tok)
 	return syms++; 
 }
 
-/* lookup storage address of a symbol */
+/* Lookup storage address of a symbol */
 int sym_lookup(token_t* tok)
 {
 	char buf[1024];
@@ -194,7 +192,7 @@ int sym_lookup(token_t* tok)
 	compiler_fail(buf, tok, 0, 0);
 }
 
-/* tree type -> arithmetic operation code */
+/* Tree type -> arithmetic operation code */
 int arith_op(int ty)
 {
 	switch (ty) {
@@ -813,9 +811,7 @@ codegen_t codegen(exp_tree_t* tree)
 	exit(1);
 }
 
-/* special routines */
-
-/* synthetic indirection */
+/* Synthetic indirection */
 int adr_microcode(int sto, int read, int set)
 {
 	int i;

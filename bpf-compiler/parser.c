@@ -1,7 +1,4 @@
-/*
- * Parser for new BPF compiler
- * Bl0ckeduser, December 2012
- */
+/* Parser */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,32 +6,6 @@
 #include "tokens.h"
 #include "tree.h"
 #include <string.h>
-
-/*
-	block := expr ';' 
-		| if (expr) block [else block] 
-		| while (expr) block | '{' { expr ';' } '}' 
-		| instr ( expr1, expr2, exprN ) ';'
-		| ident ':'
-		| goto ident ';'
-
-	lvalue := ident [ '[' expr ']' ]
-
-	expr := lvalue asg-op expr 
-		| sum_expr [comp-op sum_expr]
-		| 'int' ident [ (= expr) 
-		| ( '[' integer ']' ) ]
-
-	sum_expr := mul_expr { add-op mul_expr }
-	mul_expr := unary_expr { mul-op unary_expr }
-
-	unary_expr := ([ - ] ( lvalue | integer | unary_expr ) ) 
-			|  '(' expr ')' 
-			| lvalue ++ 
-			| lvalue --
-			| ++ lvalue 
-			| -- lvalue
-*/
 
 token_t *tokens;
 int indx;
@@ -48,15 +19,16 @@ exp_tree_t unary_expr();
 void printout(exp_tree_t et);
 extern void fail(char* mesg);
 
+/* give the current token */
 token_t peek()
 {
 	if (indx >= tok_count)
+		/* past the end of the token stream;
+		 * give the last one to avoid errors */
 		return tokens[tok_count - 1];
 	else
 		return tokens[indx];
 }
-
-#define need(X) need_call((X), __LINE__)
 
 /* generate a pretty error when parsing fails */
 void parse_fail(char *message)
@@ -84,7 +56,7 @@ void parse_fail(char *message)
  * Fail if the next token isn't of the desired type.
  * Otherwise, return it.
  */
-token_t need_call(char type, int source_line)
+token_t need(char type)
 {
 	char buf[1024];
 	if (tokens[indx++].type != type) {
@@ -123,6 +95,7 @@ exp_tree_t parse(token_t *t)
 	return program;
 }
 
+/* lvalue := ident [ '[' expr ']' ] */
 exp_tree_t lval()
 {
 	token_t tok = peek();
@@ -149,6 +122,14 @@ exp_tree_t lval()
 		return null_tree;
 }
 
+/*
+	block := expr ';' 
+		| if (expr) block [else block] 
+		| while (expr) block | '{' { expr ';' } '}' 
+		| instr ( expr1, expr2, exprN ) ';'
+		| ident ':'
+		| goto ident ';'
+*/
 exp_tree_t block()
 {
 	int i, args;
@@ -246,6 +227,12 @@ exp_tree_t block()
 	}
 }
 
+/*
+	expr := lvalue asg-op expr 
+		| sum_expr [comp-op sum_expr]
+		| 'int' ident [ (= expr) 
+		| ( '[' integer ']' ) ]
+*/
 exp_tree_t expr()
 {
 	exp_tree_t tree, subtree, subtree2;
@@ -354,12 +341,14 @@ exp_tree_t expr()
 	return null_tree;
 }
 
-/* difficult part */
+/* sum_expr := mul_expr { add-op mul_expr } */
 exp_tree_t sum_expr()
 {
 	exp_tree_t et1, et2;
 	exp_tree_t *subtree, *subtree2, *tree, *root;
 	token_t oper;
+
+	/* subtle/difficult tree manipulation */
 
 	if (!valid_tree(et1 = mul_expr()))
 		return null_tree;
@@ -411,12 +400,14 @@ exp_tree_t sum_expr()
 	return *root;
 }
 
-/* mostly a repeat of sum_expr */
+/* mul_expr := unary_expr { mul-op unary_expr } */
 exp_tree_t mul_expr()
 {
 	exp_tree_t et1, et2;
 	exp_tree_t *subtree, *subtree2, *tree, *root;
 	token_t oper;
+
+	/* (mostly a repeat of sum_expr) */
 
 	if (!valid_tree(et1 = unary_expr()))
 		return null_tree;
@@ -468,6 +459,14 @@ exp_tree_t mul_expr()
 	return *root;
 }
 
+/*
+	unary_expr := ([ - ] ( lvalue | integer | unary_expr ) ) 
+			|  '(' expr ')' 
+			| lvalue ++ 
+			| lvalue --
+			| ++ lvalue 
+			| -- lvalue
+*/
 exp_tree_t unary_expr()
 {
 	exp_tree_t tree = null_tree, subtree = null_tree;
