@@ -432,8 +432,7 @@ codegen_t codegen(exp_tree_t* tree)
 				push_line(buf);
 				return (codegen_t){ 0, cod.bytes + 2 };
 			}
-		} else
-			fail("can't compile that instruction yet");
+		}
 		/* TODO: more instructions. Won't be simple
 		 * because some parameters have to be addresses,
 		 * some have to be numbers.
