@@ -15,7 +15,7 @@
 int temp_register = 255 - EXPR_STACK_SIZE;
 char symtab[256][32] = {""};
 char *instr_arg[32];
-int syms = 0;
+int syms = 1;
 int label_count = 0;
 char *label_bp[256];	/* label backpatches */
 char *label_bp_2[256];
