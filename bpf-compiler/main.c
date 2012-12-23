@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 
 #ifdef DEBUG
 	/* display the tokens */
-	for (i = 0; tokens[i].start; i++) {
+	for (int i = 0; tokens[i].start; i++) {
 		fprintf(stderr, "%d: %s: ", i, tok_nam[tokens[i].type]);
 		tok_display(stderr, tokens[i]);
 		fputc('\n', stderr);

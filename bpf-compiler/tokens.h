@@ -50,7 +50,10 @@ enum {
 	TOK_GOTO,
 	TOK_COLON,
 	TOK_LBRACK,
-	TOK_RBRACK
+	TOK_RBRACK,
+	C_CMNT_OPEN,
+	C_CMNT_CLOSE,
+	CPP_CMNT
 };
 
 static char* tok_nam[] = {
@@ -97,6 +100,9 @@ static char* tok_nam[] = {
 	"TOK_COLON",
 	"TOK_LBRACK",
 	"TOK_RBRACK"
+	"C_CMNT_OPEN",
+	"C_CMNT_CLOSE",
+	"CPP_CMNT"
 };
 
 static char* tok_desc[] = {
@@ -142,7 +148,10 @@ static char* tok_desc[] = {
 	"goto",
 	":",
 	"[",
-	"]"
+	"]",
+	"/*",
+	"*/",
+	"//"
 };
 
 /* keywords */

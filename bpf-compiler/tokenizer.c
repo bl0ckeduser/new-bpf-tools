@@ -376,6 +376,7 @@ token_t* tokenize(char *buf)
 	token_t *toks = malloc(64 * sizeof(token_t));
 	int tok_alloc = 64;
 	int tok_count = 0;
+	int in_comment = 0;
 
 	*code_lines = buf;
 
@@ -399,6 +400,10 @@ token_t* tokenize(char *buf)
 
 		if (max == -1) {
 			/* matching from this offset failed */
+			if (in_comment) {
+				++p;
+				continue;
+			}
 			fail("tokenization failed");
 		} else {
 			/* spot keywords */
@@ -411,9 +416,32 @@ token_t* tokenize(char *buf)
 				}
 			}
 
+			/* comments */
+			if (c.token == C_CMNT_OPEN) {
+				if (in_comment == 2)
+					fail("don't nest comments, please");
+				in_comment = 2;
+			} else if (c.token == C_CMNT_CLOSE) {
+				if (in_comment == 2) {
+					in_comment = 0;
+					goto advance;
+				} else {
+					fail("dafuq is a */ doing there ?");
+				}
+			} else if (c.token == CPP_CMNT) {
+				if (in_comment == 2)
+					fail("don't mix and nest comments, please");
+				in_comment = 1;		
+			}
+			if (in_comment == 1 && c.token == TOK_NEWLINE) {
+				in_comment = 0;
+				goto advance;
+			}
+
 			/* add token to the tokens array */
 			if (c.token != TOK_WHITESPACE
-			 && c.token != TOK_NEWLINE) {
+			 && c.token != TOK_NEWLINE
+			 && !in_comment) {
 				if (++tok_count > tok_alloc) {
 					tok_alloc = tok_count + 64;
 					toks = realloc(toks,
@@ -429,6 +457,7 @@ token_t* tokenize(char *buf)
 					line_start + 1;
 			}
 
+advance:
 			/* move forward in the string */
 			p += max;
 			if (max == 0)
@@ -497,5 +526,10 @@ void setup_tokenizer()
 	add_token(t[tc++], ":", TOK_COLON);
 	add_token(t[tc++], "[", TOK_LBRACK);
 	add_token(t[tc++], "]", TOK_RBRACK);
+
+	/* comments */
+	add_token(t[tc++], "/\\*", C_CMNT_OPEN);
+	add_token(t[tc++], "\\*/", C_CMNT_CLOSE);
+	add_token(t[tc++], "//", CPP_CMNT);
 }
 

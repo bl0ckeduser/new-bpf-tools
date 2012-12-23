@@ -99,10 +99,16 @@ an optional part in a construction.
 		exprA <= exprB
 		exprA > exprB
 		exprA < exprB
-These work fine as in C, but note that C's convention of "nonzero true, 
-zero false" is not use by this compiler. Instead, the convention here is that
-"expr" is true iff expr <= 0. If you write code that does not depend on such 
-conventions there will be no portability or confusion problem.
+
+   These work fine as in C, but note that C's convention of "nonzero true, 
+   zero false" is not use by this compiler. Instead, the convention here is 
+   that "expr" is true iff expr <= 0. If you write code that does not depend
+   on such conventions there will be no portability or confusion problem.
+
+9. Comments
+	/* this is a C-style comment */
+	// this is a C++ -style comment.
+	// (C++ -style comments last till the end of the line)
 
 Some tips: be careful not to overuse array expressions. They are expensive
 in bytes of memory and bytes of program code, because I have to use a special
