@@ -229,6 +229,10 @@ void run_codegen(exp_tree_t *tree)
 	push_line(buf);
 	count_labels(*tree);
 
+	/* provide easy access to
+	 * the special keyboard register */
+	strcpy(symtab[0], "_kbreg");
+
 	for (i = 0; i < 32; i++)
 		if (!(instr_arg[i] = malloc(32)))
 			fail("malloc instr arg string");

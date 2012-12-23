@@ -110,6 +110,26 @@ an optional part in a construction.
 	// this is a C++ -style comment.
 	// (C++ -style comments last till the end of the line)
 
+10. Keyboard extension (see VM spec part 5, 
+    "Keyboard/game-controller interface specification")
+
+    The compiler automatically provides the identifier "_kbreg"
+    for the keyboard register (byte address 0). Here is some sample code:
+
+	/*
+	 * Check to see if the VM supports the
+	 * keyboard extension. Spec says:
+	 * 	If decimal value 240 is written to address 0,
+	 *	address 0 must immediately take the value 123.
+	 */
+	
+	_kbreg = 240;
+	if (_kbreg == 123)
+		echo(1);	/* it does */
+	else
+		echo(0);	/* it doesn't */
+
+
 Some tips: be careful not to overuse array expressions. They are expensive
 in bytes of memory and bytes of program code, because I have to use a special
 routine to make them work since the VM doesn't provide indirection / array
