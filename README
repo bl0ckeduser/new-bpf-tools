@@ -29,3 +29,10 @@ interesting VM or maybe even a real computer. Or the compiler could be
 improved, merged with a well-designed VM and hacked into a big REPL to create 
 a script interpreter.
 
+NOTE: an 32-bit x86 codegen (using gcc as the assembler) has been added,
+so the compiler now supports a real machine. But the language is still the
+same limited one: no functions, no pointers, etc. Future project: compiler
+compiling a larger subset of C. Not sure if it would be possible to grow this
+off this code.
+
+NOTE: At the moment, I've only tested the x86 codegen on 64-bit Linux.

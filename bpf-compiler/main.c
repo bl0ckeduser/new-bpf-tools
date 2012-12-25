@@ -12,7 +12,6 @@
 #include "tokens.h"
 #include "tree.h"
 #include "parser.h"
-#include "codegen.h"
 
 int main(int argc, char** argv)
 {

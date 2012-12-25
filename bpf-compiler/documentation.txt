@@ -92,6 +92,9 @@ an optional part in a construction.
 		array[i] = stor;
 	I'll try to do this rewriting automatically at one point.
 
+	[NOTE: "echo" is the only such routine supported by the 32-bit
+	x86 codegen]
+
 8. Relational operators
 		exprA == exprB
 		exprA != exprB
@@ -104,6 +107,9 @@ an optional part in a construction.
    zero false" is not use by this compiler. Instead, the convention here is 
    that "expr" is true iff expr <= 0. If you write code that does not depend
    on such conventions there will be no portability or confusion problem.
+
+   [NOTE: The 32-bit x86 code generator follows the C booleans convention;
+   the paragraph above applies to the BPFVM code generator].
 
 9. Comments
 	/* this is a C-style comment */
@@ -129,7 +135,6 @@ an optional part in a construction.
 	else
 		echo(0);	/* it doesn't */
 
-
 Some tips: be careful not to overuse array expressions. They are expensive
 in bytes of memory and bytes of program code, because I have to use a special
 routine to make them work since the VM doesn't provide indirection / array
@@ -145,6 +150,18 @@ own beggining.]
 		      -----------------------------
 		      Compilation / running process
 		      -----------------------------
+
+NOTE: Support for generating 32-bit x86 code has been added.
+The relevant scripts are
+		build-x86.sh
+		autotest-x86.sh
+		compile-run-x86.sh
+The 32-bit x86 code generator outputs GAS assembly and the relevant
+scripts assembles this using gcc.
+
+To build the compiler targeting the BPF VM, run build.sh.
+
+		================================
 
 Considering the following example program:
 
@@ -273,5 +290,4 @@ Finally, the compiled binary file can be run in the VM:
 Note that the script "compile-run.sh" does all the above steps
 automatically given a source file as argument. [It assumes that the
 compiler is compiled as "a.out"].
-
 
