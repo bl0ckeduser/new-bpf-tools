@@ -4,7 +4,7 @@
 extern char* codegen(exp_tree_t* tree);
 
 #define TEMP_REGISTERS 6
-#define TEMP_MEM 64
+#define TEMP_MEM 16
 
 static char* temp_reg[TEMP_REGISTERS] = {
 	"%eax",
