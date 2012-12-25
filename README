@@ -35,4 +35,6 @@ same limited one: no functions, no pointers, etc. Future project: compiler
 compiling a larger subset of C. Not sure if it would be possible to grow this
 off this code.
 
-NOTE: At the moment, I've only tested the x86 codegen on 64-bit Linux.
+NOTE: The x86 codegen and relevant scripts have been tested on 64-bit Linux
+and on 32-bit FreeBSD 9.0.
+

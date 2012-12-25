@@ -178,8 +178,9 @@ void run_codegen(exp_tree_t *tree)
 	printf(".section .rodata\n");
 	printf("format: .string \"%%d\\n\"\n");
 	printf(".section .text\n");
-	printf(".globl _start\n\n");
-	printf("_start:\n");
+	printf(".globl main\n\n");
+	printf(".type main, @function\n");
+	printf("main:\n");
 	printf("# set up stack space\n");
 	printf("pushl %%ebp\n");
 	printf("movl %%esp, %%ebp\n");

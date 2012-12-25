@@ -4,6 +4,9 @@
 # change to clang or whatever if you like ;)
 C_COMPILER=gcc
 
+# again, change to whatever
+SUM_TOOL=md5sum
+
 for x in test/*
 do
 	mkdir autotest-tmp
@@ -19,8 +22,8 @@ do
 	echo "}" >>$SRC_FILE
 
 	$C_COMPILER $SRC_FILE -o ./autotest-tmp/exec
-	good_result=$(./autotest-tmp/exec | md5sum)
-	blok_result=$(./compile-run-x86.sh $x | md5sum)
+	good_result=$(./autotest-tmp/exec | $SUM_TOOL)
+	blok_result=$(./compile-run-x86.sh $x | $SUM_TOOL)
 	if [ "$good_result" = "$blok_result" ];
 	then
 		echo "$x - PASS"
