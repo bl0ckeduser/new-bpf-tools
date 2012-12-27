@@ -27,7 +27,10 @@ void compiler_fail(char *message, token_t *token,
 		}
 	fprintf(stderr, "%s\n", buf);
 	for (i = 1; i < chr; ++i)
-		fputc(' ', stderr);
+		if (buf[i - 1] == '\t')
+			fputc(buf[i - 1], stderr);
+		else
+			fputc(' ', stderr);
 	fputc('^', stderr);
 	fputc('\n', stderr);
 
