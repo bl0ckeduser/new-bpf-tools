@@ -16,11 +16,14 @@
 #include <stdio.h>
 
 char symtab[256][32] = {""};
+char arg_symtab[256][32] = {""};
 char ts_used[TEMP_REGISTERS];
 char tm_used[TEMP_MEM];
 int syms = 0;
+int arg_syms = 0;
 int temp_register = 0;
 int swap = 0;
+int proc_ok = 1;
 
 int stack_size;
 int intl_label = 0; /* internal label numbering */
@@ -77,6 +80,8 @@ char *symstack(int id) {
 	static char buf[128];
 	if (!id)
 		sprintf(buf, "(%%ebp)");
+	else if (id < 0)
+		sprintf(buf, "%d(%%ebp)", -id * 4);
 	else
 		sprintf(buf, "-%d(%%ebp)", id * 4);
 	return buf;
@@ -98,8 +103,14 @@ int sym_check(token_t* tok)
 	char *s = get_tok_str(*tok);
 	char buf[128];
 
-	for (i = 0; i < 256; i++)
+	for (i = 0; i < syms; i++)
 		if (!strcmp(symtab[i], s)) {
+			sprintf(buf, "symbol `%s' defined twice", s);
+			compiler_fail(buf, tok, 0, 0);
+		}
+
+	for (i = 0; i < arg_syms; i++)
+		if (!strcmp(arg_symtab[i], s)) {
 			sprintf(buf, "symbol `%s' defined twice", s);
 			compiler_fail(buf, tok, 0, 0);
 		}
@@ -137,6 +148,11 @@ int sym_lookup(token_t* tok)
 	for (i = 0; i < syms; i++)
 		if (!strcmp(symtab[i], s))
 			return i;
+
+	for (i = 0; i < arg_syms; i++)
+		if (!strcmp(arg_symtab[i], s))
+			return -2 - i;
+
 	sprintf(buf, "unknown symbol `%s'", s);
 	compiler_fail(buf, tok, 0, 0);
 }
@@ -158,12 +174,19 @@ char* arith_op(int ty)
 	}
 }
 
-/* Starting point of the codegen */
-void run_codegen(exp_tree_t *tree)
+void codegen_proc(char *name, exp_tree_t *tree, char **args)
 {
 	extern void setup_symbols(exp_tree_t* tree);
+	char buf[1024];
 	char *buf2;
 	int i;
+
+	syms = 1;
+	arg_syms = 0;
+
+	/* argument symbols */
+	for (i = 0; args[i]; ++i)
+		strcpy(arg_symtab[arg_syms++], args[i]);
 
 	/* setup the identifier symbol table and make stack
 	 * space for all the variables in the program */
@@ -175,17 +198,13 @@ void run_codegen(exp_tree_t *tree)
 		temp_mem[i] = buf2;
 	}
 
-	printf(".section .rodata\n");
-	printf("format: .string \"%%d\\n\"\n");
-	printf(".section .text\n");
-	printf(".globl main\n\n");
-	printf(".type main, @function\n");
-	printf("main:\n");
+	printf(".type %s, @function\n", name);
+	printf("%s:\n", name);
 	printf("# set up stack space\n");
 	printf("pushl %%ebp\n");
 	printf("movl %%esp, %%ebp\n");
 	printf("subl $%d, %%esp\n", syms * 4);
-	printf("\n\n# >>> compiled code <<<\n"); 
+	printf("\n# >>> compiled code for '%s'\n", name); 
 
 	codegen(tree);
 
@@ -193,8 +212,34 @@ void run_codegen(exp_tree_t *tree)
 	printf("addl $%d, %%esp\n", syms * 4);
 	printf("movl %%ebp, %%esp\n");
 	printf("popl %%ebp\n");
-	printf("\n# exit(0)\n");
-	printf("pushl $0\ncall exit\n\n");
+	printf("ret\n\n");
+}
+
+/* Starting point of the codegen */
+void run_codegen(exp_tree_t *tree)
+{
+	char *main_args[] = { NULL };
+	extern void deal_with_procs(exp_tree_t *tree);
+
+	printf(".section .rodata\n");
+	printf("format: .string \"%%d\\n\"\n");
+	printf(".section .text\n");
+	printf(".globl main\n\n");
+
+	/* 
+	 * We deal with the procedures separately
+	 * before doing any further work to prevent
+	 * their code from being output within
+	 * the code for "main"
+	 */
+	proc_ok = 1;
+	deal_with_procs(tree);
+	proc_ok = 0;	/* no further procedures shall
+			 * be allowed */
+
+	codegen_proc("main", tree, main_args);
+
+	/* echo utility routine */
 	printf(".type echo, @function\n");
 	printf("echo:\n");
     printf("pushl $0\n");
@@ -203,6 +248,21 @@ void run_codegen(exp_tree_t *tree)
     printf("call printf\n");
     printf("addl $12, %%esp  # get rid of the printf args\n");
     printf("ret\n");
+}
+
+void deal_with_procs(exp_tree_t *tree)
+{
+	int i;
+
+	if (tree->head_type == PROC) {
+		codegen(tree);
+		(*tree).head_type = NULL_TREE;
+	}
+
+	for (i = 0; i < tree->child_count; ++i)
+		if (tree->child[i]->head_type == BLOCK
+		|| tree->child[i]->head_type == PROC)
+			deal_with_procs(tree->child[i]);
 }
 
 void setup_symbols(exp_tree_t *tree)
@@ -260,7 +320,10 @@ char* codegen(exp_tree_t* tree)
 	char *sto, *sto2, *sto3;
 	char *str, *str2;
 	char *name;
+	char *proc_args[32];
+	char *buf;
 	int i;
+	int arg_count;
 	int sym;
 	char *oper;
 	char *arith;
@@ -278,6 +341,94 @@ char* codegen(exp_tree_t* tree)
 		/* clear temporary memory and registers */
 		new_temp_mem();
 		new_temp_reg();
+	}
+
+	/* procedure call */
+	if (tree->head_type == PROC_CALL) {
+		new_temp_mem();
+
+		/* count the arguments */
+		arg_count = 0;
+		for (i = 0; tree->child[i]; ++i)
+			++arg_count;
+
+		/* push the registers as they are now */
+		for (i = 0; i < TEMP_REGISTERS; ++i)
+			printf("pushl %s\n", temp_reg[i]);
+
+		/* push the arguments in reverse order */
+		for (i = arg_count - 1; i >= 0; --i) {
+			sto = codegen(tree->child[i]);
+			printf("pushl %s\n", sto);
+			free_temp_reg(sto);
+		}
+
+		/* call that routine */
+		printf("call %s\n", get_tok_str(*(tree->tok)));
+
+		/* throw off the arguments from the stack */
+		printf("addl $%d, %%esp\n", 4 * arg_count);
+
+		/* move the return-value register (EAX)
+		 * to temporary stack-based storage */
+		sto = get_temp_mem();
+		printf("movl %%eax, %s\n", sto);
+
+		/* restore the registers as they were
+		 * prior to the call -- pop them in 
+		 * reverse order they were pushed */
+		for (i = 0; i < TEMP_REGISTERS; ++i)
+			printf("popl %s\n", temp_reg[TEMP_REGISTERS - (i + 1)]);
+
+		/* give back the temporary stack storage
+		 * with the return value in it */
+		return sto;
+	}
+
+	/* procedure */
+	if (tree->head_type == PROC) {
+		if (!proc_ok)
+			compiler_fail("proc not allowed here", tree->tok, 0, 0);
+
+		/* put the list of arguments in char *proc_args */
+		for (i = 0; tree->child[0]->child[i]; ++i) {
+			buf = malloc(64);
+			strcpy(buf, get_tok_str
+				(*(tree->child[0]->child[i]->tok)));
+			proc_args[i] = buf;
+		}
+		proc_args[i] = NULL;
+
+		/* can't nest procedure definitions */
+		proc_ok = 0;
+
+		/* do the boilerplate routine stuff and code
+		 * its body */
+		codegen_proc(get_tok_str(*(tree->tok)),
+			tree->child[1],
+			proc_args);
+
+		proc_ok = 1;
+
+		return NULL;
+	}
+
+	/* return */
+	if (tree->head_type == RET) {
+		new_temp_reg();
+		new_temp_mem();
+		/* code the return expression */
+		sto = codegen(tree->child[0]);
+		/* put the return expression's value
+		 * in EAX and do the usual x86 return
+		 * stuff */
+		printf("\n# return value\n");
+		printf("movl %s, %%eax\n", sto, str);
+		printf("addl $%d, %%esp\n", syms * 4);
+		printf("movl %%ebp, %%esp\n");
+		printf("popl %%ebp\n");
+		printf("ret\n\n");
+		return NULL;
 	}
 
 	/* relational operators */

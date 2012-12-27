@@ -32,6 +32,10 @@ enum {		/* head_type */
 	GOTO,
 	ARRAY,
 	ARRAY_DECL,
+	ARG_LIST,
+	PROC,
+	RET,
+	PROC_CALL,
 	/* special */
 	NULL_TREE
 };
@@ -64,6 +68,10 @@ static char* tree_nam[] = {
 	"GOTO",
 	"ARRAY",
 	"ARRAY_DECL",
+	"ARG_LIST",
+	"PROC",
+	"RET",
+	"PROC_CALL",
 	"NULL_TREE"
 };
 

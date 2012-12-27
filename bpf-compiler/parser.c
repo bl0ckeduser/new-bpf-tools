@@ -61,7 +61,6 @@ token_t need(char type)
 	char buf[1024];
 	if (tokens[indx++].type != type) {
 		fflush(stdout);
-		printf("\n");
 		--indx;
 		sprintf(buf, "%s expected", tok_desc[type]);
 		parse_fail(buf);
@@ -129,11 +128,14 @@ exp_tree_t lval()
 		| instr ( expr1, expr2, exprN ) ';'
 		| ident ':'
 		| goto ident ';'
+		| 'proc' ident '(' ident [ ',' ident ] ')' block
+		| 'return' expr ';'
 */
 exp_tree_t block()
 {
 	int i, args;
 	exp_tree_t tree, subtree;
+	exp_tree_t subtree2;
 	token_t tok;
 
 	/* empty block */
@@ -222,6 +224,36 @@ exp_tree_t block()
 		++indx;	/* eat goto */
 		tok = need(TOK_IDENT);
 		return new_exp_tree(GOTO, &tok);
+	} else if (peek().type == TOK_PROC) {
+		++indx;	/* eat "proc" */
+		tok = need(TOK_IDENT);
+		tree = new_exp_tree(PROC, &tok);
+		/* argument list */
+		subtree = new_exp_tree(ARG_LIST, NULL);
+		need(TOK_LPAREN);
+		while (peek().type != TOK_RPAREN) {
+			tok = need(TOK_IDENT);
+			subtree2 = new_exp_tree(VARIABLE, &tok);
+			add_child(&subtree, alloc_exptree(subtree2));
+			if (peek().type != TOK_RPAREN)
+				need(TOK_COMMA);
+		}
+		++indx;
+		add_child(&tree, alloc_exptree(subtree));
+		subtree = block();
+		if (!valid_tree(subtree))
+			parse_fail("block expected");
+		add_child(&tree, alloc_exptree(subtree));
+		return tree;
+	} else if (peek().type == TOK_RET) {
+		++indx;	/* eat 'return' */
+		tree = new_exp_tree(RET, NULL);
+		subtree = expr();
+		if (!valid_tree(subtree))
+			parse_fail("expression expected");
+		add_child(&tree, alloc_exptree(subtree));
+		need(TOK_SEMICOLON);
+		return tree;
 	} else {
 		return null_tree;
 	}
@@ -466,6 +498,7 @@ exp_tree_t mul_expr()
 			| lvalue --
 			| ++ lvalue 
 			| -- lvalue
+			| ident '(' expr1, expr2, exprN ')'
 */
 exp_tree_t unary_expr()
 {
@@ -476,6 +509,31 @@ exp_tree_t unary_expr()
 	if (peek().type == TOK_MINUS) {
 		tree = new_exp_tree(NEGATIVE, NULL);
 		++indx;	/* eat sign */
+	}
+
+	/* ident ( expr1, expr2, exprN ) */
+	if (peek().type == TOK_IDENT) {
+		tok = peek();
+		++indx;
+		if (peek().type == TOK_LPAREN) {
+			++indx;	/* eat ( */
+			subtree = new_exp_tree(PROC_CALL, &tok);
+			while (peek().type != TOK_RPAREN) {
+				subtree2 = expr();
+				if (!valid_tree(subtree2))
+					parse_fail("expression expected");
+				add_child(&subtree, alloc_exptree(subtree2));
+				if (peek().type != TOK_RPAREN)
+					need(TOK_COMMA);
+			}
+			++indx;
+			if (valid_tree(tree))
+				add_child(&tree, alloc_exptree(subtree));
+			else
+				tree = subtree;
+			return tree;
+		} else
+			--indx;
 	}
 
 	if (peek().type == TOK_PLUSPLUS

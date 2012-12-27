@@ -140,6 +140,10 @@ in bytes of memory and bytes of program code, because I have to use a special
 routine to make them work since the VM doesn't provide indirection / array
 indexing facilities.
 
+11. Custom procedures (x86 codegen only)
+
+Recursion allowed. See example code: test/procedure	
+
 [This compiler assumes VM behaviour about which the specification is 
 ambiguous. This behaviour is that "PtrTo X" will store to X the address 
 of the beggining of the following instruction rather than the address of its 

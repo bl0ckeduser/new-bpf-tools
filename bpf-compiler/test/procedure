@@ -1,0 +1,10 @@
+/* typical recursive factorial example */
+proc factorial(n) {
+	if (n > 0)
+		return n * factorial(n - 1);
+	else
+		return 1;
+}
+
+echo(factorial(5));
+
