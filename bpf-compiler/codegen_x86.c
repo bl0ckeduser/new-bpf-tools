@@ -15,6 +15,7 @@
 #include <string.h>
 #include <stdio.h>
 
+char current_proc[64];
 char symtab[256][32] = {""};
 char arg_symtab[256][32] = {""};
 char ts_used[TEMP_REGISTERS];
@@ -184,6 +185,8 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	syms = 1;
 	arg_syms = 0;
 
+	strcpy(current_proc, name);
+
 	/* argument symbols */
 	for (i = 0; args[i]; ++i)
 		strcpy(arg_symtab[arg_syms++], args[i]);
@@ -205,6 +208,8 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	printf("movl %%esp, %%ebp\n");
 	printf("subl $%d, %%esp\n", syms * 4);
 	printf("\n# >>> compiled code for '%s'\n", name); 
+
+	printf("_tco_%s:\n", name);	/* hook for TCO */
 
 	codegen(tree);
 
@@ -410,6 +415,36 @@ char* codegen(exp_tree_t* tree)
 
 		proc_ok = 1;
 
+		return NULL;
+	}
+
+	/* TCO return ? */
+	if (tree->head_type == RET
+	&& tree->child[0]->head_type == PROC_CALL
+	&& !strcmp(get_tok_str(*(tree->child[0]->tok)),
+		current_proc)) {
+		/* aha ! I can TCO this */
+		printf("# TCO'd self-call\n");
+
+		new_temp_reg();
+		new_temp_mem();
+
+		/* count the arguments */
+		arg_count = 0;
+		for (i = 0; tree->child[0]->child[i]; ++i)
+			++arg_count;
+
+		/* move the arguments directly to the
+		 * callee stack offsets */
+		for (i = arg_count - 1; i >= 0; --i) {
+			sto = codegen(tree->child[0]->child[i]);
+			str = get_temp_reg();
+			printf("movl %s, %s\n", sto, str);
+			printf("movl %s, %s\n", str, symstack(-2 - i));
+			free_temp_reg(str);
+		}
+
+		printf("jmp _tco_%s\n", current_proc);
 		return NULL;
 	}
 
