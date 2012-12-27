@@ -350,8 +350,6 @@ char* codegen(exp_tree_t* tree)
 
 	/* procedure call */
 	if (tree->head_type == PROC_CALL) {
-		new_temp_mem();
-
 		/* count the arguments */
 		arg_count = 0;
 		for (i = 0; tree->child[i]; ++i)
