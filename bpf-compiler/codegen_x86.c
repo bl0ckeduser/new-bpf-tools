@@ -271,8 +271,6 @@ char* codegen(exp_tree_t* tree)
 	extern char* cheap_relational(exp_tree_t* tree, char *oppcheck);
 	int lab1, lab2;
 
-	printf("# %s\n", tree_nam[tree->head_type]);
-
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
 		|| tree->head_type == WHILE
