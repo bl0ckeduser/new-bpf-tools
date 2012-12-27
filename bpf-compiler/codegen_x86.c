@@ -337,6 +337,8 @@ char* codegen(exp_tree_t* tree)
 	exp_tree_t fake_tree;
 	exp_tree_t fake_tree_2;
 	extern char* cheap_relational(exp_tree_t* tree, char *oppcheck);
+	extern char* optimized_if(exp_tree_t* tree, char *oppcheck);
+	extern char* optimized_while(exp_tree_t* tree, char *oppcheck);
 	int lab1, lab2;
 
 	if (tree->head_type == BLOCK
@@ -709,7 +711,27 @@ char* codegen(exp_tree_t* tree)
 		return sto2;
 	}
 
-	/* if */
+	/* optimized code for if ( A < B) etc. */
+	if (tree->head_type == IF
+	&& tree->child[0]->head_type == LT)
+		return optimized_if(tree, "jge");
+	if (tree->head_type == IF
+	&& tree->child[0]->head_type == LTE)
+		return optimized_if(tree, "jg");
+	if (tree->head_type == IF
+	&& tree->child[0]->head_type == GT)
+		return optimized_if(tree, "jle");
+	if (tree->head_type == IF
+	&& tree->child[0]->head_type == GTE)
+		return optimized_if(tree, "jl");
+	if (tree->head_type == IF
+	&& tree->child[0]->head_type == NEQL)
+		return optimized_if(tree, "je");
+	if (tree->head_type == IF
+	&& tree->child[0]->head_type == EQL)
+		return optimized_if(tree, "jne");
+
+	/* general-case if */
 	if (tree->head_type == IF) {
 		lab1 = intl_label++;
 		lab2 = intl_label++;
@@ -739,7 +761,27 @@ char* codegen(exp_tree_t* tree)
 		return NULL;
 	}
 
-	/* while */
+	/* optimized code for while ( A < B) etc. */
+	if (tree->head_type == WHILE
+	&& tree->child[0]->head_type == LT)
+		return optimized_while(tree, "jge");
+	if (tree->head_type == WHILE
+	&& tree->child[0]->head_type == LTE)
+		return optimized_while(tree, "jg");
+	if (tree->head_type == WHILE
+	&& tree->child[0]->head_type == GT)
+		return optimized_while(tree, "jle");
+	if (tree->head_type == WHILE
+	&& tree->child[0]->head_type == GTE)
+		return optimized_while(tree, "jl");
+	if (tree->head_type == WHILE
+	&& tree->child[0]->head_type == NEQL)
+		return optimized_while(tree, "je");
+	if (tree->head_type == WHILE
+	&& tree->child[0]->head_type == EQL)
+		return optimized_while(tree, "jne");
+
+	/* general-case while */
 	if (tree->head_type == WHILE) {
 		lab1 = intl_label++;
 		lab2 = intl_label++;
@@ -822,6 +864,61 @@ char* cheap_relational(exp_tree_t* tree, char *oppcheck)
 		free_temp_reg(sto);
 		free_temp_reg(sto2);
 		return sto3;
+}
+
+char* optimized_if(exp_tree_t* tree, char *oppcheck)
+{
+	char *str, *str2, *sto, *sto2;
+	int lab1 = intl_label++;
+	int lab2 = intl_label++;
+	/* optimized conditonal */
+	str = codegen(tree->child[0]->child[0]);
+	str2 = codegen(tree->child[0]->child[1]);
+	sto = get_temp_reg();
+	sto2 = get_temp_reg();
+	printf("movl %s, %s\n", str, sto);
+	printf("movl %s, %s\n", str2, sto2);
+	printf("cmpl %s, %s\n", sto2, sto);
+	free_temp_reg(sto);
+	free_temp_reg(sto2);
+	printf("%s IL%d\n", oppcheck, lab1);
+	/* codegen "true" block */
+	codegen(tree->child[1]);
+	/* jump over else block if there
+	 * is one */
+	if (tree->child_count == 3)
+		printf("jmp IL%d\n", lab2);
+	printf("IL%d: \n", lab1);
+	/* code the else block, if any */
+	if (tree->child_count == 3)
+		codegen(tree->child[2]);
+	printf("IL%d: \n", lab2);
+	return NULL;
+}
+
+char* optimized_while(exp_tree_t* tree, char *oppcheck)
+{
+	char *str, *str2, *sto, *sto2;
+	int lab1 = intl_label++;
+	int lab2 = intl_label++;
+	/* optimized conditional branch */
+	printf("IL%d: \n", lab1);
+	str = codegen(tree->child[0]->child[0]);
+	str2 = codegen(tree->child[0]->child[1]);
+	sto = get_temp_reg();
+	sto2 = get_temp_reg();
+	printf("movl %s, %s\n", str, sto);
+	printf("movl %s, %s\n", str2, sto2);
+	printf("cmpl %s, %s\n", sto2, sto);
+	free_temp_reg(sto);
+	free_temp_reg(sto2);
+	printf("%s IL%d\n",	oppcheck, lab2);
+	/* codegen the block */
+	codegen(tree->child[1]);
+	/* jump back to the conditional */
+	printf("jmp IL%d\n", lab1);
+	printf("IL%d: \n", lab2);
+	return NULL;
 }
 
 
