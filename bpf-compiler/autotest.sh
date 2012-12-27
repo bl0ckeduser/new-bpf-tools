@@ -4,7 +4,8 @@
 # change to clang or whatever if you like ;)
 C_COMPILER=gcc
 
-for x in test/*
+# the examples not ending in .c are not C-compatible
+for x in test/*.c
 do
 	mkdir autotest-tmp
 	SRC_FILE=autotest-tmp/test-temp.c

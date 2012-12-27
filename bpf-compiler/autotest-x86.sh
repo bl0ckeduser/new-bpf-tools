@@ -4,10 +4,12 @@
 # change to clang or whatever if you like ;)
 C_COMPILER=gcc
 
-# again, change to whatever
-SUM_TOOL=md5sum
+# I like to use `md5sum' on Linux but some un*xes only
+# have `sum', so yeah...
+SUM_TOOL=sum
 
-for x in test/*
+# the examples not ending in .c are not C-compatible
+for x in test/*.c
 do
 	mkdir autotest-tmp
 	SRC_FILE=autotest-tmp/test-temp.c
