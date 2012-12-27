@@ -409,7 +409,9 @@ char* codegen(exp_tree_t* tree)
 
 		/* do the boilerplate routine stuff and code
 		 * its body */
-		codegen_proc(get_tok_str(*(tree->tok)),
+		buf = malloc(64);
+		strcpy(buf, get_tok_str(*(tree->tok)));
+		codegen_proc(buf,
 			tree->child[1],
 			proc_args);
 
