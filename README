@@ -1,10 +1,12 @@
-This a new [December 2012] set of programming tools for my 
-ancient [2007; I was a very big noob] "BPF" virtual machine. 
-This project is meant as a personal exercise in compiler programming.
+This a new [December 2012] set of programming tools targeting my 
+ancient [2007; I was a very big noob] "BPF" virtual machine. (32-bit
+x86 has also been added as target.) This project is meant as a
+personal exercise in compiler programming.
 
 Implementations of the "BPF" VM:
    https://sites.google.com/site/bl0ckeduserssoftware/past-projects 
    https://github.com/bl0ckeduser/blokvm 	[broken ?]
+
 
 bpf-asm
 =======
