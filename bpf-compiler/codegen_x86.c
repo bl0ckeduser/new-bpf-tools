@@ -314,6 +314,27 @@ void setup_symbols(exp_tree_t *tree)
 }
 
 /*
+ * If a temporary storage location is already
+ * a register, give it back as is. Otherwise,
+ * copy it to a new temporary register and give
+ * this new register.
+ */
+char* registerize(char *stor)
+{
+	int is_reg = 0;
+	int i;
+	char* str;
+
+	for (i = 0; i < TEMP_REGISTERS; ++i)
+		if (!strcmp(stor, temp_reg[i]))
+			return stor;
+	
+	str = get_temp_reg();
+	printf("movl %s, %s\n", stor, str);
+	return str;
+}
+
+/*
  * The core codegen routine. It returns
  * the temporary register at which the runtime
  * evaluation value of the tree is stored
@@ -440,8 +461,7 @@ char* codegen(exp_tree_t* tree)
 		 * callee stack offsets */
 		for (i = arg_count - 1; i >= 0; --i) {
 			sto = codegen(tree->child[0]->child[i]);
-			str = get_temp_reg();
-			printf("movl %s, %s\n", sto, str);
+			str = registerize(sto);
 			printf("movl %s, %s\n", str, symstack(-2 - i));
 			free_temp_reg(str);
 		}
@@ -602,12 +622,12 @@ char* codegen(exp_tree_t* tree)
 			sto2 = get_temp_reg();
 			printf("movl %s, %s\n", sto, sto2);
 			printf("movl %s, %s\n", sto2, symstack(sym));
+			free_temp_reg(sto2);
 			return symstack(sym);
 		} else {
 			/* general case */
 			sto = codegen(tree->child[1]);
-			sto2 = get_temp_reg();
-			printf("movl %s, %s\n", sto, sto2);
+			sto2 = registerize(sto);
 			printf("movl %s, %s\n", sto2, symstack(sym));
 			free_temp_reg(sto2);
 			return symstack(sym);
@@ -623,12 +643,9 @@ char* codegen(exp_tree_t* tree)
 		str = codegen(tree->child[0]->child[1]);
 		/* right operand */
 		str2 = codegen(tree->child[1]);
-		sto3 = get_temp_reg();
-		printf("movl %s, %s\n", str2, sto3);
+		sto3 = registerize(str2);
 		/* build pointer */
-		sto2 = get_temp_reg();
-		printf("movl %s, %s\n",
-			str, sto2);
+		sto2 = registerize(str);
 		printf("imull $4, %s\n",
 			sto2);
 		printf("addl %%ebp, %s\n",
@@ -651,9 +668,7 @@ char* codegen(exp_tree_t* tree)
 		/* index expression */
 		str = codegen(tree->child[1]);
 		/* build pointer */
-		sto2 = get_temp_reg();
-		printf("movl %s, %s\n",
-			str, sto2);
+		sto2 = registerize(str);
 		printf("imull $4, %s\n",
 			sto2);
 		printf("addl %%ebp, %s\n",
@@ -691,7 +706,6 @@ char* codegen(exp_tree_t* tree)
 		/* (with optimized code for number and variable operands
 		 * that avoids wasting temporary registes) */
 		sto = get_temp_reg();
-		sto2 = get_temp_mem();
 		for (i = 0; i < tree->child_count; i++) {
 			oper = i ? arith : "movl";
 			if (tree->child[i]->head_type == NUMBER) {
@@ -706,9 +720,7 @@ char* codegen(exp_tree_t* tree)
 				free_temp_reg(str);
 			}
 		}
-		printf("movl %s, %s\n", sto, sto2);
-		free_temp_reg(sto);
-		return sto2;
+		return sto;
 	}
 
 	/* optimized code for if ( A < B) etc. */
@@ -738,9 +750,8 @@ char* codegen(exp_tree_t* tree)
 		/* codegen the conditional */
 		sto = codegen(tree->child[0]);
 		/* branch if the conditional is false */
-		str = get_temp_reg();
+		str = registerize(sto);
 		str2 = get_temp_reg();
-		printf("movl %s, %s\n", sto, str);
 		printf("movl $0, %s\n", str2);
 		printf("cmpl %s, %s\n", str, str2);
 		free_temp_reg(sto);
@@ -789,9 +800,8 @@ char* codegen(exp_tree_t* tree)
 		printf("IL%d: \n", lab1);
 		sto = codegen(tree->child[0]);
 		/* branch if the conditional is false */
-		str = get_temp_reg();
+		str = registerize(sto);
 		str2 = get_temp_reg();
-		printf("movl %s, %s\n", sto, str);
 		printf("movl $0, %s\n", str2);
 		printf("cmpl %s, %s\n", str, str2);
 		free_temp_reg(sto);
@@ -874,10 +884,8 @@ char* optimized_if(exp_tree_t* tree, char *oppcheck)
 	/* optimized conditonal */
 	str = codegen(tree->child[0]->child[0]);
 	str2 = codegen(tree->child[0]->child[1]);
-	sto = get_temp_reg();
-	sto2 = get_temp_reg();
-	printf("movl %s, %s\n", str, sto);
-	printf("movl %s, %s\n", str2, sto2);
+	sto = registerize(str);
+	sto2 = registerize(str2);
 	printf("cmpl %s, %s\n", sto2, sto);
 	free_temp_reg(sto);
 	free_temp_reg(sto2);
@@ -905,10 +913,8 @@ char* optimized_while(exp_tree_t* tree, char *oppcheck)
 	printf("IL%d: \n", lab1);
 	str = codegen(tree->child[0]->child[0]);
 	str2 = codegen(tree->child[0]->child[1]);
-	sto = get_temp_reg();
-	sto2 = get_temp_reg();
-	printf("movl %s, %s\n", str, sto);
-	printf("movl %s, %s\n", str2, sto2);
+	sto = registerize(str);
+	sto2 = registerize(str2);
 	printf("cmpl %s, %s\n", sto2, sto);
 	free_temp_reg(sto);
 	free_temp_reg(sto2);
