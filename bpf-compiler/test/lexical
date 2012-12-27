@@ -1,0 +1,10 @@
+int x = 456;
+
+proc bob() {
+	int x = 123;
+	echo(x);
+}
+
+bob();
+echo(x);
+
