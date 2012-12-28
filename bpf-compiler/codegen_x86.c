@@ -347,6 +347,7 @@ char* codegen(exp_tree_t* tree)
 	char *str, *str2;
 	char *name;
 	char *proc_args[32];
+	char my_ts_used[TEMP_REGISTERS];
 	char *buf;
 	int i;
 	int arg_count;
@@ -378,14 +379,18 @@ char* codegen(exp_tree_t* tree)
 		for (i = 0; tree->child[i]; ++i)
 			++arg_count;
 
-		/* push the registers as they are now */
+		/* push all the registers being used */
 		for (i = 0; i < TEMP_REGISTERS; ++i)
-			printf("pushl %s\n", temp_reg[i]);
+			if (ts_used[i])
+				printf("pushl %s\t# save temp register\n",
+					temp_reg[i]);
+		memcpy(my_ts_used, ts_used, TEMP_REGISTERS);
 
 		/* push the arguments in reverse order */
 		for (i = arg_count - 1; i >= 0; --i) {
 			sto = codegen(tree->child[i]);
-			printf("pushl %s\n", sto);
+			printf("pushl %s\t# argument %d to %s\n", sto, i,
+				 get_tok_str(*(tree->tok)));
 			free_temp_reg(sto);
 		}
 
@@ -393,7 +398,9 @@ char* codegen(exp_tree_t* tree)
 		printf("call %s\n", get_tok_str(*(tree->tok)));
 
 		/* throw off the arguments from the stack */
-		printf("addl $%d, %%esp\n", 4 * arg_count);
+		printf("addl $%d, %%esp\t# throw off %d arg%s\n",
+			4 * arg_count, arg_count,
+			arg_count > 1 ? "s" : "");
 
 		/* move the return-value register (EAX)
 		 * to temporary stack-based storage */
@@ -404,7 +411,9 @@ char* codegen(exp_tree_t* tree)
 		 * prior to the call -- pop them in 
 		 * reverse order they were pushed */
 		for (i = 0; i < TEMP_REGISTERS; ++i)
-			printf("popl %s\n", temp_reg[TEMP_REGISTERS - (i + 1)]);
+			if (my_ts_used[TEMP_REGISTERS - (i + 1)])
+				printf("popl %s\t# restore temp register\n",
+					temp_reg[TEMP_REGISTERS - (i + 1)]);
 
 		/* give back the temporary stack storage
 		 * with the return value in it */
