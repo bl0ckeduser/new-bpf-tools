@@ -37,12 +37,16 @@ void print_code() {
 	;
 }
 
+/* make all the general-purpose registers
+ * available for temporary use */
 void new_temp_reg() {
 	int i;
 	for (i = 0; i < TEMP_REGISTERS; ++i)
 		ts_used[i] = 0;
 }
 
+/* get a general-purpose register for
+ * temporary use */
 char* get_temp_reg() {
 	int i;
 	for (i = 0; i < TEMP_REGISTERS; ++i)
@@ -53,6 +57,7 @@ char* get_temp_reg() {
 	fail("out of registers");
 }
 
+/* let go of a temporary register */
 void free_temp_reg(char *reg) {
 	int i;
 
@@ -61,12 +66,16 @@ void free_temp_reg(char *reg) {
 			ts_used[i] = 0;
 }
 
+/* make all the stack-based temporary
+ * storage available for use */
 void new_temp_mem() {
 	int i;
 	for (i = 0; i < TEMP_MEM; ++i)
 		tm_used[i] = 0;
 }
 
+/* use some stack-based temporary
+ * storage */
 char* get_temp_mem() {
 	int i;
 	for (i = 0; i < TEMP_MEM; ++i)
@@ -77,6 +86,8 @@ char* get_temp_mem() {
 	fail("out of temporary memory");
 }
 
+/* get the GAS syntax for a symbol
+ * stored in the stack */
 char *symstack(int id) {
 	static char buf[128];
 	if (!id)
@@ -175,6 +186,12 @@ char* arith_op(int ty)
 	}
 }
 
+/*
+ * Given its name, the names of its arguments,
+ * and the tree containing its body block,
+ * write the code for a procedure, and set up
+ * the memory, stack, symbols, etc. needed.
+ */
 void codegen_proc(char *name, exp_tree_t *tree, char **args)
 {
 	extern void setup_symbols(exp_tree_t* tree);
@@ -201,8 +218,13 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 		temp_mem[i] = buf2;
 	}
 
+	/* make the symbol and label for the procedure */
 	printf(".type %s, @function\n", name);
 	printf("%s:\n", name);
+
+	/* do the usual x86 function entry process,
+	 * and set aside stack memory for local
+	 * variables */
 	printf("# set up stack space\n");
 	printf("pushl %%ebp\n");
 	printf("movl %%esp, %%ebp\n");
@@ -211,8 +233,10 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 
 	printf("_tco_%s:\n", name);	/* hook for TCO */
 
+	/* code the body of the procedure */
 	codegen(tree);
 
+	/* typical x86 function return */
 	printf("\n# clean up stack\n");
 	printf("addl $%d, %%esp\n", syms * 4);
 	printf("movl %%ebp, %%esp\n");
@@ -227,7 +251,7 @@ void run_codegen(exp_tree_t *tree)
 	extern void deal_with_procs(exp_tree_t *tree);
 
 	printf(".section .rodata\n");
-	printf("format: .string \"%%d\\n\"\n");
+	printf("_echo_format: .string \"%%d\\n\"\n");
 	printf(".section .text\n");
 	printf(".globl main\n\n");
 
@@ -249,12 +273,13 @@ void run_codegen(exp_tree_t *tree)
 	printf("echo:\n");
     printf("pushl $0\n");
     printf("pushl 8(%%esp)\n");
-    printf("pushl $format\n");
+    printf("pushl $_echo_format\n");
     printf("call printf\n");
     printf("addl $12, %%esp  # get rid of the printf args\n");
     printf("ret\n");
 }
 
+/* See run_codegen above */
 void deal_with_procs(exp_tree_t *tree)
 {
 	int i;
@@ -270,6 +295,7 @@ void deal_with_procs(exp_tree_t *tree)
 			deal_with_procs(tree->child[i]);
 }
 
+/* See codegen_proc above */
 void setup_symbols(exp_tree_t *tree)
 {
 	int i, sto;
@@ -861,6 +887,13 @@ char* codegen(exp_tree_t* tree)
 	exit(1);
 }
 
+/* 
+ * Simple implementation of a generic relational operator.
+ * Needs tree with the operands as children and the x86
+ * jump mnemonic for the *opposite* check; for example, the
+ * opposite for "less than" is "greater or equal" which
+ * has jump mnemonic "jge".
+ */
 char* cheap_relational(exp_tree_t* tree, char *oppcheck)
 {
 		char *sto, *sto2, *sto3;
@@ -886,6 +919,12 @@ char* cheap_relational(exp_tree_t* tree, char *oppcheck)
 		return sto3;
 }
 
+/* 
+ * Write optimized code for cases like
+ *	if ( A < B ), if (A == B), etc.
+ * Again, the tree and the jump mnemonic
+ * for the opposite check is needed.
+ */
 char* optimized_if(exp_tree_t* tree, char *oppcheck)
 {
 	char *str, *str2, *sto, *sto2;
@@ -914,6 +953,7 @@ char* optimized_if(exp_tree_t* tree, char *oppcheck)
 	return NULL;
 }
 
+/* Same salad as above, but for while loops */
 char* optimized_while(exp_tree_t* tree, char *oppcheck)
 {
 	char *str, *str2, *sto, *sto2;

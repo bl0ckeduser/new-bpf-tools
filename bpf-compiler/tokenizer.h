@@ -7,8 +7,8 @@ typedef struct token {
 	int len;
 
 	/* for elegant parser diagnostics */
-	int from_line;
-	int from_char;
+	int from_line;	/* originating source line */
+	int from_char;	/* originating offset in that line */
 } token_t;
 
 extern char *code_lines[1024];

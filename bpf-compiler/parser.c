@@ -30,7 +30,10 @@ token_t peek()
 		return tokens[indx];
 }
 
-/* generate a pretty error when parsing fails */
+/* generate a pretty error when parsing fails.
+ * this is a hack-wrapper around the routine
+ * in diagnostics.c that deals with certain
+ * special cases special to the parser. */
 void parse_fail(char *message)
 {
 	token_t tok;
@@ -54,7 +57,7 @@ void parse_fail(char *message)
 
 /*
  * Fail if the next token isn't of the desired type.
- * Otherwise, return it.
+ * Otherwise, return it and advance.
  */
 token_t need(char type)
 {
@@ -94,6 +97,18 @@ exp_tree_t parse(token_t *t)
 	return program;
 }
 
+/* 
+ * Now the real fun starts. Each routine is
+ * named after the part of the grammar that
+ * it deals with. When it doesn't find anything
+ * that it's been trained to find, a routine
+ * gives back "null_tree". "indx" is a global
+ * variable giving the current token index.
+ * Don't ask why, but using a variable called
+ * "index" made some compilers on some systems
+ * very unhappy.
+ */
+
 /* lvalue := ident [ '[' expr ']' ] */
 exp_tree_t lval()
 {
@@ -112,7 +127,7 @@ exp_tree_t lval()
 			add_child(&tree, alloc_exptree(subtree));
 			need(TOK_RBRACK);
 			return tree;	
-		/* identifier alone */		
+		/* identifier alone -- variable */		
 		} else {
 			++indx;	/* eat the identifier */
 			return new_exp_tree(VARIABLE, &tok);
@@ -152,6 +167,8 @@ exp_tree_t block()
 			++indx;	/* eat : */
 			return tree;
 		}
+		/* push back the identifier, this isn't
+		 * a label after all */
 		else --indx;
 	}
 	if (valid_tree(tree = expr())) {
@@ -262,8 +279,7 @@ exp_tree_t block()
 /*
 	expr := lvalue asg-op expr 
 		| sum_expr [comp-op sum_expr]
-		| 'int' ident [ (= expr) 
-		| ( '[' integer ']' ) ]
+		| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
 */
 exp_tree_t expr()
 {
@@ -313,6 +329,7 @@ exp_tree_t expr()
 		} else
 			indx = save;
 	}
+	/* sum_expr [comp-op sum_expr] */
 	if (valid_tree(subtree = sum_expr())) {
 		if (!is_comp_op(peek().type)) {
 			return subtree;
@@ -349,6 +366,7 @@ exp_tree_t expr()
 		}
 		return tree;
 	}
+	/* 'int' ident [ ( '=' expr ) |  ('[' integer ']') ] */
 	if(peek().type == TOK_INT) {
 		++indx;	/* eat int token */
 		tree = new_exp_tree(INT_DECL, NULL);
@@ -527,6 +545,8 @@ exp_tree_t unary_expr()
 					need(TOK_COMMA);
 			}
 			++indx;
+			/* if there's already a negative sign,
+			 * use that as a parent tree */
 			if (valid_tree(tree))
 				add_child(&tree, alloc_exptree(subtree));
 			else
@@ -550,7 +570,7 @@ exp_tree_t unary_expr()
 			if (!valid_tree(subtree2 = lval()))
 				parse_fail("lvalue expected");
 			add_child(&subtree, alloc_exptree(subtree2));	
-		if (valid_tree(tree)) {
+		if (valid_tree(tree)) {	/* negative sign ? */
 			add_child(&tree, alloc_exptree(subtree));
 		} else
 			tree = subtree;
@@ -582,19 +602,21 @@ exp_tree_t unary_expr()
 		else
 			subtree3 = subtree;
 
-		if (valid_tree(tree)) {
+		if (valid_tree(tree)) {	/* negative sign ? */
 			add_child(&tree, alloc_exptree(subtree3));
 		} else
 			tree = subtree3;
 
 		return tree;
 	}
+
+	/* parenthesized expression */
 	if(peek().type == TOK_LPAREN) {
 		++indx;	/* eat ( */
 		subtree = expr();
 		need(TOK_RPAREN);
 		
-		if (valid_tree(tree))
+		if (valid_tree(tree))	/* negative sign ? */
 			add_child(&tree, alloc_exptree(subtree));
 		else
 			tree = subtree;

@@ -1,6 +1,8 @@
 /* 
  * New compiler targeting my old "BPF" VM
- * (could target something cooler one day)
+ * and now also 32-bit x86. It could easily
+ * target other things given sufficient time.
+ * 
  * by Bl0ckeduser, December 2012
  * Enjoy !
  */

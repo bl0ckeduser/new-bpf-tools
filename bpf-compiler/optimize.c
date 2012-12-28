@@ -25,7 +25,8 @@ void optimize(exp_tree_t *et)
 
 	/* Simplify nested binary trees.
 	 * e.g. (MULT (NUMBER:2) (MULT (NUMBER:3) (NUMBER:4)))
-	 * becomes (MULT (NUMBER:2) (NUMBER:3) (NUMBER:4))
+	 * becomes (MULT (NUMBER:2) (NUMBER:3) (NUMBER:4)), which
+	 * allows for much smarter code.
 	 */
 	if (et->child_count == 2 
 		&& et->child[1]->head_type == et->head_type
