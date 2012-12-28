@@ -34,7 +34,7 @@ an optional part in a construction.
 	ii. arrays
 		int array_name[integer];
 
-2. Control flow
+3. Control flow
 	i. if statement
 		if (expr)
 			block1
@@ -44,7 +44,7 @@ an optional part in a construction.
 		while (expr)
 			block
 
-3. Arithmetic
+4. Arithmetic
 	Operands are any kind of expression: number, variable, array
 	index, etc.
 	e.g. 
@@ -52,7 +52,7 @@ an optional part in a construction.
 		(1 + 2) * 3		(evaluates to 9)
 		z - x * x + 123		(evalutes to something)	
 		
-4. Assignment operators
+5. Assignment operators
 	Left operand is an lvalue, right operand is an expression.
 	e.g.
 		x += 3;
@@ -61,18 +61,18 @@ an optional part in a construction.
 		array[12] = 34;
 		z -= 56;
 
-5. lvalues (essentially, objects to which you can assign values)
+6. lvalues (essentially, objects to which you can assign values)
 	e.g.
 		table[index]
 		variable
 
-6. C-style increments and decrements
+7. C-style increments and decrements
 	The operand is any lvalue.
 	e.g.
 		++foo;		tab[bobobo]--;
 		--bar;		mystery++;
 
-7. BPF instructions
+8. BPF instructions
 	e.g.
 		echo(1 + 2 * 3);
 		wait(1, 2);
@@ -95,7 +95,7 @@ an optional part in a construction.
 	[NOTE: "echo" is the only such routine supported by the 32-bit
 	x86 codegen]
 
-8. Relational operators
+9. Relational operators
 		exprA == exprB
 		exprA != exprB
 		exprA >= exprB
@@ -111,13 +111,14 @@ an optional part in a construction.
    [NOTE: The 32-bit x86 code generator follows the C booleans convention;
    the paragraph above applies to the BPFVM code generator].
 
-9. Comments
+10. Comments
 	/* this is a C-style comment */
 	// this is a C++ -style comment.
 	// (C++ -style comments last till the end of the line)
 
-10. Keyboard extension (see VM spec part 5, 
+11. Keyboard extension (see VM spec part 5, 
     "Keyboard/game-controller interface specification")
+    (BPFVM codegen only)
 
     The compiler automatically provides the identifier "_kbreg"
     for the keyboard register (byte address 0). Here is some sample code:
@@ -135,19 +136,45 @@ an optional part in a construction.
 	else
 		echo(0);	/* it doesn't */
 
-Some tips: be careful not to overuse array expressions. They are expensive
+12. Custom procedures (x86 codegen only)
+
+	See examples: test/lexical, test/procedure, test/square,
+	test/tco.
+
+	Recursion is allowed. Tail-call optimization is done when it
+	can be done. Everything is pass-by-value; passing arrays around
+	has not yet been considered by the author and will probably make
+	bad things happen. You are allowed to return nothing from a 
+	function and even to assign the return value of a function
+	returning nothing to a variable. Your computer should not crash,
+	but you	will get arbitrary data in the variable. Consider
+	the following:
+
+			proc bob() {
+				;
+			}
+
+			int x = bob();
+			echo(x);
+
+	It runs fine for me and I get the result-number 1, which is
+	never mentioned anywhere in the program, nor in the
+	generated assembly. What a mystery.
+
+.............................................................................
+		
+		Hints concerning the BPFVM code generator
+		-----------------------------------------
+
+This compiler assumes VM behaviour about which the specification is 
+ambiguous. This behaviour is that "PtrTo X" will store to X the address 
+of the beggining of the following instruction rather than the address of its 
+own beggining.
+
+Be careful not to overuse array expressions. They are expensive
 in bytes of memory and bytes of program code, because I have to use a special
 routine to make them work since the VM doesn't provide indirection / array
 indexing facilities.
-
-11. Custom procedures (x86 codegen only)
-
-Recursion allowed. See example code: test/procedure	
-
-[This compiler assumes VM behaviour about which the specification is 
-ambiguous. This behaviour is that "PtrTo X" will store to X the address 
-of the beggining of the following instruction rather than the address of its 
-own beggining.]
 
 .............................................................................
 
@@ -155,15 +182,23 @@ own beggining.]
 		      Compilation / running process
 		      -----------------------------
 
-NOTE: Support for generating 32-bit x86 code has been added.
-The relevant scripts are
-		build-x86.sh
-		autotest-x86.sh
-		compile-run-x86.sh
-The 32-bit x86 code generator outputs GAS assembly and the relevant
-scripts assembles this using gcc.
+Support for generating 32-bit x86 code has been added.
+The relevant scripts are:
 
-To build the compiler targeting the BPF VM, run build.sh.
+	build-x86.sh 		-- build the x86 compiler
+	autotest-x86.sh 	-- test the x86 compiler against test/*.c
+	compile-run-x86.sh 	-- compile and run a program via x86
+
+Quick example:
+	$ sh build-x86.sh 
+	$ sh compile-run-x86.sh test/procedure 
+	120
+
+The 32-bit x86 code generator outputs GAS assembly and the relevant
+scripts assemble this using gcc. clang also works.
+
+To build the compiler targeting the BPF VM, run build.sh; this compiler
+uses autotest.sh, compile-run.sh, compile.sh as helper scripts. 
 
 		================================
 
@@ -291,7 +326,8 @@ Finally, the compiled binary file can be run in the VM:
   55
   $ 
 	
-Note that the script "compile-run.sh" does all the above steps
+Note that the script "compile-run.sh" does the above steps
 automatically given a source file as argument. [It assumes that the
-compiler is compiled as "a.out"].
+compiler is compiled as "a.out", which the script build.sh will do
+for you].
 
