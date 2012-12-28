@@ -489,7 +489,8 @@ char* codegen(exp_tree_t* tree)
 		 * in EAX and do the usual x86 return
 		 * stuff */
 		printf("\n# return value\n");
-		printf("movl %s, %%eax\n", sto, str);
+		if (strcmp(sto, "%eax"))
+			printf("movl %s, %%eax\n", sto, str);
 		printf("addl $%d, %%esp\n", syms * 4);
 		printf("movl %%ebp, %%esp\n");
 		printf("popl %%ebp\n");
