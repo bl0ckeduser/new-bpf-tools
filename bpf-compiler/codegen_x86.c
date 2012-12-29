@@ -597,11 +597,11 @@ char* codegen(exp_tree_t* tree)
 		sto = get_temp_reg();
 		printf("movl %s, %s\n",
 			str, sto);
-		printf("imull $4, %s\n",
+		printf("imull $-4, %s\n",
 			sto);
 		printf("addl %%ebp, %s\n",
 			sto);
-		printf("addl $%d, %s\n",
+		printf("subl $%d, %s\n",
 			4 * sym, sto);
 		/* write the final move */
 		sto2 = get_temp_reg();
@@ -682,11 +682,11 @@ char* codegen(exp_tree_t* tree)
 		sto3 = registerize(str2);
 		/* build pointer */
 		sto2 = registerize(str);
-		printf("imull $4, %s\n",
+		printf("imull $-4, %s\n",
 			sto2);
 		printf("addl %%ebp, %s\n",
 			sto2);
-		printf("addl $%d, %s\n",
+		printf("subl $%d, %s\n",
 			4 * sym, sto2);
 		/* write the final move */
 		sto = get_temp_mem();
@@ -705,11 +705,11 @@ char* codegen(exp_tree_t* tree)
 		str = codegen(tree->child[1]);
 		/* build pointer */
 		sto2 = registerize(str);
-		printf("imull $4, %s\n",
+		printf("imull $-4, %s\n",
 			sto2);
 		printf("addl %%ebp, %s\n",
 			sto2);
-		printf("addl $%d, %s\n",
+		printf("subl $%d, %s\n",
 			4 * sym, sto2);
 		/* write the final move */
 		sto = get_temp_reg();
