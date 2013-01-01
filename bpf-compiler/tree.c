@@ -60,6 +60,7 @@ void add_child(exp_tree_t *dest, exp_tree_t* src)
 			fail("realloc tree children");
 	}
 	dest->child[dest->child_count - 1] = src;
+	dest->child[dest->child_count] = NULL;
 }
 
 void printout_tree(exp_tree_t et)
