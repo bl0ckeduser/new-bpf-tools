@@ -1,4 +1,4 @@
-if [[ $(uname | grep MINGW) ]];
+if [ $(uname | grep MINGW) ];
 then
 
 # MinGW
