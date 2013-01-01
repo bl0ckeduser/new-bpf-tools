@@ -413,10 +413,7 @@ char* codegen(exp_tree_t* tree)
 
 	/* procedure call */
 	if (tree->head_type == PROC_CALL) {
-		/* count the arguments */
-		arg_count = 0;
-		for (i = 0; tree->child[i]; ++i)
-			++arg_count;
+		arg_count = tree->child_count;
 
 		/* push all the registers being used */
 		for (i = 0; i < TEMP_REGISTERS; ++i)
@@ -465,13 +462,16 @@ char* codegen(exp_tree_t* tree)
 			compiler_fail("proc not allowed here", tree->tok, 0, 0);
 
 		/* put the list of arguments in char *proc_args */
-		for (i = 0; tree->child[0]->child[i]; ++i) {
-			buf = malloc(64);
-			strcpy(buf, get_tok_str
-				(*(tree->child[0]->child[i]->tok)));
-			proc_args[i] = buf;
-		}
-		proc_args[i] = NULL;
+		if (tree->child[0]->child_count) {
+			for (i = 0; tree->child[0]->child[i]; ++i) {
+				buf = malloc(64);
+				strcpy(buf, get_tok_str
+					(*(tree->child[0]->child[i]->tok)));
+				proc_args[i] = buf;
+			}
+			proc_args[i] = NULL;
+		} else
+			*proc_args = NULL;
 
 		/* can't nest procedure definitions */
 		proc_ok = 0;
