@@ -219,7 +219,9 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	}
 
 	/* make the symbol and label for the procedure */
+#ifndef MINGW_BUILD
 	printf(".type %s, @function\n", name);
+#endif
 	printf("%s:\n", name);
 
 	/* do the usual x86 function entry process,
@@ -249,11 +251,16 @@ void run_codegen(exp_tree_t *tree)
 {
 	char *main_args[] = { NULL };
 	extern void deal_with_procs(exp_tree_t *tree);
+#ifdef MINGW_BUILD
+	char main_name[] = "_main";
+#else
+	char main_name[] = "main";
+#endif
 
 	printf(".section .rodata\n");
 	printf("_echo_format: .string \"%%d\\n\"\n");
 	printf(".section .text\n");
-	printf(".globl main\n\n");
+	printf(".globl %s\n\n", main_name);
 
 	/* 
 	 * We deal with the procedures separately
@@ -266,15 +273,21 @@ void run_codegen(exp_tree_t *tree)
 	proc_ok = 0;	/* no further procedures shall
 			 * be allowed */
 
-	codegen_proc("main", tree, main_args);
+	codegen_proc(main_name, tree, main_args);
 
 	/* echo utility routine */
+#ifndef MINGW_BUILD
 	printf(".type echo, @function\n");
+#endif
 	printf("echo:\n");
     printf("pushl $0\n");
     printf("pushl 8(%%esp)\n");
     printf("pushl $_echo_format\n");
+#ifdef MINGW_BUILD
+    printf("call _printf\n");
+#else
     printf("call printf\n");
+#endif
     printf("addl $12, %%esp  # get rid of the printf args\n");
     printf("ret\n");
 }
