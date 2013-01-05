@@ -2,11 +2,38 @@
   		  Some documentation on the compiler
 		  ==================================
 
+			 --------------
+			 Helper scripts
+			 --------------
+
+The scripts to use the x86-targeting compiler are:
+
+	build-x86.sh 		-- build the x86 compiler
+	autotest-x86.sh 	-- test the x86 compiler against test/*.c
+	compile-run-x86.sh 	-- compile and run a program via x86
+
+Quick example:
+	$ sh build-x86.sh 
+	$ sh compile-run-x86.sh test/procedure 
+	120
+
+The 32-bit x86 code generator outputs GAS assembly and the relevant scripts
+assemble this using gcc. clang also works; you can modify the scripts to
+use clang if desired.
+
+			**********************
+
+For the BPFVM-targeting compiler the scripts are:
+
+	build.sh		-- build the BPFVM compiler
+	autotest.sh		-- test it
+	compile-run.sh		-- compile a program and run it using
+				   "bpfvm" command
+
 			   ------------
 			   The language
 			   ------------
 			
-
 The language compiled by this compiler is essentially a simple BASIC
 with C-inspired syntax and features and built-in support for the 
 blokvm instructions. Please see the examples in the "test" directory.
@@ -180,27 +207,8 @@ indexing facilities.
 
 		      -----------------------------
 		      Compilation / running process
+			  (for the BPFVM target)
 		      -----------------------------
-
-Support for generating 32-bit x86 code has been added.
-The relevant scripts are:
-
-	build-x86.sh 		-- build the x86 compiler
-	autotest-x86.sh 	-- test the x86 compiler against test/*.c
-	compile-run-x86.sh 	-- compile and run a program via x86
-
-Quick example:
-	$ sh build-x86.sh 
-	$ sh compile-run-x86.sh test/procedure 
-	120
-
-The 32-bit x86 code generator outputs GAS assembly and the relevant
-scripts assemble this using gcc. clang also works.
-
-To build the compiler targeting the BPF VM, run build.sh; this compiler
-uses autotest.sh, compile-run.sh, compile.sh as helper scripts. 
-
-		================================
 
 Considering the following example program:
 
@@ -326,8 +334,6 @@ Finally, the compiled binary file can be run in the VM:
   55
   $ 
 	
-Note that the script "compile-run.sh" does the above steps
-automatically given a source file as argument. [It assumes that the
-compiler is compiled as "a.out", which the script build.sh will do
-for you].
+The helper scripts (see top of this document) make this process somewhat
+easier by doing  several of these steps automatically.
 
