@@ -71,6 +71,14 @@ an optional part in a construction.
 		while (expr)
 			block
 
+	iii. for statement
+		for (<init>; <condition>; <increment>)
+			block
+	
+	     init, condition, increment are expressions.
+	     if condition is ommitted, the compiler writes in
+	     "1 == 1" (always true) instead.
+
 4. Arithmetic
 	Operands are any kind of expression: number, variable, array
 	index, etc.

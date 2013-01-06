@@ -6,11 +6,7 @@ int ball_yvel = 5;
 // fill the screen with white
 draw(0, 0, 255, 255, 119, 219, 10, 10);
 
-/*
- * while(1) will not work. see what the compiler docs
- * have to say about relationals...
- */
-while (1 == 1) {
+for (;;) {
 	// move the ball
 	ball_x += ball_xvel;
 	ball_y += ball_yvel;

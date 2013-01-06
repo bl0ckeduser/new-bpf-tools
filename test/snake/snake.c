@@ -1,5 +1,6 @@
 // Simple "snake" game (uses keyboard)
 // by blockeduser Dec. 23, 2012
+// Updated Jan. 5, 2013 to use for-statements
 
 game_start:
 
@@ -25,22 +26,21 @@ if (_kbreg != 123) {
 	draw (0, 0, 255, 255, 17, 41, 10, 10);	// white bg
 	draw(10, 100, 252, 51, 2, 186, 252, 51);	// message
 	outputdraw();
-	while (1 == 1)
+	for (;;)
 		wait(1, 10);
 }
 
-while (1 == 1) {
+for (;;) {
 	kbcheck = _kbreg;	// read the keyboard byte
 	/* now split it up into bits.
 	 * (no, the vm doesn't provide bit ops or
 	 * even modulo. this is why this is fun) */
-	i = 0;
-	while (i < 8) {
+	for (i = 0; i < 8; ++i) {
 		temp = kbcheck;
 		while (temp >= 2)
 			temp -= 2;
 		kbcheck /= 2;
-		kb_bits[i++] = temp;
+		kb_bits[i] = temp;
 	}
 
 	if (game_over == 0) {
@@ -94,8 +94,7 @@ while (1 == 1) {
 		temp = 0;
 	else
 		temp = tail_ptr;
-	i = 0;
-	while (i < tail_len) {
+	for (i = 0; i < tail_len; ++i) {
 		draw(snake_tail_x[temp], snake_tail_y[temp],
 			16, 16, 153, 33, 10, 10);
 
@@ -106,7 +105,6 @@ while (1 == 1) {
 
 		if (++temp >= TAIL_LENGTH)
 			temp = 0;
-		++i;
 	}
 
 	if (game_over == 1) {
