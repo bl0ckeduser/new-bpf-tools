@@ -138,9 +138,11 @@ exp_tree_t lval()
 
 /*
 	block := expr ';' 
-		| if (expr) block [else block] 
-		| while (expr) block | '{' { expr ';' } '}' 
-		| instr ( expr1, expr2, exprN ) ';'
+		| if '(' expr ')' block [else block] 
+		| while '(' expr ')' block 
+		| for '(' [expr] ';' [expr] ';' [expr] ')' block
+		| '{' { expr ';' } '}' 
+		| instr '(' expr1, expr2, ..., exprN ')' ';'
 		| ident ':'
 		| goto ident ';'
 		| 'proc' ident '(' ident [ ',' ident ] ')' block
@@ -150,8 +152,11 @@ exp_tree_t block()
 {
 	int i, args;
 	exp_tree_t tree, subtree;
-	exp_tree_t subtree2;
+	exp_tree_t subtree2, subtree3;
+	exp_tree_t subtree4;
 	token_t tok;
+	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
+	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 
 	/* empty block */
 	if (peek().type == TOK_SEMICOLON) {
@@ -270,6 +275,54 @@ exp_tree_t block()
 			parse_fail("expression expected");
 		add_child(&tree, alloc_exptree(subtree));
 		need(TOK_SEMICOLON);
+		return tree;
+	} else if (peek().type == TOK_FOR) {
+		/* for '(' [expr] ';' [expr] ';' [expr] ')' block */
+		++indx;	/* eat 'for' */
+		need(TOK_LPAREN);
+		tree = new_exp_tree(BLOCK, NULL);
+		/* part 1 : initializer ... */
+		if (peek().type == TOK_SEMICOLON)
+			++indx;	/* eat ';' -- no init */
+		else {
+			subtree = expr();
+			if (!valid_tree(subtree))
+				parse_fail("expression expected");
+			add_child(&tree, alloc_exptree(subtree));
+			need(TOK_SEMICOLON);
+		}
+		subtree = new_exp_tree(WHILE, NULL);
+		/* part 2 : loop condition */
+		if (peek().type == TOK_SEMICOLON) {
+			/* empty conditional -- write 1 == 1 */
+			++indx; /* eat ';' */
+			subtree2 = new_exp_tree(EQL, NULL);
+			for (i = 0; i < 2; ++i)
+				add_child(&subtree2, alloc_exptree(one_tree));
+		} else {
+			if (!valid_tree(subtree2 = expr()))
+				parse_fail("expression expected");
+			need(TOK_SEMICOLON);
+		}
+		add_child(&subtree, alloc_exptree(subtree2));
+		/* part 3: increment */
+		if (peek().type == TOK_RPAREN) {
+			subtree3 = null_tree;
+			++indx;	/* no increment, eat ')' */
+		} else {
+			if (!valid_tree(subtree3 = expr()))
+				parse_fail("expression expected");
+			need(TOK_RPAREN);
+		}
+		subtree4 = new_exp_tree(BLOCK, NULL);
+		if (!valid_tree(subtree2 = block()))
+			parse_fail("block expected");
+		add_child(&subtree4, alloc_exptree(subtree2));
+		/* add increment (if any) to end of block */
+		if (valid_tree(subtree3))
+			add_child(&subtree4, alloc_exptree(subtree3));
+		add_child(&subtree, alloc_exptree(subtree4));
+		add_child(&tree, alloc_exptree(subtree));
 		return tree;
 	} else {
 		return null_tree;

@@ -55,7 +55,8 @@ enum {
 	C_CMNT_CLOSE,
 	CPP_CMNT,
 	TOK_PROC,
-	TOK_RET
+	TOK_RET,
+	TOK_FOR
 };
 
 static char* tok_nam[] = {
@@ -106,7 +107,8 @@ static char* tok_nam[] = {
 	"C_CMNT_CLOSE",
 	"CPP_CMNT",
 	"TOK_PROC",
-	"TOK_RET"
+	"TOK_RET",
+	"TOK_FOR"
 };
 
 static char* tok_desc[] = {
@@ -157,7 +159,8 @@ static char* tok_desc[] = {
 	"*/",
 	"//",
 	"proc",
-	"return"
+	"return",
+	"for"
 };
 
 /* keywords */
@@ -167,7 +170,7 @@ struct bpf_kw {
 	char tok;
 };
 
-#define KW_COUNT 15
+#define KW_COUNT 16
 
 static struct bpf_kw kw_tab[] = 
 {
@@ -185,7 +188,8 @@ static struct bpf_kw kw_tab[] =
 	{ "else", TOK_ELSE },
 	{ "goto", TOK_GOTO },
 	{ "proc", TOK_PROC },
-	{ "return", TOK_RET }
+	{ "return", TOK_RET },
+	{ "for", TOK_FOR }
 };
 
 /* routines */
