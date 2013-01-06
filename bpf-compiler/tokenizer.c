@@ -289,17 +289,15 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int btm,
 			 * be "greedy" (choose longest match).
 			 */
 			if (mc > 1) {
-					record = 0;
-					choice = NULL;
-					for (j = 0; j < mc; j++)
-						if (ml[j].pos - full_tok 
-						 >= record) {
-							choice = &ml[j];
-							record = ml[j].pos 
-							 - full_tok;
-						}
-					if (!choice) fail("greedy choice");
-					return *choice;
+				record = 0;
+				choice = NULL;
+				for (j = 0; j < mc; j++)
+					if (ml[j].pos - full_tok >= record) {
+						choice = &ml[j];
+						record = ml[j].pos - full_tok;
+					}
+				if (!choice) fail("greedy choice");
+				return *choice;
 			}
 			else if (mc == 1) /* No ambiguity, no time wasted 
 					     choosing */
