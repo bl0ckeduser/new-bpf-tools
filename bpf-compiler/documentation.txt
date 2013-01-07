@@ -173,8 +173,10 @@ an optional part in a construction.
 	 *	address 0 must immediately take the value 123.
 	 */
 	
-	_kbreg = 240;
-	if (_kbreg == 123)
+	int check;
+
+	check = _kbreg = 240;
+	if (check == 123)
 		echo(1);	/* it does */
 	else
 		echo(0);	/* it doesn't */

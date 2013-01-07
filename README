@@ -7,9 +7,16 @@ This project is meant as a personal exercise in compiler programming.
 The x86 compiler is frequently tested on FreeBSD and Linux.
 It can also be built and used on MinGW, but I don't test that as often.
 
-Implementations of the "BPF" VM:
-   https://sites.google.com/site/bl0ckeduserssoftware/past-projects 
-   https://github.com/bl0ckeduser/blokvm 	[broken ?]
+Below are some implementations of the "BPF" VM.
+Both include the VM specs document and some demo programs in their tree.
+
+ * https://github.com/bl0ckeduser/blokvm
+	Was made in collaboration with darkf. Single clean 294-line
+	SDL/C file.
+
+ * https://sites.google.com/site/bl0ckeduserssoftware/past-projects#oldvm
+	Made by me. 461 lines of SDL/C code spread across a few files.
+	Not as lean as blokvm, but faster and more polished.
 
 The License is an MIT one.
 
@@ -38,5 +45,6 @@ Supporting a larger subset of C ? Not sure if it would be possible to
 do this by growing this code.
 
 Support for other real architectures than x86, say e.g. powerpc or arm 
+(PowerPC does not look easy.)
 
 Support for popular serious VMs like JVM / .NET / LLVM

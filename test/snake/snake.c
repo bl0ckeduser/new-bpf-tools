@@ -21,8 +21,8 @@ int game_over = 0;
 
 /* if keyboard isn't supported,
  * put up an error message and hang */
-_kbreg = 240;
-if (_kbreg != 123) {
+kbcheck = _kbreg = 240;
+if (kbcheck != 123) {
 	draw (0, 0, 255, 255, 17, 41, 10, 10);	// white bg
 	draw(10, 100, 252, 51, 2, 186, 252, 51);	// message
 	outputdraw();
