@@ -25,6 +25,7 @@ int arg_syms = 0;
 int temp_register = 0;
 int swap = 0;
 int proc_ok = 1;
+int else_ret;
 
 int stack_size;
 int intl_label = 0; /* internal label numbering */
@@ -807,15 +808,22 @@ char* codegen(exp_tree_t* tree)
 		printf("je IL%d\n",	lab1);
 		/* codegen "true" block */
 		codegen(tree->child[1]);
+		/* check for else-return pattern;
+		 * if it is encountered, the else
+		 * label and jump are not necessary */
+		else_ret = tree->child_count == 3
+		 && tree->child[2]->head_type == RET;
 		/* jump over else block if there
 		 * is one */
-		if (tree->child_count == 3)
+		if (tree->child_count == 3
+			&& !else_ret)
 			printf("jmp IL%d\n", lab2);
 		printf("IL%d: \n", lab1);
 		/* code the else block, if any */
 		if (tree->child_count == 3)
 			codegen(tree->child[2]);
-		printf("IL%d: \n", lab2);
+		if (!else_ret)
+			printf("IL%d: \n", lab2);
 		return NULL;
 	}
 
@@ -952,15 +960,22 @@ char* optimized_if(exp_tree_t* tree, char *oppcheck)
 	printf("%s IL%d\n", oppcheck, lab1);
 	/* codegen "true" block */
 	codegen(tree->child[1]);
+	/* check for else-return pattern;
+	 * if it is encountered, the else
+	 * label and jump are not necessary */
+	else_ret = tree->child_count == 3
+	 && tree->child[2]->head_type == RET;
 	/* jump over else block if there
 	 * is one */
-	if (tree->child_count == 3)
+	if (tree->child_count == 3
+		&& !else_ret)
 		printf("jmp IL%d\n", lab2);
 	printf("IL%d: \n", lab1);
 	/* code the else block, if any */
 	if (tree->child_count == 3)
 		codegen(tree->child[2]);
-	printf("IL%d: \n", lab2);
+	if (!else_ret)
+		printf("IL%d: \n", lab2);
 	return NULL;
 }
 
