@@ -239,7 +239,8 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	codegen(tree);
 
 	/* typical x86 function return */
-	printf("\n# clean up stack\n");
+	printf("\n# clean up stack and return\n");
+	printf("_ret_%s:\n", name);	/* hook for value returns */
 	printf("addl $%d, %%esp\n", syms * 4);
 	printf("movl %%ebp, %%esp\n");
 	printf("popl %%ebp\n");
@@ -525,15 +526,12 @@ char* codegen(exp_tree_t* tree)
 		/* code the return expression */
 		sto = codegen(tree->child[0]);
 		/* put the return expression's value
-		 * in EAX and do the usual x86 return
-		 * stuff */
-		printf("\n# return value\n");
+		 * in EAX and jump to the end of the
+		 * routine */
+		printf("# return value\n");
 		if (strcmp(sto, "%eax"))
 			printf("movl %s, %%eax\n", sto, str);
-		printf("addl $%d, %%esp\n", syms * 4);
-		printf("movl %%ebp, %%esp\n");
-		printf("popl %%ebp\n");
-		printf("ret\n\n");
+		printf("jmp _ret_%s\n", current_proc);
 		return NULL;
 	}
 
