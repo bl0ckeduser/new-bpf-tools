@@ -838,6 +838,11 @@ codegen_t codegen(exp_tree_t* tree)
 		return (codegen_t){ t5, bytesize };
 	}
 
+	if (tree->head_type == PROC)
+		compiler_fail("BPF codegen does not support procedures",
+		tree->tok, 0, 0);
+		
+
 	fprintf(stderr, "Sorry, I can't yet codegen this tree: \n");
 	fflush(stderr);
 	printout_tree(*tree);
