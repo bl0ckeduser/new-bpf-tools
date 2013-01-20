@@ -450,6 +450,8 @@ exp_tree_t sum_expr()
 {
 	exp_tree_t et1, et2;
 	exp_tree_t *subtree, *subtree2, *tree, *root;
+	exp_tree_t *new_root;
+	int prev;
 	token_t oper;
 
 	/* subtle/difficult tree manipulation */
@@ -470,6 +472,7 @@ exp_tree_t sum_expr()
 			et2 = new_exp_tree(SUB, NULL);
 		break;
 	}
+	prev = oper.type;
 	++indx;	/* eat add-op */
 	root = tree = alloc_exptree(et2);
 	add_child(tree, subtree);
@@ -492,13 +495,22 @@ exp_tree_t sum_expr()
 		}
 		++indx;	/* eat add-op */
 
-		subtree = alloc_exptree(et2);
-		subtree2 = alloc_exptree(et1);
-		add_child(subtree, subtree2);
-		add_child(tree, subtree);
+		if (prev != oper.type) {
+			new_root = alloc_exptree(et2);
+			subtree2 = alloc_exptree(et1);
+			add_child(tree, subtree2);
+			add_child(new_root, root);
+			tree = root = new_root;
+		} else {
+			subtree = alloc_exptree(et2);
+			subtree2 = alloc_exptree(et1);
+			add_child(subtree, subtree2);
+			add_child(tree, subtree);
 
-		tree = subtree;
-		subtree = subtree2;
+			tree = subtree;
+			subtree = subtree2;
+		}
+		prev = oper.type;
 	}
 
 	return *root;
@@ -509,6 +521,8 @@ exp_tree_t mul_expr()
 {
 	exp_tree_t et1, et2;
 	exp_tree_t *subtree, *subtree2, *tree, *root;
+	exp_tree_t *new_root;
+	int prev;
 	token_t oper;
 
 	/* (mostly a repeat of sum_expr) */
@@ -529,6 +543,7 @@ exp_tree_t mul_expr()
 			et2 = new_exp_tree(MULT, NULL);
 		break;
 	}
+	prev = oper.type;
 	++indx;	/* eat add-op */
 	root = tree = alloc_exptree(et2);
 	add_child(tree, subtree);
@@ -551,13 +566,22 @@ exp_tree_t mul_expr()
 		}
 		++indx;	/* eat add-op */
 
-		subtree = alloc_exptree(et2);
-		subtree2 = alloc_exptree(et1);
-		add_child(subtree, subtree2);
-		add_child(tree, subtree);
+		if (prev != oper.type) {
+			new_root = alloc_exptree(et2);
+			subtree2 = alloc_exptree(et1);
+			add_child(tree, subtree2);
+			add_child(new_root, root);
+			tree = root = new_root;
+		} else {
+			subtree = alloc_exptree(et2);
+			subtree2 = alloc_exptree(et1);
+			add_child(subtree, subtree2);
+			add_child(tree, subtree);
 
-		tree = subtree;
-		subtree = subtree2;
+			tree = subtree;
+			subtree = subtree2;
+		}
+		prev = oper.type;
 	}
 
 	return *root;

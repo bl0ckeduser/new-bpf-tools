@@ -180,7 +180,7 @@ char* arith_op(int ty)
 			return "subl";
 		case MULT:
 			return "imull";
-		case DIV:
+		case DIV:	/* FIXME: x86 division is special */
 			return "idivl";
 		default:
 			return 0;
