@@ -617,7 +617,9 @@ char* codegen(exp_tree_t* tree)
 			4 * sym, sto);
 		/* write the final move */
 		sto2 = get_temp_reg();
-		printf("incl (%s)\n", sto);
+		printf("%s (%s)\n", 
+			tree->head_type == DEC ? "decl" : "incl",
+			sto);
 		printf("movl (%s), %s\n", sto, sto2);
 		free_temp_reg(sto);
 		return sto2;
