@@ -343,7 +343,7 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int btm,
 		 * relevant for the first ambiguous
 		 * choice after the fork
 		 */
-valid:	if (btm)
+valid:		if (btm)
 			btm = 0;
 
 	} while (i < len && t);
