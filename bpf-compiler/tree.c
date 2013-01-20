@@ -63,6 +63,8 @@ void add_child(exp_tree_t *dest, exp_tree_t* src)
 	dest->child[dest->child_count] = NULL;
 }
 
+/* lisp-inspired tree printouts, useful for debugging
+ * the parser and codegenerator. */
 void printout_tree(exp_tree_t et)
 {
 	int i;

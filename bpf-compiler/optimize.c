@@ -6,6 +6,7 @@
 #include "tokens.h"
 #include <stdio.h>
 
+/* check for an arithmetic operation tree */
 int arith_type(int ty)
 {
 	return 	ty == ADD

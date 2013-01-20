@@ -5,11 +5,12 @@
  * and additional bugs. The tokenization is
  * "greedy".
  *
- * Bl0ckeduser, December 2012
+ * Bl0ckeduser, December 2012 - January 2013
  */
 
 /* TODO: cleanup some of the more mysterious
  *       parts of the code...
+ * FIXME: the automatons never get free()'d !
  */
 
 #include "tokenizer.h"
@@ -399,12 +400,14 @@ token_t* tokenize(char *buf)
 		if (max == -1) {
 			/* matching from this offset failed */
 			if (in_comment) {
+				/* okay to have non-tokens in comments */
 				++p;
 				continue;
 			}
 			fail("tokenization failed");
 		} else {
-			/* spot keywords */
+			/* spot keywords. they are initially
+			 * recognized as identifiers. */
 			if (c.token == TOK_IDENT) {
 				strncpy(buf2, p, max);
 				buf2[max] = 0;
@@ -461,6 +464,8 @@ advance:
 			if (max == 0)
 				++p;
 
+			/* line accounting (useful for
+		 	 * pretty parse-fail diagnostics) */
 			if (c.token == TOK_NEWLINE) {
 				code_lines[line] = line_start;
 				++line;
@@ -469,6 +474,7 @@ advance:
 		}
 	}
 
+	/* the final token is a bit special */
 	toks[tok_count].start = NULL;
 	toks[tok_count].len = 0;
 	toks[tok_count].from_line = line;

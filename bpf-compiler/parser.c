@@ -1,4 +1,4 @@
-/* Parser */
+/* Parser (tokens -> tree) */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -89,6 +89,7 @@ exp_tree_t parse(token_t *t)
 	indx = 0;
 	while (tokens[indx].start) {
 		subtree = alloc_exptree(block());
+		/* parse fails at EOF */
 		if (!valid_tree(*subtree))
 			break;
 		add_child(&program, subtree);
