@@ -94,6 +94,7 @@ an optional part in a construction.
 		1 + 2 * 3 		(evaluates to 7)
 		(1 + 2) * 3		(evaluates to 9)
 		z - x * x + 123		(evalutes to something)	
+		-x + 5
 		
 5. Assignment operators
 	Left operand is an lvalue, right operand is an expression.
@@ -205,6 +206,21 @@ an optional part in a construction.
 	It runs fine for me and I get the result-number 1, which is
 	never mentioned anywhere in the program, nor in the
 	generated assembly. What a mystery.
+
+.............................................................................
+
+			Operator precedence table
+			-------------------------
+
+From greatest to lowest precedence:
+
+	unary -, ( ), ++, --, procedure calls
+	* /
+	+ -
+	> >= < <= == !=
+	= += -= *= /=
+
+I'll get back to you later about associativity.
 
 .............................................................................
 		
