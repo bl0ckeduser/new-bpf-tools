@@ -8,15 +8,16 @@ C_COMPILER=gcc
 # have `sum', so yeah...
 SUM_TOOL=sum
 
-# the examples not ending in .c are not C-compatible
-for x in test/*.c
+for x in test/*
 do
 	mkdir autotest-tmp
 	SRC_FILE=autotest-tmp/test-temp.c
 	echo "#include <stdio.h>" >$SRC_FILE
 	/bin/echo "void echo(int n) { printf(\"%d\\n\", n); }" >>$SRC_FILE
 	echo "int main(int argc, char **argv) {" >>$SRC_FILE
-	cat $x >>$SRC_FILE
+	# paste code, converting procedures syntax ("proc")
+	# to standard C "int"
+	cat $x | sed 's/proc/int/g' >>$SRC_FILE
 	# gcc doesn't allow labels at the end of a codeblock,
 	# but I do, so stick in a dummy statement for compatibility.
 	# (see e.g. test/goto.c)
