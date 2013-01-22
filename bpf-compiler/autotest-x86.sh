@@ -2,6 +2,7 @@
 # to that from C_COMPILER, which is considered valid.
 
 # change to clang or whatever if you like ;)
+# issue: if you use clang, can only test against test/*.c, not test/*
 C_COMPILER=gcc
 
 # I like to use `md5sum' on Linux but some un*xes only

@@ -2,12 +2,6 @@
   		  Some documentation on the compiler
 		  ==================================
 
-			   ----------
-			   Known bugs
-			   ----------
-
-	- Division (/ operator) is currently broken for the x86 codegen.
-
 			 --------------
 			 Helper scripts
 			 --------------

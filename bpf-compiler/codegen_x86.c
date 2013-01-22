@@ -87,6 +87,15 @@ char* get_temp_mem() {
 	fail("out of temporary memory");
 }
 
+/* let go of temporary stack memory */
+void free_temp_mem(char *reg) {
+	int i;
+
+	for (i = 0; i < TEMP_MEM; ++i)
+		if (!strcmp(reg, temp_mem[i]))
+			tm_used[i] = 0;
+}
+
 /* get the GAS syntax for a symbol
  * stored in the stack */
 char *symstack(int id) {
@@ -180,8 +189,6 @@ char* arith_op(int ty)
 			return "subl";
 		case MULT:
 			return "imull";
-		case DIV:	/* FIXME: x86 division is special */
-			return "idivl";
 		default:
 			return 0;
 	}
@@ -403,6 +410,7 @@ char* codegen(exp_tree_t* tree)
 	extern char* optimized_if(exp_tree_t* tree, char *oppcheck);
 	extern char* optimized_while(exp_tree_t* tree, char *oppcheck);
 	int lab1, lab2;
+	char *sav1, *sav2;
 
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
@@ -772,6 +780,64 @@ char* codegen(exp_tree_t* tree)
 		}
 		return sto;
 	}
+
+	/* division. division is special on x86.
+	 * I hope I got this right. */
+	if (tree->head_type == DIV && tree->child_count) {
+		sto = get_temp_mem();
+		sav1 = sav2 = NULL;
+		/* 
+		 * If EAX or EDX are in use, save them
+		 * to temporary stack storage, restoring
+		 * when the division tree is done
+		 */
+		if (ts_used[0]) {	/* EAX in use ? */
+			sav1 = get_temp_mem();
+			printf("movl %%eax, %s\n", sav1);
+		}
+		if (ts_used[3]) {	/* EDX in use ? */
+			sav2 = get_temp_mem();
+			printf("movl %%edx, %s\n", sav2);			
+		}
+		ts_used[0] = ts_used[3] = 1;
+		/* code the dividend */
+		str = codegen(tree->child[0]);
+		/* put the 32-bit dividend in EAX */
+		printf("movl %s, %%eax\n", str);
+		/* clear EDX (higher 32 bits of 64-bit dividend) */
+		printf("xor %%edx, %%edx\n");
+		/* extend EAX sign to EDX */
+		printf("cdq\n");
+		for (i = 1; i < tree->child_count; i++) {
+			/* (can't idivl directly by a number, eh ?) */
+			if(tree->child[i]->head_type == VARIABLE) {
+				sym = sym_lookup(tree->child[i]->tok);
+				printf("idivl %s\n", symstack(sym));
+				printf("xor %%edx, %%edx\n");
+				printf("cdq\n");
+			} else {
+				str = codegen(tree->child[i]);
+				printf("idivl %s\n", str);
+				printf("xor %%edx, %%edx\n");
+				printf("cdq\n");
+				free_temp_reg(str);
+				free_temp_mem(str);
+			}
+		}
+		/* move EAX to some temporary storage */
+		printf("movl %%eax, %s\n", sto);
+		/* restore or free EAX and EDX */
+		if (sav1)
+			printf("movl %s, %%eax\n", sav1);
+		else
+			free_temp_reg("%eax");
+		if (sav2)
+			printf("movl %s, %%edx\n", sav2);
+		else
+			free_temp_reg("%edx");
+		return sto;
+	}
+
 
 	/* optimized code for if ( A < B) etc. */
 	if (tree->head_type == IF
