@@ -177,7 +177,6 @@ void add_token(trie* t, char* tok, int key)
 				 */
 				add_link(t, hist[++n] = new_trie());
 				t = hist[n];
-
 				break;
 			case '*':	/* optional character
 					   with repetition allowed */
@@ -195,8 +194,6 @@ void add_token(trie* t, char* tok, int key)
 
 				add_link(t, hist[++n] = new_trie());
 				t = hist[n];
-				add_link(hist[n - 1], t);
-
 				break;
 			case '\\':	/* escape to normal text */
 				if (++i == len)
@@ -229,27 +226,26 @@ void add_token(trie* t, char* tok, int key)
 match_t match(trie* automaton, char* full_text, char* where)
 {
 	extern match_t match_algo(trie* t, char* full_tok, char* tok,
-		int btm, int vd, trie* led, int ledi);
+		int frk, trie* led, int ledi);
 
-	return match_algo(automaton, full_text, where, 0, 0, NULL, 0);
+	return match_algo(automaton, full_text, where, 0, NULL, 0);
 }
 
-/* trie* t		:	matching automaton
+/* trie* t		:	matching automaton / current node
  * char* full_tok	:	full text
  * char* tok		: 	where we are now
- * int btm		: 	internal. initially, give 0
- * int vd		:	internal, initially, give 0
+ * int frk		: 	internal. initially, give 0
  * trie* led		:	internal. start with NULL
  * int ledi		:	internal. start with 0
  */	
-match_t match_algo(trie* t, char* full_tok, char* tok, int btm, 
-	int vd, trie* led, int ledi)
+match_t match_algo(trie* t, char* full_tok, char* tok, int frk, 
+	trie* led, int ledi)
 {
 	int i = 0;
 	int j;
 	char c;
 
-	/* greedy choice algorithm */
+	/* greedy choice registers */
 	int record;		/* longest match */
 	match_t m;		/* match register */
 	match_t ml[10];		/* match list */
@@ -265,30 +261,27 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int btm,
 		last_inc = 0;
 		c = tok[i];
 
-		if (t->links && !btm)
+		/* check if multiple epsilon edges exist
+		 * and if we are not already in a fork */ 
+		if (t->links && !frk)
 		{
-			/*
-			 * Ambiguous. Try all possibilites by "forking"
-			 * (informal sense).
-			 */
+			/* fork for each possibility
+			 * and collect results in an array */
 
-			/* Try character edge if it exists */
+			/* character edge: frk = 1 */
 			if (t->map[c])
 				if ((m = match_algo(t, full_tok, tok + i, 1,
-					vd + 1,	led, ledi)).token)
+					led, ledi)).token)
 					ml[mc++] = m;
 
-			/* Try all the epsilon nodes */
+			/* epsilon edge(s): frk = 2 + link number */
 			for (j = 0; j < t->links; j++)
 				if ((m = match_algo(t, full_tok, tok + i, 
-					j + 2, 
-					vd + 1, led, ledi)).token)
+					j + 2, led, ledi)).token)
 					ml[mc++] = m;
 
-			/*
-			 * If there are multiple matches,
-			 * be "greedy" (choose longest match).
-			 */
+			/* if there are multiple epsilon matches,
+			 * be "greedy", i.e. choose longest match. */
 			if (mc > 1) {
 				record = 0;
 				choice = NULL;
@@ -300,28 +293,34 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int btm,
 				if (!choice) fail("greedy choice");
 				return *choice;
 			}
-			else if (mc == 1) /* No ambiguity, no time wasted 
-					     choosing */
+			else if (mc == 1) /* only one match */
 				return *ml;
-			else	/* For non-matches (they are never pushed
-				   to the decision list) */
+			else	/* no match, return blank as-is */
 				return m;
 		}
 
-		if (btm <= 1 && t->map[c]) {
+		/* if we are not in an epsilon fork
+		 * and the character edge exists,
+		 * follow it. */
+		if (frk <= 1 && t->map[c]) {
 			t = t->map[c];
 
 			last_inc = 1;
 
+			/* break loop if in matching state */
 			if (t->valid_token)
 				break;
 			
 			++i;
 			goto valid;
 		}
-		else if (btm > 1) {
-			/* prevents infinite loops */
-			if (!(led && t->link[btm - 2] == led
+		else if (frk > 1) {
+			/* prevents infinite loops: if the
+			 * link chosen in this fork brings us back
+			 * to the last link followed and the character
+			 * index has not increased since we followed 
+			 * this last link, do not follow it */
+			if (!(led && t->link[frk - 2] == led
 			    && (int)(&tok[i] - full_tok) == ledi)) {
 
 				/* t->links == 1 is special (???) */
@@ -331,7 +330,7 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int btm,
 					ledi = (int)(&tok[i] - full_tok);
 				}
 
-				t = t->link[btm - 2];
+				t = t->link[frk - 2];
 					
 				goto valid;
 			}
@@ -339,19 +338,21 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int btm,
 
 		break;
 
-		/* The fork path choice is only
-		 * relevant for the first ambiguous
-		 * choice after the fork
-		 */
-valid:		if (btm)
-			btm = 0;
+		/* clear fork path number after the first
+		 * iteration of the loop, it is not relevant
+		 * afterwards */
+valid:		if (frk)
+			frk = 0;
 
 	} while (i < len && t);
 
+	/* set up the returned structure */
 	if (t && t->valid_token) {
+		/* match */
 		m.token = t->valid_token;
 		m.pos = tok + i + last_inc;
 	} else {
+		/* no match */
 		m.token = 0;
 	}
 
@@ -389,7 +390,7 @@ token_t* tokenize(char *buf)
 		 */
 		for (i = 0; i < tc; i++) {
 			m = match(t[i], buf, p);
-			if (m.token) {	/* pattern matched */
+			if (m.token) {	/* match has succeeded */
 				if (m.pos - p > max) {
 					c = m;
 					max = m.pos - p;
@@ -487,6 +488,9 @@ advance:
 void setup_tokenizer()
 {
 	int i = 0;
+
+	/* set up the automatons that
+	 * match the various token types */
 
 	for (i = 0; i < 100; i++)
 		t[i] = new_trie();
