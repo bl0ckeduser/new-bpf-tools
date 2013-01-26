@@ -1,6 +1,11 @@
 This a new [December 2012] set of programming tools targeting my 
 ancient [2007; I was a very big noob] "BPF" virtual machine. 32-bit
-x86 using GNU assembler has also been added as target.
+x86 using GNU assembler has also been added as target. Additionally,
+it is possible to build a version ("new clown") of the compiler that
+includes a little built-in VM and compiles and runs in one go. The advantage
+of the built-in-VM version is that it is practical because it does
+everything automatically and that it is directly portable across
+architectures and systems.
 
 This project is meant as a personal exercise in compiler programming.
 
@@ -38,11 +43,8 @@ and assembler.
 
 Future project ideas: 
 
-The compiler could be improved, merged with a well-designed VM and 
-hacked into a big REPL to create a script interpreter.
-
-Supporting a larger subset of C ? Not sure if it would be possible to
-do this by growing this code.
+Supporting a larger subset of C ? Not sure if it would be reasonably
+feasible to do this by growing this code.
 
 Support for other real architectures than x86, say e.g. powerpc or arm 
 (PowerPC does not look easy.)

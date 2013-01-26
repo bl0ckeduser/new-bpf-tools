@@ -53,8 +53,12 @@ int main(int argc, char** argv)
 
 	run_codegen(&tree);
 
+#ifndef CLOWN_VM
 	/* Write out the final compiled assembly */
 	print_code();
+#else
+	do_clown_load();
+#endif
 
 	free(buf);
 	return 0;

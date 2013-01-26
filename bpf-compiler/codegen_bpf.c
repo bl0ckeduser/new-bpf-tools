@@ -1,8 +1,14 @@
-/* Syntax tree -> BPF VM bytecode generator */
+/* Syntax tree -> BPF/clown VM bytecode generator */
 
 /* TODO: - eliminate repetitions, make routines for them (DRY)
- *        - try porting this to a real architecture one day ? 
+ *       - procedures support for clown
  */
+
+#ifdef CLOWN_VM
+	#define VM_MEM 1999999
+#else
+	#define VM_MEM 255
+#endif
 
 #define EXPR_STACK_SIZE 32
 
@@ -12,7 +18,7 @@
 #include <string.h>
 #include <stdio.h>
 
-int temp_register = 255 - EXPR_STACK_SIZE;
+int temp_register = VM_MEM - EXPR_STACK_SIZE;
 char symtab[256][32] = {""};
 char *instr_arg[32];
 int syms = 1;
@@ -52,7 +58,7 @@ encoded_int_t encode(int n) {
  * two temporary registers are needed.
  */
 int get_temp_storage() {
-	if (temp_register > 255) {
+	if (temp_register > VM_MEM) {
 		fail("expression stack overflow");
 	}
 	return temp_register++;
@@ -64,7 +70,7 @@ int get_temp_storage() {
  * statement.
  */
 void new_temp_storage() {
-	temp_register = 255 - EXPR_STACK_SIZE;
+	temp_register = VM_MEM - EXPR_STACK_SIZE;
 }
 
 /*
@@ -83,6 +89,19 @@ void print_code()
 	}
 	printf("\n"); 
 }
+
+#ifdef CLOWN_VM
+/*
+ * Send off compiled code text to the
+ * clown VM, which will translate it
+ * to a sequence of numbers and run it.
+ */
+void do_clown_load()
+{
+	extern void clownVM_load(char **code_text, int code_toks);
+	clownVM_load(code_text, code_toks);
+}
+#endif
 
 /*
  * Push a compiled line of assembly
@@ -160,7 +179,7 @@ int sym_check(token_t* tok)
  */
 int nameless_perm_storage()
 {
-	if (syms >= 255 - EXPR_STACK_SIZE)
+	if (syms >= VM_MEM - EXPR_STACK_SIZE)
 		fail("out of permanent registers");
 	return syms++;
 }
@@ -173,7 +192,7 @@ int sym_add(token_t *tok)
 {
 	char *s = get_tok_str(*tok);
 	strcpy(symtab[syms], s);
-	if (syms >= 255 - EXPR_STACK_SIZE)
+	if (syms >= VM_MEM - EXPR_STACK_SIZE)
 		fail("out of permanent registers");
 	return syms++; 
 }
@@ -850,6 +869,22 @@ codegen_t codegen(exp_tree_t* tree)
 	exit(1);
 }
 
+#ifdef CLOWN_VM
+
+int adr_microcode(int sto, int read, int set)
+{
+	char buf[64];
+
+	if (set)
+		sprintf(buf, "AdrSet %d %d\n", sto, read);
+	else
+		sprintf(buf, "AdrGet %d %d\n", sto, read);
+	push_line(buf);
+	return 3;
+}
+
+#else
+
 /* Synthetic indirection */
 int adr_microcode(int sto, int read, int set)
 {
@@ -903,4 +938,5 @@ int adr_microcode(int sto, int read, int set)
 	return 1834;	/* 1834 bytes of compiled code */
 }
 
+#endif
 

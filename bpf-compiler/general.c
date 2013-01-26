@@ -2,6 +2,16 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
+
+int numstr(char *str)
+{
+	char *p = str;
+	for (; *p; ++p)
+		if (!isdigit(*p))
+			return 0;
+	return *str != 0;
+}
 
 void fail(char* mesg)
 {
