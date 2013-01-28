@@ -25,7 +25,6 @@ int main(int argc, char** argv)
 	extern void push_line(char *lin);
 	extern void print_code(void);
 	extern void fail(char*);
-	extern void do_clown_load();
 
 	/* Read in at most 1KB of code from stdin */
 	if (!(buf = malloc(1024 * 1024)))
@@ -54,12 +53,8 @@ int main(int argc, char** argv)
 
 	run_codegen(&tree);
 
-#ifndef CLOWN_VM
 	/* Write out the final compiled assembly */
 	print_code();
-#else
-	do_clown_load();
-#endif
 
 	free(buf);
 	return 0;

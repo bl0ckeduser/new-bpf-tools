@@ -30,23 +30,6 @@ For the BPFVM-targeting compiler the scripts are:
 	compile-run.sh		-- compile a program and run it using
 				   "bpfvm" command
 
-			**********************
-
-For the "new clown" VM version, use the following scripts:
-
-	build-clownvm.sh 	-- build the clown system
-	autotest-clownvm.sh	-- test it
-
-With the clown system, the program inputted to the compiler is run directly
-in a built-in VM nicknamed "new clown": for example,
-
-	$ sh build-clownvm.sh 
-	$ ./a.out <test/arith.c 
-	257
-	15254
-	2
-	-123
-
 			   ------------
 			   The language
 			   ------------
