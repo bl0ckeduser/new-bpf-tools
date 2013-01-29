@@ -398,7 +398,6 @@ char* codegen(exp_tree_t* tree)
 	char my_ts_used[TEMP_REGISTERS];
 	char *buf;
 	int i;
-	int arg_count;
 	int sym;
 	char *oper;
 	char *arith;
@@ -423,8 +422,6 @@ char* codegen(exp_tree_t* tree)
 
 	/* procedure call */
 	if (tree->head_type == PROC_CALL) {
-		arg_count = tree->child_count;
-
 		/* push all the registers being used */
 		for (i = 0; i < TEMP_REGISTERS; ++i)
 			if (ts_used[i])
@@ -433,7 +430,7 @@ char* codegen(exp_tree_t* tree)
 		memcpy(my_ts_used, ts_used, TEMP_REGISTERS);
 
 		/* push the arguments in reverse order */
-		for (i = arg_count - 1; i >= 0; --i) {
+		for (i = tree->child_count - 1; i >= 0; --i) {
 			sto = codegen(tree->child[i]);
 			printf("pushl %s\t# argument %d to %s\n", sto, i,
 				 get_tok_str(*(tree->tok)));
@@ -445,8 +442,8 @@ char* codegen(exp_tree_t* tree)
 
 		/* throw off the arguments from the stack */
 		printf("addl $%d, %%esp\t# throw off %d arg%s\n",
-			4 * arg_count, arg_count,
-			arg_count > 1 ? "s" : "");
+			4 * tree->child_count, tree->child_count,
+			tree->child_count > 1 ? "s" : "");
 
 		/* move the return-value register (EAX)
 		 * to temporary stack-based storage */
@@ -510,14 +507,9 @@ char* codegen(exp_tree_t* tree)
 		new_temp_reg();
 		new_temp_mem();
 
-		/* count the arguments */
-		arg_count = 0;
-		for (i = 0; tree->child[0]->child[i]; ++i)
-			++arg_count;
-
 		/* move the arguments directly to the
 		 * callee stack offsets */
-		for (i = arg_count - 1; i >= 0; --i) {
+		for (i = tree->child[0]->child_count - 1; i >= 0; --i) {
 			sto = codegen(tree->child[0]->child[i]);
 			str = registerize(sto);
 			printf("movl %s, %s\n", str, symstack(-2 - i));
