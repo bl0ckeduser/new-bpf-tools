@@ -8,7 +8,7 @@
 
 #include "tree.h"
 #include "tokens.h"
-#include "codegen.h"
+#include "codegen_bpf.h"
 #include <string.h>
 #include <stdio.h>
 
