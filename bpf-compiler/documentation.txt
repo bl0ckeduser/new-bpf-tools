@@ -220,7 +220,12 @@ From greatest to lowest precedence:
 	> >= < <= == !=
 	= += -= *= /=
 
-I'll get back to you later about associativity.
+All arithmetic operators are left-associative.
+
+Assignment is right-associative.
+
+Comparison operators are not associative: expressions like 1 < 2 < 3
+will raise syntax errors.
 
 .............................................................................
 		
