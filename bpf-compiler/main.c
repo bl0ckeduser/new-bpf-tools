@@ -44,6 +44,12 @@ int main(int argc, char** argv)
 #endif
 
 	tree = parse(tokens);
+
+#ifdef DEBUG
+	printout_tree(tree);
+	fputc('\n', stderr);
+#endif
+
 	optimize(&tree);
 	
 #ifdef DEBUG
