@@ -448,143 +448,120 @@ exp_tree_t expr()
 /* sum_expr := mul_expr { add-op mul_expr } */
 exp_tree_t sum_expr()
 {
-	exp_tree_t et1, et2;
-	exp_tree_t *subtree, *subtree2, *tree, *root;
-	exp_tree_t *new_root;
+	exp_tree_t child, tree, new;
+	exp_tree_t *child_ptr, *tree_ptr, *new_ptr;
+	exp_tree_t *root;
 	int prev;
 	token_t oper;
 
-	/* subtle/difficult tree manipulation */
-
-	if (!valid_tree(et1 = mul_expr()))
+	if (!valid_tree(child = mul_expr()))
 		return null_tree;
 	
 	if (!is_add_op((oper = peek()).type))
-		return et1;
+		return child;
 	
-	subtree = alloc_exptree(et1);
+	child_ptr = alloc_exptree(child);
 	
 	switch (oper.type) {
 		case TOK_PLUS:
-			et2 = new_exp_tree(ADD, NULL);
+			tree = new_exp_tree(ADD, NULL);
 		break;
 		case TOK_MINUS:
-			et2 = new_exp_tree(SUB, NULL);
+			tree = new_exp_tree(SUB, NULL);
 		break;
 	}
 	prev = oper.type;
 	++indx;	/* eat add-op */
-	root = tree = alloc_exptree(et2);
-	add_child(tree, subtree);
+	tree_ptr = alloc_exptree(tree);
+	add_child(tree_ptr, child_ptr);
 
 	while (1) {
-		if (!valid_tree(et1 = mul_expr()))
+		if (!valid_tree(child = mul_expr()))
 			parse_fail("expression expected");
 
-		if (!is_add_op((oper = peek()).type)) {
-			add_child(tree, alloc_exptree(et1));
-			return *root;
-		}
+		/* add term as child */
+		add_child(tree_ptr, alloc_exptree(child));
+
+		/* bail out early if no more operators */
+		if (!is_add_op((oper = peek()).type))
+			return *tree_ptr;
+
 		switch (oper.type) {
 			case TOK_PLUS:
-				et2 = new_exp_tree(ADD, NULL);
+				new = new_exp_tree(ADD, NULL);
 			break;
 			case TOK_MINUS:
-				et2 = new_exp_tree(SUB, NULL);
+				new = new_exp_tree(SUB, NULL);
 			break;
 		}
 		++indx;	/* eat add-op */
 
-		if (prev != oper.type) {
-			new_root = alloc_exptree(et2);
-			subtree2 = alloc_exptree(et1);
-			add_child(tree, subtree2);
-			add_child(new_root, root);
-			tree = root = new_root;
-		} else {
-			subtree = alloc_exptree(et2);
-			subtree2 = alloc_exptree(et1);
-			add_child(subtree, subtree2);
-			add_child(tree, subtree);
-
-			tree = subtree;
-			subtree = subtree2;
-		}
-		prev = oper.type;
+		new_ptr = alloc_exptree(new);
+		add_child(new_ptr, tree_ptr);
+		tree_ptr = new_ptr;
 	}
 
-	return *root;
+	return *tree_ptr;
 }
 
 /* mul_expr := unary_expr { mul-op unary_expr } */
 exp_tree_t mul_expr()
 {
-	exp_tree_t et1, et2;
-	exp_tree_t *subtree, *subtree2, *tree, *root;
-	exp_tree_t *new_root;
+	/* this routine is mostly a repeat of sum_expr() */
+	exp_tree_t child, tree, new;
+	exp_tree_t *child_ptr, *tree_ptr, *new_ptr;
+	exp_tree_t *root;
 	int prev;
 	token_t oper;
 
-	/* (mostly a repeat of sum_expr) */
-
-	if (!valid_tree(et1 = unary_expr()))
+	if (!valid_tree(child = unary_expr()))
 		return null_tree;
 	
 	if (!is_mul_op((oper = peek()).type))
-		return et1;
+		return child;
 	
-	subtree = alloc_exptree(et1);
+	child_ptr = alloc_exptree(child);
 	
 	switch (oper.type) {
 		case TOK_DIV:
-			et2 = new_exp_tree(DIV, NULL);
+			tree = new_exp_tree(DIV, NULL);
 		break;
 		case TOK_MUL:
-			et2 = new_exp_tree(MULT, NULL);
+			tree = new_exp_tree(MULT, NULL);
 		break;
 	}
 	prev = oper.type;
 	++indx;	/* eat add-op */
-	root = tree = alloc_exptree(et2);
-	add_child(tree, subtree);
+	tree_ptr = alloc_exptree(tree);
+	add_child(tree_ptr, child_ptr);
 
 	while (1) {
-		if (!valid_tree(et1 = unary_expr()))
+		if (!valid_tree(child = unary_expr()))
 			parse_fail("expression expected");
 
-		if (!is_mul_op((oper = peek()).type)) {
-			add_child(tree, alloc_exptree(et1));
-			return *root;
-		}
+		/* add term as child */
+		add_child(tree_ptr, alloc_exptree(child));
+
+		/* bail out early if no more operators */
+		if (!is_mul_op((oper = peek()).type))
+			return *tree_ptr;
+
 		switch (oper.type) {
 			case TOK_DIV:
-				et2 = new_exp_tree(DIV, NULL);
+				new = new_exp_tree(DIV, NULL);
 			break;
 			case TOK_MUL:
-				et2 = new_exp_tree(MULT, NULL);
+				new = new_exp_tree(MULT, NULL);
 			break;
 		}
 		++indx;	/* eat add-op */
 
-		if (prev != oper.type) {
-			new_root = alloc_exptree(et2);
-			subtree2 = alloc_exptree(et1);
-			add_child(tree, subtree2);
-			add_child(new_root, root);
-			tree = root = new_root;
-		} else {
-			subtree = alloc_exptree(et2);
-			subtree2 = alloc_exptree(et1);
-			add_child(subtree, subtree2);
-			add_child(tree, subtree);
-
-			tree = subtree;
-			subtree = subtree2;
-		}
-		prev = oper.type;
+		new_ptr = alloc_exptree(new);
+		add_child(new_ptr, tree_ptr);
+		tree_ptr = new_ptr;
 	}
 
-	return *root;
+	return *tree_ptr;
 }
 
 /*
