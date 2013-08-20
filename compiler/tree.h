@@ -39,6 +39,7 @@ enum {		/* head_type */
 	ADDR,
 	DEREF,
 	STR_CONST,
+	MOD,
 	/* special */
 	NULL_TREE
 };
@@ -78,6 +79,7 @@ static char* tree_nam[] = {
 	"ADDR",
 	"DEREF",
 	"STR_CONST",
+	"MOD",
 	"NULL_TREE"
 };
 

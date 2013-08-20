@@ -423,6 +423,9 @@ exp_tree_t expr()
 				case TOK_DIVEQ:
 					subtree = new_exp_tree(DIV, NULL);
 					break;
+				case TOK_MODEQ:
+					subtree = new_exp_tree(MOD, NULL);
+					break;
 				case TOK_ASGN:
 					break;
 				default:
@@ -605,6 +608,9 @@ exp_tree_t mul_expr()
 		case TOK_MUL:
 			tree = new_exp_tree(MULT, NULL);
 		break;
+		case TOK_MOD:
+			tree = new_exp_tree(MOD, NULL);
+		break;
 	}
 	prev = oper.type;
 	++indx;	/* eat add-op */
@@ -628,6 +634,9 @@ exp_tree_t mul_expr()
 			break;
 			case TOK_MUL:
 				new = new_exp_tree(MULT, NULL);
+			break;
+			case TOK_MOD:
+				new = new_exp_tree(MOD, NULL);
 			break;
 		}
 		++indx;	/* eat add-op */

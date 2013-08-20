@@ -59,6 +59,8 @@ enum {
 	TOK_FOR,
 	TOK_ADDR,
 	TOK_STR_CONST,
+	TOK_MOD,
+	TOK_MODEQ,
 	TOK_DEREF
 };
 
@@ -114,6 +116,8 @@ static char* tok_nam[] = {
 	"TOK_FOR",
 	"TOK_ADDR",
 	"TOK_STR_CONST",
+	"TOK_MOD",
+	"TOK_MODEQ",
 	"TOK_DEREF"
 };
 
@@ -169,6 +173,8 @@ static char* tok_desc[] = {
 	"for",
 	"address-of",
 	"string constant",
+	"%",
+	"%=",
 	"dereference"
 };
 

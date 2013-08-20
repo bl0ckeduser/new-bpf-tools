@@ -542,6 +542,8 @@ void setup_tokenizer()
 	add_token(t[tc++], "\\+\\+", TOK_PLUSPLUS);
 	add_token(t[tc++], "--", TOK_MINUSMINUS);
 	add_token(t[tc++], "&", TOK_ADDR);
+	add_token(t[tc++], "%", TOK_MOD);
+	add_token(t[tc++], "%=", TOK_MODEQ);
 
 	/* special characters */
 	add_token(t[tc++], "{", TOK_LBRACE);

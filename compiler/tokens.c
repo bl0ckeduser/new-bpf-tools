@@ -24,12 +24,14 @@ int is_asg_op(char type)
  		|| type == TOK_MINUSEQ
 		|| type == TOK_DIVEQ
 		|| type == TOK_MULEQ
+		|| type == TOK_MODEQ
 		|| type == TOK_ASGN;
 }
 
 int is_mul_op(char type)
 {
-	return type == TOK_MUL || type == TOK_DIV;
+	return type == TOK_MUL || type == TOK_DIV
+			|| type == TOK_MOD;
 }
 
 int is_comp_op(char type)
