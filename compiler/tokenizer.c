@@ -20,6 +20,7 @@
 #include <string.h>
 
 char *code_lines[1024];
+char err_buf[1024];
 extern void fail(char* mesg);
 extern void sanity_requires(int exp);
 
@@ -413,7 +414,17 @@ token_t* tokenize(char *buf)
 				++p;
 				continue;
 			}
-			fail("tokenization failed");
+			/* tokenization failed.. give a verbose diagnostic */
+			sprintf(err_buf, "tokenization failed: ");
+			sprintf(err_buf, "%scharacter '%c', near '", err_buf, *p);
+			i = 10;
+			while (--i && *(p - 1) && *(p - 1) != '\n')
+				--p;
+
+			for (i = 0; *p && *p != '\n' && i < 30; ++i)
+				sprintf(err_buf, "%s%c", err_buf, *p++);
+			sprintf(err_buf, "%s', line %d", err_buf, line);
+			fail(err_buf);
 		} else {
 			/* spot keywords. they are initially
 			 * recognized as identifiers. */
