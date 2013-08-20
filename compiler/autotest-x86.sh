@@ -1,8 +1,7 @@
 # Automatic testing script: compare program output from this compiler
 # to that from C_COMPILER, which is considered valid.
 
-# change to clang or whatever if you like ;)
-# clang doesn't quite work for some of the tests :(
+# clang also works
 C_COMPILER=gcc
 
 # I like to use `md5sum' on Linux but some un*xes only
