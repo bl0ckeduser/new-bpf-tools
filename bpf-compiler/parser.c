@@ -110,13 +110,23 @@ exp_tree_t parse(token_t *t)
  * very unhappy.
  */
 
-/* lvalue := ident [ '[' expr ']' ] */
+/* lvalue := ident [ '[' expr ']' ]  | '*' lvalue */
 exp_tree_t lval()
 {
 	token_t tok = peek();
 	exp_tree_t tree, subtree;
 
-	if (tok.type == TOK_IDENT) {
+	/* *x */
+	if (peek().type == TOK_MUL) {
+		++indx;	/* eat * */
+		subtree = unary_expr();
+		if (!valid_tree(subtree))
+			parse_fail("expression expected");
+		tree = new_exp_tree(DEREF, NULL);
+		add_child(&tree, alloc_exptree(subtree));
+		return tree;
+	}
+	else if (tok.type == TOK_IDENT) {
 		/* array expression: identifier[index] */
 		if(tokens[indx + 1].type == TOK_LBRACK) {
 			tree = new_exp_tree(ARRAY, NULL);
@@ -582,6 +592,7 @@ exp_tree_t mul_expr()
 			| ++ lvalue 
 			| -- lvalue
 			| ident '(' expr1, expr2, exprN ')'
+			| '&' lvalue
 */
 exp_tree_t unary_expr()
 {
@@ -682,17 +693,6 @@ exp_tree_t unary_expr()
 		if (!valid_tree(subtree))
 			parse_fail("lvalue expected");
 		tree = new_exp_tree(ADDR, NULL);
-		add_child(&tree, alloc_exptree(subtree));
-		return tree;
-	}
-
-	/* *x */
-	if (peek().type == TOK_MUL) {
-		++indx;	/* eat * */
-		subtree = expr();
-		if (!valid_tree(subtree))
-			parse_fail("expression expected");
-		tree = new_exp_tree(DEREF, NULL);
 		add_child(&tree, alloc_exptree(subtree));
 		return tree;
 	}

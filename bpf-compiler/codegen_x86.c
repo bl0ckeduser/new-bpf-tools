@@ -702,6 +702,17 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
+	/* pointer assignment, e.g. "*ptr = 123" */
+	if (tree->head_type == ASGN && tree->child_count == 2
+		&& tree->child[0]->head_type == DEREF) {
+
+		sto = registerize(codegen(tree->child[0]->child[0]));
+		sto2 = registerize(codegen(tree->child[1]));
+		printf("movl %s, (%s)\n", sto2, sto);
+
+		return sto2;
+	}
+
 	/* simple variable assignment */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == VARIABLE) {

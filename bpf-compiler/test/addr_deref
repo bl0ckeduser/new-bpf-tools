@@ -10,6 +10,7 @@
 int x = 123;
 int y = 456;
 int *ptr = &y;
+int **pptr = &ptr;
 int derp[32];
 int* ptr2;
 
@@ -22,3 +23,9 @@ echo(*ptr2);
 
 echo(*&x);
 echo(*&derp[2]);
+
+**pptr = 456;
+echo(y);
+
+*ptr = 1234;
+echo(y);
