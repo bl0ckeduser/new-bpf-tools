@@ -80,7 +80,8 @@ an optional part in a construction.
 	e.g. 
 		1 + 2 * 3 		(evaluates to 7)
 		(1 + 2) * 3		(evaluates to 9)
-		z - x * x + 123		(evalutes to something)	
+		456 % 123		(evaluates to 87)
+		z - x * x + 123		(evaluates to something)	
 		-x + 5
 		
 5. Assignment operators
@@ -140,24 +141,9 @@ an optional part in a construction.
 	test/x86/square.c, test/x86/tco.c.
 
 	Recursion is allowed. Tail-call optimization is done when it
-	can be done. Everything is pass-by-value; passing arrays around
-	has not yet been considered by the author and will probably make
-	bad things happen. You are allowed to return nothing from a 
-	function and even to assign the return value of a function
-	returning nothing to a variable. Your computer should not crash,
-	but you	will get arbitrary data in the variable. Consider
-	the following:
-
-			proc bob() {
-				;
-			}
-
-			int x = bob();
-			echo(x);
-
-	It runs fine for me and I get the result-number 1, which is
-	never mentioned anywhere in the program, nor in the
-	generated assembly. What a mystery.
+	can be done. You are allowed to return nothing from a 
+	function; if anything tries to use the result it will get
+	random garbage.
 
 13. Pointers
 
@@ -195,7 +181,7 @@ an optional part in a construction.
 From greatest to lowest precedence:
 
 	unary -, ( ), ++, --, procedure calls
-	* /
+	* / %
 	+ -
 	> >= < <= == !=
 	= += -= *= /=

@@ -905,9 +905,15 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
+
 	/* division. division is special on x86.
-	 * I hope I got this right. */
-	if (tree->head_type == DIV && tree->child_count) {
+	 * I hope I got this right.
+	 *
+	 * This also implements % because they are
+	 * done using the same instruction on x86.
+	 */
+	if ((tree->head_type == DIV || tree->head_type == MOD)
+		&& tree->child_count) {
 		sto = get_temp_mem();
 		sav1 = sav2 = NULL;
 		/* 
@@ -931,25 +937,32 @@ char* codegen(exp_tree_t* tree)
 		/* clear EDX (higher 32 bits of 64-bit dividend) */
 		printf("xor %%edx, %%edx\n");
 		/* extend EAX sign to EDX */
-		printf("cdq\n");
+		if (tree->head_type != MOD)
+			printf("cdq\n");
 		for (i = 1; i < tree->child_count; i++) {
 			/* (can't idivl directly by a number, eh ?) */
 			if(tree->child[i]->head_type == VARIABLE) {
 				sym = sym_lookup(tree->child[i]->tok);
 				printf("idivl %s\n", symstack(sym));
-				printf("xor %%edx, %%edx\n");
-				printf("cdq\n");
+				if (tree->head_type != MOD) {
+					printf("xor %%edx, %%edx\n");
+					printf("cdq\n");
+				}
 			} else {
 				str = codegen(tree->child[i]);
 				printf("idivl %s\n", str);
-				printf("xor %%edx, %%edx\n");
-				printf("cdq\n");
+				if (tree->head_type != MOD) {
+					printf("xor %%edx, %%edx\n");
+					printf("cdq\n");
+				}
 				free_temp_reg(str);
 				free_temp_mem(str);
 			}
 		}
 		/* move EAX to some temporary storage */
-		printf("movl %%eax, %s\n", sto);
+		printf("movl %s, %s\n", 
+			tree->head_type == MOD ? "%edx" : "%eax",
+			sto);
 		/* restore or free EAX and EDX */
 		if (sav1)
 			printf("movl %s, %%eax\n", sav1);
