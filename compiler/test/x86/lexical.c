@@ -1,4 +1,5 @@
-int x = 456;
+// int x = 456;
+// BUG: globals outside main() are currently broken
 
 bob() {
 	int x = 123;
@@ -6,6 +7,7 @@ bob() {
 }
 
 main() {
+	int x = 456;
 	bob();
 	printf("%d\n", x);
 }
