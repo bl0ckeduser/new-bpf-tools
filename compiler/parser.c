@@ -650,7 +650,7 @@ exp_tree_t mul_expr()
 }
 
 /*
-	unary_expr := ([ - ] ( lvalue | integer | unary_expr ) ) 
+	unary_expr := ([ - ] ( lvalue | integer | char-const | unary_expr ) ) 
 			|  '(' expr ')' 
 			| lvalue ++ 
 			| lvalue --
@@ -664,6 +664,8 @@ exp_tree_t unary_expr()
 	exp_tree_t tree = null_tree, subtree = null_tree;
 	exp_tree_t subtree2 = null_tree, subtree3;
 	token_t tok;
+	token_t fake_int;
+	char *buff;
 
 	if (peek().type == TOK_MINUS) {
 		tree = new_exp_tree(NEGATIVE, NULL);
@@ -720,9 +722,21 @@ exp_tree_t unary_expr()
 
 	tok = peek();
 	if (valid_tree(subtree = lval())
-	||  tok.type == TOK_INTEGER) {
+	||  tok.type == TOK_INTEGER || tok.type == TOK_CHAR_CONST) {
 
-		if (tok.type == TOK_INTEGER) {
+		if (tok.type == TOK_CHAR_CONST) {
+				/* XXX: doesn't handle escapes like \n */
+				fake_int.type = TOK_INTEGER;
+				buff = malloc(8);
+				sprintf(buff, "%d", *(tok.start + 1));
+				fake_int.start = buff;
+				fake_int.len = strlen(buff);
+				fake_int.from_line = 0;
+				fake_int.from_line = 1;
+				subtree = new_exp_tree(NUMBER, &fake_int);
+				++indx;	/* eat number */
+		}
+		else if (tok.type == TOK_INTEGER) {
 				subtree = new_exp_tree(NUMBER, &tok);
 				++indx;	/* eat number */
 		} else {

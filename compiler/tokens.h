@@ -61,7 +61,8 @@ enum {
 	TOK_STR_CONST,
 	TOK_MOD,
 	TOK_MODEQ,
-	TOK_DEREF
+	TOK_DEREF,
+	TOK_CHAR_CONST
 };
 
 static char* tok_nam[] = {
@@ -118,7 +119,8 @@ static char* tok_nam[] = {
 	"TOK_STR_CONST",
 	"TOK_MOD",
 	"TOK_MODEQ",
-	"TOK_DEREF"
+	"TOK_DEREF",
+	"TOK_CHAR_CONST"
 };
 
 static char* tok_desc[] = {
@@ -175,7 +177,8 @@ static char* tok_desc[] = {
 	"string constant",
 	"%",
 	"%=",
-	"dereference"
+	"dereference",
+	"character constant"
 };
 
 /* keywords */

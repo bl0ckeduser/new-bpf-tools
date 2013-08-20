@@ -204,6 +204,13 @@ void add_token(trie* t, char* tok, int key)
 				t = next;
 				++n;
 				break;
+			case '.':		/* all chars */
+				next = new_trie();
+				for(j = 0; j < 256; j++)
+					t->map[j] = next;
+				t = next;
+				++n;
+				break;
 			case '\\':	/* escape to normal text */
 				if (++i == len)
 					fail("backslash expected char");
@@ -564,5 +571,8 @@ void setup_tokenizer()
 
 	/* string constants */
 	add_token(t[tc++], "\"Q*\"", TOK_STR_CONST);
+
+	/* character constants */
+	add_token(t[tc++], "'.'", TOK_CHAR_CONST);
 }
 
