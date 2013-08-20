@@ -156,7 +156,7 @@ exp_tree_t lval()
 		| instr '(' expr1, expr2, ..., exprN ')' ';'
 		| ident ':'
 		| goto ident ';'
-		| 'proc' ident '(' ident [ ',' ident ] ')' block
+		| ['proc'] ident '(' ident [ ',' ident ] ')' block
 		| 'return' expr ';'
 */
 exp_tree_t block()
@@ -168,13 +168,70 @@ exp_tree_t block()
 	token_t tok;
 	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
+	int sav_indx;
 
-	/* empty block */
+	/* proc bob(a, b, c) { ... } */
+	if (peek().type == TOK_PROC) {
+		++indx;	/* eat "proc" */
+		tok = need(TOK_IDENT);
+		goto proc_parse;
+	}
+	/* bob(a, b, c) { ... } */
+	if ((tok = peek()).type == TOK_IDENT) {
+		sav_indx = indx++;
+		/*
+		 * Check that it is actually a procedure
+		 * definition
+		 */
+		if (peek().type != TOK_LPAREN)
+			goto not_proc;		
+		++indx;
+		while (peek().type != TOK_RPAREN) {
+			if (peek().type != TOK_IDENT)
+				goto not_proc;
+			++indx;
+			if (peek().type != TOK_RPAREN)
+				if (peek().type != TOK_COMMA) {
+					goto not_proc;
+				} else {
+					++indx;
+				}
+		}
+		++indx;
+		if (peek().type != TOK_LBRACE)
+			goto not_proc;
+		else
+			indx = sav_indx + 1;
+proc_parse:
+		tree = new_exp_tree(PROC, &tok);
+		/* argument list */
+		subtree = new_exp_tree(ARG_LIST, NULL);
+		need(TOK_LPAREN);
+		while (peek().type != TOK_RPAREN) {
+			tok = need(TOK_IDENT);
+			subtree2 = new_exp_tree(VARIABLE, &tok);
+			add_child(&subtree, alloc_exptree(subtree2));
+			if (peek().type != TOK_RPAREN)
+				need(TOK_COMMA);
+		}
+		++indx;
+		add_child(&tree, alloc_exptree(subtree));
+		subtree = block();
+		if (!valid_tree(subtree))
+			parse_fail("block expected");
+		add_child(&tree, alloc_exptree(subtree));
+		return tree;
+
+not_proc:
+		indx = sav_indx;
+		/* carry on with other checks */
+	}
+	/* empty block -- ';' */
 	if (peek().type == TOK_SEMICOLON) {
 		++indx;	/* eat semicolon */
 		return new_exp_tree(BLOCK, NULL);
 	}
-	/* label ? */
+	/* label -- ident ':' */
 	if (peek().type == TOK_IDENT) {
 		tok = peek();
 		tree = new_exp_tree(LABEL, &tok);
@@ -187,10 +244,13 @@ exp_tree_t block()
 		 * a label after all */
 		else --indx;
 	}
+	/* expr */
 	if (valid_tree(tree = expr())) {
 		need(TOK_SEMICOLON);
 		return tree;
-	} else if(peek().type == TOK_IF) {
+	}
+	/* if (expr) block1 [ else block2 ] */
+	if(peek().type == TOK_IF) {
 		++indx;	/* eat if */
 		tree = new_exp_tree(IF, NULL);
 		need(TOK_LPAREN);
@@ -202,7 +262,9 @@ exp_tree_t block()
 			add_child(&tree, alloc_exptree(block()));
 		}
 		return tree;
-	} else if(peek().type == TOK_WHILE) {
+	}
+	/* while (expr) block */
+	if(peek().type == TOK_WHILE) {
 		++indx;	/* eat while */
 		tree = new_exp_tree(WHILE, NULL);
 		need(TOK_LPAREN);
@@ -210,15 +272,18 @@ exp_tree_t block()
 		need(TOK_RPAREN);
 		add_child(&tree, alloc_exptree(block()));
 		return tree;
-	} else if(peek().type == TOK_LBRACE) {
+	}
+	/* '{' block '}' */
+	if(peek().type == TOK_LBRACE) {
 		++indx;	/* eat { */
 		tree = new_exp_tree(BLOCK, NULL);
 		while (valid_tree(subtree = block()))
 			add_child(&tree, alloc_exptree(subtree));
 		need(TOK_RBRACE);
 		return tree;
+	}
 	/* instr(arg1, arg2, argN); */
-	} else if (is_instr(peek().type)) {
+	if (is_instr(peek().type)) {
 		tok = peek();
 		tree = new_exp_tree(BPF_INSTR, &tok);
 		switch(peek().type) {
@@ -253,32 +318,15 @@ exp_tree_t block()
 		need(TOK_RPAREN);
 		need(TOK_SEMICOLON);
 		return tree;
-	} else if (peek().type == TOK_GOTO) {
+	}
+	/* 'goto' ident */
+	if (peek().type == TOK_GOTO) {
 		++indx;	/* eat goto */
 		tok = need(TOK_IDENT);
 		return new_exp_tree(GOTO, &tok);
-	} else if (peek().type == TOK_PROC) {
-		++indx;	/* eat "proc" */
-		tok = need(TOK_IDENT);
-		tree = new_exp_tree(PROC, &tok);
-		/* argument list */
-		subtree = new_exp_tree(ARG_LIST, NULL);
-		need(TOK_LPAREN);
-		while (peek().type != TOK_RPAREN) {
-			tok = need(TOK_IDENT);
-			subtree2 = new_exp_tree(VARIABLE, &tok);
-			add_child(&subtree, alloc_exptree(subtree2));
-			if (peek().type != TOK_RPAREN)
-				need(TOK_COMMA);
-		}
-		++indx;
-		add_child(&tree, alloc_exptree(subtree));
-		subtree = block();
-		if (!valid_tree(subtree))
-			parse_fail("block expected");
-		add_child(&tree, alloc_exptree(subtree));
-		return tree;
-	} else if (peek().type == TOK_RET) {
+	}
+	/* 'return' expr */
+	if (peek().type == TOK_RET) {
 		++indx;	/* eat 'return' */
 		tree = new_exp_tree(RET, NULL);
 		subtree = expr();
@@ -287,8 +335,9 @@ exp_tree_t block()
 		add_child(&tree, alloc_exptree(subtree));
 		need(TOK_SEMICOLON);
 		return tree;
-	} else if (peek().type == TOK_FOR) {
-		/* for '(' [expr] ';' [expr] ';' [expr] ')' block */
+	}
+	/* for '(' [expr] ';' [expr] ';' [expr] ')' block */
+	if (peek().type == TOK_FOR) {
 		++indx;	/* eat 'for' */
 		need(TOK_LPAREN);
 		tree = new_exp_tree(BLOCK, NULL);
@@ -335,9 +384,9 @@ exp_tree_t block()
 		add_child(&subtree, alloc_exptree(subtree4));
 		add_child(&tree, alloc_exptree(subtree));
 		return tree;
-	} else {
-		return null_tree;
 	}
+
+	return null_tree;
 }
 
 /*
