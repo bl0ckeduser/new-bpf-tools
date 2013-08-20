@@ -2,14 +2,14 @@
 # to that from C_COMPILER, which is considered valid.
 
 # change to clang or whatever if you like ;)
-# issue: if you use clang, can only test against test/*.c, not test/*
+# clang doesn't quite work for some of the tests :(
 C_COMPILER=gcc
 
 # I like to use `md5sum' on Linux but some un*xes only
 # have `sum', so yeah...
 SUM_TOOL=sum
 
-for x in test/*
+for x in test/*.c test/x86/*.c
 do
 	mkdir autotest-tmp
 	SRC_FILE=autotest-tmp/test-temp.c

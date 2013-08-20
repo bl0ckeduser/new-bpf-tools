@@ -1,8 +1,10 @@
-proc diff(a, b) {
+diff(a, b) {
 	if ( b > 0 )
 		return diff(a - 1, b - 1);
 	else
 		return a;
 }
 
-echo(diff(10000000, 15));
+main() {
+	printf("%d\n", diff(10000000, 15));
+}
