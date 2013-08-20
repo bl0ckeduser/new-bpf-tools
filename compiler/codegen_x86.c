@@ -399,13 +399,15 @@ void setup_symbols(exp_tree_t *tree)
 
 	/* array declaration */
 	if (tree->head_type == ARRAY_DECL) {
+		/* number of elements (integer) */
+		sto = atoi(get_tok_str(*(tree->child[1]->tok)));
 		/* make a symbol named after the array
 		 * and store the *ADDRESS* of its first element there */
 		if (!sym_check(tree->child[0]->tok))
 			(void)sym_add(tree->child[0]->tok);
 		str = get_temp_reg();
 		sprintf(buf, "leal %s, %s\n",
-			symstack(sym_lookup(tree->child[0]->tok) + 1),
+			symstack(sym_lookup(tree->child[0]->tok) + sto),
 			str);
 		strcat(entry_buf, buf);
 		sprintf(buf, "movl %s, %s\n",
@@ -417,7 +419,6 @@ void setup_symbols(exp_tree_t *tree)
 		 * such as array[index] we only need to know
 		 * the starting point of the array and the
 		 * value "index" evaluates to */
-		sto = atoi(get_tok_str(*(tree->child[1]->tok)));
 		for (i = 0; i < sto; i++)
 			(void)nameless_perm_storage();
 		/* discard tree */
@@ -528,7 +529,7 @@ char* codegen(exp_tree_t* tree)
 				sto);
 
 		sto2 = registerize(codegen(tree->child[0]->child[1]));
-		printf("imull $-4, %s\n", sto2);
+		printf("imull $4, %s\n", sto2);
 		printf("addl %s, %s\n", sto2, sto);
 
 		return sto;
@@ -737,7 +738,7 @@ char* codegen(exp_tree_t* tree)
 
 		/* build pointer */
 		sto = get_temp_reg();
-		printf("imull $-4, %s\n", sto2);
+		printf("imull $4, %s\n", sto2);
 		printf("addl %s, %s\n", symstack(sym), sto2);
 		printf("movl %s, %s\n", sto2, sto);
 		free_temp_reg(sto2);
@@ -834,7 +835,7 @@ char* codegen(exp_tree_t* tree)
 		str2 = codegen(tree->child[1]);
 		sto3 = registerize(str2);
 
-		printf("imull $-4, %s\n", sto2);
+		printf("imull $4, %s\n", sto2);
 		printf("addl %s, %s\n", symstack(sym), sto2);
 		printf("movl %s, (%s)\n", sto3, sto2);
 
@@ -855,7 +856,7 @@ char* codegen(exp_tree_t* tree)
 
 		sto = get_temp_reg();
 		printf("# build ptr\n");
-		printf("imull $-4, %s\n", sto2);
+		printf("imull $4, %s\n", sto2);
 		printf("addl %s, %s\n", symstack(sym), sto2);
 		printf("movl (%s), %s\n", sto2, sto);
 
