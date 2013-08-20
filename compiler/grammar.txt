@@ -1,0 +1,31 @@
+lvalue := ident [ '[' expr ']' ]  | '*' lvalue
+
+block := expr ';' 
+	| if '(' expr ')' block [else block] 
+	| while '(' expr ')' block 
+	| for '(' [expr] ';' [expr] ';' [expr] ')' block
+	| '{' { expr ';' } '}' 
+	| instr '(' expr1, expr2, ..., exprN ')' ';'
+	| ident ':'
+	| goto ident ';'
+	| ['proc'] ident '(' ident [ ',' ident ] ')' block
+	| 'return' expr ';'
+
+expr := lvalue asg-op expr 
+	| sum_expr [comp-op sum_expr]
+	| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
+	| str-const
+
+sum_expr := mul_expr { add-op mul_expr }
+
+mul_expr := unary_expr { mul-op unary_expr }
+
+unary_expr := ([ - ] ( lvalue | integer | char-const | unary_expr ) ) 
+		|  '(' expr ')' 
+		| lvalue ++ 
+		| lvalue --
+		| ++ lvalue 
+		| -- lvalue
+		| ident '(' expr1, expr2, exprN ')'
+		| '&' lvalue
+
