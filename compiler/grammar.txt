@@ -8,7 +8,7 @@ block := expr ';'
 	| instr '(' expr1, expr2, ..., exprN ')' ';'
 	| ident ':'
 	| goto ident ';'
-	| ['proc'] ident '(' ident [ ',' ident ] ')' block
+	| ['proc'] ident '(' ident { ',' ident } ')' block
 	| 'return' expr ';'
 
 expr := lvalue asg-op expr 

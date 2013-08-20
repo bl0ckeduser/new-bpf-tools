@@ -156,7 +156,7 @@ exp_tree_t lval()
 		| instr '(' expr1, expr2, ..., exprN ')' ';'
 		| ident ':'
 		| goto ident ';'
-		| ['proc'] ident '(' ident [ ',' ident ] ')' block
+		| ['proc'] ident '(' ident { ',' ident } ')' block
 		| 'return' expr ';'
 */
 exp_tree_t block()
