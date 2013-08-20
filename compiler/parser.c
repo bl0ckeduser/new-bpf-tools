@@ -524,8 +524,18 @@ exp_tree_t expr()
 	return null_tree;
 }
 
-/* sum_expr := mul_expr { add-op mul_expr } */
-exp_tree_t sum_expr()
+/* 
+ * General parsing routine for 
+ * left-associative operators:
+ * A-expr := B-expr { C-op B-expr } 
+ * 
+ * anonymous functions AKA lambdas
+ * would have been nice to have in C
+ */
+exp_tree_t parse_left_assoc(
+	exp_tree_t(*B_expr)(),
+	int(*is_C_op)(char),
+	void(*tree_dispatch)(char, exp_tree_t*))
 {
 	exp_tree_t child, tree, new;
 	exp_tree_t *child_ptr, *tree_ptr, *new_ptr;
@@ -533,47 +543,35 @@ exp_tree_t sum_expr()
 	int prev;
 	token_t oper;
 
-	if (!valid_tree(child = mul_expr()))
+	if (!valid_tree(child = B_expr()))
 		return null_tree;
 	
-	if (!is_add_op((oper = peek()).type))
+	if (!is_C_op((oper = peek()).type))
 		return child;
 	
 	child_ptr = alloc_exptree(child);
 	
-	switch (oper.type) {
-		case TOK_PLUS:
-			tree = new_exp_tree(ADD, NULL);
-		break;
-		case TOK_MINUS:
-			tree = new_exp_tree(SUB, NULL);
-		break;
-	}
+	tree_dispatch(oper.type, &tree);
+
 	prev = oper.type;
-	++indx;	/* eat add-op */
+	++indx;	/* eat C-op */
 	tree_ptr = alloc_exptree(tree);
 	add_child(tree_ptr, child_ptr);
 
 	while (1) {
-		if (!valid_tree(child = mul_expr()))
+		if (!valid_tree(child = B_expr()))
 			parse_fail("expression expected");
 
 		/* add term as child */
 		add_child(tree_ptr, alloc_exptree(child));
 
 		/* bail out early if no more operators */
-		if (!is_add_op((oper = peek()).type))
+		if (!is_C_op((oper = peek()).type))
 			return *tree_ptr;
 
-		switch (oper.type) {
-			case TOK_PLUS:
-				new = new_exp_tree(ADD, NULL);
-			break;
-			case TOK_MINUS:
-				new = new_exp_tree(SUB, NULL);
-			break;
-		}
-		++indx;	/* eat add-op */
+		tree_dispatch(oper.type, &new);
+
+		++indx;	/* eat C-op */
 
 		new_ptr = alloc_exptree(new);
 		add_child(new_ptr, tree_ptr);
@@ -583,70 +581,47 @@ exp_tree_t sum_expr()
 	return *tree_ptr;
 }
 
-/* mul_expr := unary_expr { mul-op unary_expr } */
-exp_tree_t mul_expr()
+/* sum_expr := mul_expr { add-op mul_expr } */
+void sum_dispatch(char oper, exp_tree_t *dest)
 {
-	/* this routine is mostly a repeat of sum_expr() */
-	exp_tree_t child, tree, new;
-	exp_tree_t *child_ptr, *tree_ptr, *new_ptr;
-	exp_tree_t *root;
-	int prev;
-	token_t oper;
+	switch (oper) {
+		case TOK_PLUS:
+			*dest = new_exp_tree(ADD, NULL);
+		break;
+		case TOK_MINUS:
+			*dest = new_exp_tree(SUB, NULL);
+		break;
+	}
+}
+exp_tree_t sum_expr()
+{
+	return parse_left_assoc(
+		&mul_expr,
+		&is_add_op,
+		&sum_dispatch);
+}
 
-	if (!valid_tree(child = unary_expr()))
-		return null_tree;
-	
-	if (!is_mul_op((oper = peek()).type))
-		return child;
-	
-	child_ptr = alloc_exptree(child);
-	
-	switch (oper.type) {
+/* mul_expr := unary_expr { mul-op unary_expr } */
+void mul_dispatch(char oper, exp_tree_t *dest)
+{
+	switch (oper) {
 		case TOK_DIV:
-			tree = new_exp_tree(DIV, NULL);
+			*dest = new_exp_tree(DIV, NULL);
 		break;
 		case TOK_MUL:
-			tree = new_exp_tree(MULT, NULL);
+			*dest = new_exp_tree(MULT, NULL);
 		break;
 		case TOK_MOD:
-			tree = new_exp_tree(MOD, NULL);
+			*dest = new_exp_tree(MOD, NULL);
 		break;
 	}
-	prev = oper.type;
-	++indx;	/* eat add-op */
-	tree_ptr = alloc_exptree(tree);
-	add_child(tree_ptr, child_ptr);
-
-	while (1) {
-		if (!valid_tree(child = unary_expr()))
-			parse_fail("expression expected");
-
-		/* add term as child */
-		add_child(tree_ptr, alloc_exptree(child));
-
-		/* bail out early if no more operators */
-		if (!is_mul_op((oper = peek()).type))
-			return *tree_ptr;
-
-		switch (oper.type) {
-			case TOK_DIV:
-				new = new_exp_tree(DIV, NULL);
-			break;
-			case TOK_MUL:
-				new = new_exp_tree(MULT, NULL);
-			break;
-			case TOK_MOD:
-				new = new_exp_tree(MOD, NULL);
-			break;
-		}
-		++indx;	/* eat add-op */
-
-		new_ptr = alloc_exptree(new);
-		add_child(new_ptr, tree_ptr);
-		tree_ptr = new_ptr;
-	}
-
-	return *tree_ptr;
+}
+exp_tree_t mul_expr()
+{
+	return parse_left_assoc(
+		&unary_expr,
+		&is_mul_op,
+		&mul_dispatch);
 }
 
 /*
