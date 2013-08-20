@@ -18,10 +18,12 @@
 char current_proc[64];
 char symtab[256][32] = {""};
 char arg_symtab[256][32] = {""};
+char str_const_tab[256][32] = {""};
 char ts_used[TEMP_REGISTERS];
 char tm_used[TEMP_MEM];
 int syms = 0;
 int arg_syms = 0;
+int str_consts = 0;
 int temp_register = 0;
 int swap = 0;
 int proc_ok = 1;
@@ -179,6 +181,29 @@ int sym_lookup(token_t* tok)
 	compiler_fail(buf, tok, 0, 0);
 }
 
+/* Lookup storage number of a string constant */
+int str_const_lookup(token_t* tok)
+{
+	char buf[1024];
+	char *s = get_tok_str(*tok);
+	int i = 0;
+
+	for (i = 0; i < str_consts; i++)
+		if (!strcmp(str_const_tab[i], s))
+			return i;
+
+	sprintf(buf, "unregistered string constant `%s'", s);
+	compiler_fail(buf, tok, 0, 0);
+}
+
+/* Add a string constant to the string constant table */
+int str_const_add(token_t *tok)
+{
+	char *s = get_tok_str(*tok);
+	strcpy(str_const_tab[str_consts], s);
+	return str_consts++; 
+}
+
 /* Tree type -> arithmetic routine */
 char* arith_op(int ty)
 {
@@ -260,6 +285,8 @@ void run_codegen(exp_tree_t *tree)
 {
 	char *main_args[] = { NULL };
 	extern void deal_with_procs(exp_tree_t *tree);
+	extern void deal_with_str_consts(exp_tree_t *tree);
+
 #ifdef MINGW_BUILD
 	char main_name[] = "_main";
 #else
@@ -268,6 +295,9 @@ void run_codegen(exp_tree_t *tree)
 
 	printf(".section .rodata\n");
 	printf("_echo_format: .string \"%%d\\n\"\n");
+
+	deal_with_str_consts(tree);
+
 	printf(".section .text\n");
 	printf(".globl %s\n\n", main_name);
 
@@ -300,6 +330,25 @@ void run_codegen(exp_tree_t *tree)
     printf("addl $12, %%esp  # get rid of the printf args\n");
     printf("ret\n");
 }
+
+void deal_with_str_consts(exp_tree_t *tree)
+{
+	int i;
+	int id;
+
+	if (tree->head_type == STR_CONST) {
+		id = str_const_add(tree->tok);
+		/* the quotes are part of the token string */
+		printf("_str_const_%d: .string %s\n", 
+			id, get_tok_str(*(tree->tok)));
+
+		/* TODO: escape sequences like \n ... */
+	}
+
+	for (i = 0; i < tree->child_count; ++i)
+		deal_with_str_consts(tree->child[i]);
+}
+
 
 /* See run_codegen above */
 void deal_with_procs(exp_tree_t *tree)
@@ -418,6 +467,15 @@ char* codegen(exp_tree_t* tree)
 		/* clear temporary memory and registers */
 		new_temp_mem();
 		new_temp_reg();
+	}
+
+	/* "bob123" */
+	if (tree->head_type == STR_CONST) {
+		sto = get_temp_reg();
+		printf("movl $_str_const_%d, %s\n",
+			str_const_lookup(tree->tok),
+			sto);
+		return sto;
 	}
 
 	/* &x */

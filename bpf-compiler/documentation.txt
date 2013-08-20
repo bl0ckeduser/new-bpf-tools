@@ -220,6 +220,13 @@ an optional part in a construction.
 	* can be applied to any expression
 	& can be applied to lvalues only
 
+14. String constants (x86 codegen only)
+
+	Examples:
+
+	"bob 123"
+	printf("hello\n");
+
 .............................................................................
 
 			Operator precedence table
