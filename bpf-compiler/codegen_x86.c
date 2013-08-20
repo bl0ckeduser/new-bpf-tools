@@ -28,6 +28,7 @@ int temp_register = 0;
 int swap = 0;
 int proc_ok = 1;
 int else_ret;
+char entry_buf[1024], buf[1024];
 
 int stack_size;
 int intl_label = 0; /* internal label numbering */
@@ -241,8 +242,15 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	for (i = 0; args[i]; ++i)
 		strcpy(arg_symtab[arg_syms++], args[i]);
 
+	/* make the symbol and label for the procedure */
+#ifndef MINGW_BUILD
+	printf(".type %s, @function\n", name);
+#endif
+	printf("%s:\n", name);
+
 	/* setup the identifier symbol table and make stack
 	 * space for all the variables in the program */
+	*entry_buf = 0;
 	setup_symbols(tree);
 
 	for (i = 0; i < TEMP_MEM; ++i) {
@@ -251,12 +259,6 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 		temp_mem[i] = buf2;
 	}
 
-	/* make the symbol and label for the procedure */
-#ifndef MINGW_BUILD
-	printf(".type %s, @function\n", name);
-#endif
-	printf("%s:\n", name);
-
 	/* do the usual x86 function entry process,
 	 * and set aside stack memory for local
 	 * variables */
@@ -264,9 +266,10 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	printf("pushl %%ebp\n");
 	printf("movl %%esp, %%ebp\n");
 	printf("subl $%d, %%esp\n", syms * 4);
-	printf("\n# >>> compiled code for '%s'\n", name); 
+	printf("\n# >>> compiled code for '%s'\n", name);
 
 	printf("_tco_%s:\n", name);	/* hook for TCO */
+	puts(entry_buf);
 
 	/* code the body of the procedure */
 	codegen(tree);
@@ -370,6 +373,7 @@ void deal_with_procs(exp_tree_t *tree)
 void setup_symbols(exp_tree_t *tree)
 {
 	int i, sto;
+	char *str;
 
 	/* variable declaration, with optional assignment */
 	if (tree->head_type == INT_DECL) {
@@ -386,16 +390,25 @@ void setup_symbols(exp_tree_t *tree)
 	/* array declaration */
 	if (tree->head_type == ARRAY_DECL) {
 		/* make a symbol named after the array
-		 * at its index 0 */
+		 * and store the *ADDRESS* of its first element there */
 		if (!sym_check(tree->child[0]->tok))
 			(void)sym_add(tree->child[0]->tok);
+		str = get_temp_reg();
+		sprintf(buf, "leal %s, %s\n",
+			symstack(sym_lookup(tree->child[0]->tok) + 1),
+			str);
+		strcat(entry_buf, buf);
+		sprintf(buf, "movl %s, %s\n",
+			str,
+			symstack(sym_lookup(tree->child[0]->tok)));
+		strcat(entry_buf, buf);
 		/* make nameless storage for the subsequent
 		 * indices -- when we deal with an expression
 		 * such as array[index] we only need to know
 		 * the starting point of the array and the
 		 * value "index" evaluates to */
 		sto = atoi(get_tok_str(*(tree->child[1]->tok)));
-		for (i = 0; i < sto - 1; i++)
+		for (i = 0; i < sto; i++)
 			(void)nameless_perm_storage();
 		/* discard tree */
 		*tree = null_tree;
@@ -493,14 +506,14 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
-	/* &(a[v]) = &a + 4 * v */
+	/* &(a[v]) = a + 4 * v */
 	if (tree->head_type == ADDR
 		&& tree->child_count == 1
 		&& tree->child[0]->head_type == ARRAY) {
 		
 		sto = get_temp_reg();
 
-		printf("leal %s, %s\n",
+		printf("movl %s, %s\n",
 				symstack(sym_lookup(tree->child[0]->child[0]->tok)),
 				sto);
 
@@ -704,28 +717,29 @@ char* codegen(exp_tree_t* tree)
 	if ((tree->head_type == INC
 		|| tree->head_type == DEC)
 		&& tree->child[0]->head_type == ARRAY) {
+
 		/* head address */
 		sym = sym_lookup(tree->child[0]->child[0]->tok);
+
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
+		sto2 = registerize(str);
+
 		/* build pointer */
 		sto = get_temp_reg();
-		printf("movl %s, %s\n",
-			str, sto);
-		printf("imull $-4, %s\n",
-			sto);
-		printf("addl %%ebp, %s\n",
-			sto);
-		printf("subl $%d, %s\n",
-			4 * sym, sto);
+		printf("imull $-4, %s\n", sto2);
+		printf("addl %s, %s\n", symstack(sym), sto2);
+		printf("movl %s, %s\n", sto2, sto);
+		free_temp_reg(sto2);
+
 		/* write the final move */
-		sto2 = get_temp_reg();
+		sto3 = get_temp_reg();
 		printf("%s (%s)\n", 
 			tree->head_type == DEC ? "decl" : "incl",
 			sto);
-		printf("movl (%s), %s\n", sto, sto2);
+		printf("movl (%s), %s\n", sto, sto3);
 		free_temp_reg(sto);
-		return sto2;
+		return sto3;
 	}
 
 	/* post-increment, post-decrement of variable lvalue */
@@ -805,24 +819,19 @@ char* codegen(exp_tree_t* tree)
 		sym = sym_lookup(tree->child[0]->child[0]->tok);
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
+		sto2 = registerize(str);
 		/* right operand */
 		str2 = codegen(tree->child[1]);
 		sto3 = registerize(str2);
-		/* build pointer */
-		sto2 = registerize(str);
-		printf("imull $-4, %s\n",
-			sto2);
-		printf("addl %%ebp, %s\n",
-			sto2);
-		printf("subl $%d, %s\n",
-			4 * sym, sto2);
-		/* write the final move */
-		sto = get_temp_mem();
-		printf("movl %s, (%s)\n",
-			sto3, sto2);
+
+		printf("imull $-4, %s\n", sto2);
+		printf("addl %s, %s\n", symstack(sym), sto2);
+		printf("movl %s, (%s)\n", sto3, sto2);
+
 		free_temp_reg(sto2);
 		free_temp_reg(sto3);
-		return str2;
+
+		return sto3;
 	}
 
 	/* array retrieval */
@@ -830,20 +839,18 @@ char* codegen(exp_tree_t* tree)
 		/* head address */
 		sym = sym_lookup(tree->child[0]->tok);
 		/* index expression */
+		printf("# index expr\n");
 		str = codegen(tree->child[1]);
-		/* build pointer */
 		sto2 = registerize(str);
-		printf("imull $-4, %s\n",
-			sto2);
-		printf("addl %%ebp, %s\n",
-			sto2);
-		printf("subl $%d, %s\n",
-			4 * sym, sto2);
-		/* write the final move */
+
 		sto = get_temp_reg();
-		printf("movl (%s), %s\n",
-			sto2, sto);
+		printf("# build ptr\n");
+		printf("imull $-4, %s\n", sto2);
+		printf("addl %s, %s\n", symstack(sym), sto2);
+		printf("movl (%s), %s\n", sto2, sto);
+
 		free_temp_reg(sto2);
+
 		return sto;
 	}
 
