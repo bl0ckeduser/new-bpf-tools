@@ -130,10 +130,9 @@ an optional part in a construction.
 	For example:
 		printf("herp derp hello world\n");
 		int c = getchar();
-
+		int buf[128];
+		scanf("%s", buf);
 	etc.
-
-	For some reason, scanf("%s") crashes, though. Will try to fix.
 
 12. Custom procedures
 
