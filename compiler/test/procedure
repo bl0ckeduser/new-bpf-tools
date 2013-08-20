@@ -1,10 +1,11 @@
 /* typical recursive factorial example */
-proc factorial(n) {
+factorial(n) {
 	if (n > 0)
 		return n * factorial(n - 1);
 	else
 		return 1;
 }
 
-echo(factorial(5));
-
+main() {
+	printf("%d\n", factorial(5));
+}

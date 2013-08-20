@@ -15,16 +15,21 @@ do
 	SRC_FILE=autotest-tmp/test-temp.c
 	echo "#include <stdio.h>" >$SRC_FILE
 	/bin/echo "void echo(int n) { printf(\"%d\\n\", n); }" >>$SRC_FILE
-	echo "int main(int argc, char **argv) {" >>$SRC_FILE
+	if ! grep -q main $x;
+	then
+		echo "int main(int argc, char **argv) {" >>$SRC_FILE
+	fi
 	# paste code, converting procedures syntax ("proc")
 	# to standard C "int"
 	cat $x | sed 's/proc/int/g' >>$SRC_FILE
 	# gcc doesn't allow labels at the end of a codeblock,
 	# but I do, so stick in a dummy statement for compatibility.
 	# (see e.g. test/goto.c)
-	echo 'argc = argc; ' >>$SRC_FILE
-	echo "}" >>$SRC_FILE
-
+	if ! grep -q main $x;
+	then
+		echo 'argc = argc; ' >>$SRC_FILE
+		echo "}" >>$SRC_FILE
+	fi
 	$C_COMPILER $SRC_FILE -o ./autotest-tmp/exec
 	good_result=$(./autotest-tmp/exec | $SUM_TOOL)
 	blok_result=$(./compile-run-x86.sh $x | $SUM_TOOL)
