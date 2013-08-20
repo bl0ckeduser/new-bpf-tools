@@ -344,6 +344,7 @@ exp_tree_t block()
 	expr := lvalue asg-op expr 
 		| sum_expr [comp-op sum_expr]
 		| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
+		| str-const
 */
 exp_tree_t expr()
 {
@@ -460,6 +461,12 @@ exp_tree_t expr()
 				alloc_exptree(new_exp_tree(NUMBER, &tok)));
 			tree.head_type = ARRAY_DECL;
 		}
+		return tree;
+	}
+	/* "bob123" */
+	if ((tok = peek()).type == TOK_STR_CONST) {
+		++indx;
+		tree = new_exp_tree(STR_CONST, &tok);
 		return tree;
 	}
 	return null_tree;

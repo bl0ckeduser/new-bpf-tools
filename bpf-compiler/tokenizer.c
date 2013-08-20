@@ -195,6 +195,14 @@ void add_token(trie* t, char* tok, int key)
 				add_link(t, hist[++n] = new_trie());
 				t = hist[n];
 				break;
+			case 'Q':		/* quotable chars */
+				next = new_trie();
+				for(j = 0; j < 256; j++)
+					if (j != '"')
+						t->map[j] = next;
+				t = next;
+				++n;
+				break;
 			case '\\':	/* escape to normal text */
 				if (++i == len)
 					fail("backslash expected char");
@@ -540,5 +548,8 @@ void setup_tokenizer()
 	add_token(t[tc++], "/\\*", C_CMNT_OPEN);
 	add_token(t[tc++], "\\*/", C_CMNT_CLOSE);
 	add_token(t[tc++], "//", CPP_CMNT);
+
+	/* string constants */
+	add_token(t[tc++], "\"Q*\"", TOK_STR_CONST);
 }
 

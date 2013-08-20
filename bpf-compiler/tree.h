@@ -38,6 +38,7 @@ enum {		/* head_type */
 	PROC_CALL,
 	ADDR,
 	DEREF,
+	STR_CONST,
 	/* special */
 	NULL_TREE
 };
@@ -76,6 +77,7 @@ static char* tree_nam[] = {
 	"PROC_CALL",
 	"ADDR",
 	"DEREF",
+	"STR_CONST",
 	"NULL_TREE"
 };
 
