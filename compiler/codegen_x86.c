@@ -28,6 +28,7 @@ int temp_register = 0;
 int swap = 0;
 int proc_ok = 1;
 int else_ret;
+int main_defined = 0;
 char entry_buf[1024], buf[1024];
 
 int stack_size;
@@ -248,6 +249,9 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 #endif
 	printf("%s:\n", name);
 
+	if (!strcmp(name, "main"))
+		main_defined = 1;
+
 	/* setup the identifier symbol table and make stack
 	 * space for all the variables in the program */
 	*entry_buf = 0;
@@ -315,7 +319,13 @@ void run_codegen(exp_tree_t *tree)
 	proc_ok = 0;	/* no further procedures shall
 			 * be allowed */
 
-	codegen_proc(main_name, tree, main_args);
+	/*
+	 * If the user code contains no main(),
+	 * compile the main lexical body as the
+	 * the main-code.
+	 */
+	if (!main_defined)
+		codegen_proc(main_name, tree, main_args);
 
 	/* echo utility routine */
 #ifndef MINGW_BUILD
