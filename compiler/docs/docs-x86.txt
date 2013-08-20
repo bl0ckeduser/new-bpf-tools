@@ -137,8 +137,8 @@ an optional part in a construction.
 
 12. Custom procedures
 
-	See examples: test/lexical, test/procedure, test/square,
-	test/tco.
+	See examples: test/x86/lexical.c, test/x86/procedure.c,
+	test/x86/square.c, test/x86/tco.c.
 
 	Recursion is allowed. Tail-call optimization is done when it
 	can be done. Everything is pass-by-value; passing arrays around
