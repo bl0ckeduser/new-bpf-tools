@@ -1,27 +1,10 @@
-		  ==================================
-  		  Some documentation on the compiler
-		  ==================================
+		  ======================================
+  		  Some documentation on the BPF compiler
+		  ======================================
 
 			     ---------
 			      Scripts
 			     ---------
-
-The scripts to use the x86-targeting compiler are:
-
-	build-x86.sh 		-- build the x86 compiler
-	autotest-x86.sh 	-- test the x86 compiler against test/*.c
-	compile-run-x86.sh 	-- compile and run a program via x86
-
-Quick example:
-	$ sh build-x86.sh 
-	$ sh compile-run-x86.sh test/procedure 
-	120
-
-The 32-bit x86 code generator outputs GAS assembly and the relevant scripts
-assemble this using gcc. clang also works; you can modify the scripts to
-use clang if desired.
-
-			**********************
 
 For the BPFVM-targeting compiler the scripts are:
 
@@ -30,17 +13,10 @@ For the BPFVM-targeting compiler the scripts are:
 	compile-run.sh		-- compile a program and run it using
 				   "bpfvm" command
 
-(BPFVM is a poorly-designed VM that I programmed when I was younger and 
-even more of a noob. It is rather difficult to generate code for it)
-
 			   ------------
-			   The language
+			      Syntax
 			   ------------
 			
-The language compiled by this compiler is essentially a simple BASIC
-with C-inspired syntax and features and built-in support for the 
-blokvm instructions. Please see the examples in the "test" directory.
-
 Below is a quick overview of the language syntax. < > symbols denote
 an optional part in a construction.
 
@@ -120,7 +96,6 @@ an optional part in a construction.
 		--bar;		mystery++;
 
 8. BPFVM instructions
-   (BPFVM codegen only except for "echo" which has been ported to x86)
 
 	e.g.
 		echo(1 + 2 * 3);
@@ -154,9 +129,6 @@ an optional part in a construction.
    that "expr" is true iff expr <= 0. If you write code that does not depend
    on such conventions there will be no portability or confusion problem.
 
-   [NOTE: The 32-bit x86 code generator follows the C booleans convention;
-   the paragraph above applies to the BPFVM code generator].
-
 10. Comments
 	/* this is a C-style comment */
 	// this is a C++ -style comment.
@@ -164,7 +136,6 @@ an optional part in a construction.
 
 11. Keyboard extension (see VM spec part 5, 
     "Keyboard/game-controller interface specification")
-    (BPFVM codegen only)
 
     The compiler automatically provides the identifier "_kbreg"
     for the keyboard register (byte address 0). Here is some sample code:
@@ -184,51 +155,9 @@ an optional part in a construction.
 	else
 		echo(0);	/* it doesn't */
 
-12. Custom procedures (x86 codegen only)
-
-	See examples: test/lexical, test/procedure, test/square,
-	test/tco.
-
-	Recursion is allowed. Tail-call optimization is done when it
-	can be done. Everything is pass-by-value; passing arrays around
-	has not yet been considered by the author and will probably make
-	bad things happen. You are allowed to return nothing from a 
-	function and even to assign the return value of a function
-	returning nothing to a variable. Your computer should not crash,
-	but you	will get arbitrary data in the variable. Consider
-	the following:
-
-			proc bob() {
-				;
-			}
-
-			int x = bob();
-			echo(x);
-
-	It runs fine for me and I get the result-number 1, which is
-	never mentioned anywhere in the program, nor in the
-	generated assembly. What a mystery.
-
-13. Pointers (x86 codegen only)
-
-	The & (address-of) and * (dereference) operators from C
-	have been implemented. Note that the language is typeless;
-	everything is an "int", including pointers. Every "int"
-	becomes a 32-bit word. (Maybe I should change the keyword
-	to "word" or something like that).
-
-	* can be applied to any expression
-	& can be applied to lvalues only
-
-14. String constants (x86 codegen only)
-
-	Examples:
-
-	"bob 123"
-	printf("hello\n");
-
 .............................................................................
 
+			-------------------------
 			Operator precedence table
 			-------------------------
 

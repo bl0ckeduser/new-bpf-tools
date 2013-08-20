@@ -1,0 +1,211 @@
+		=============================================
+  		Some documentation on the 32-bit x86 compiler
+		=============================================
+
+			     ---------
+			      Scripts
+			     ---------
+
+The scripts to use the x86-targeting compiler are:
+
+	build-x86.sh 		-- build the x86 compiler
+	autotest-x86.sh 	-- test the x86 compiler against test/*.c
+	compile-run-x86.sh 	-- compile and run a program via x86
+
+Quick example:
+	$ sh build-x86.sh 
+	$ sh compile-run-x86.sh test/procedure 
+	120
+
+The 32-bit x86 code generator outputs GAS assembly and the test scripts
+assemble this using gcc. clang also works; you can modify the scripts to
+use clang if desired.
+
+			   ------------
+			      Syntax
+			   ------------
+			
+Below is a quick overview of the language syntax. < > symbols denote
+an optional part in a construction.
+
+1. Code blocks
+	i. empty block
+		;
+	ii. single-instruction block
+		e.g. x += 1;
+	iii. multi-instruction blocks
+		e.g.
+		{
+			x += 1;
+			y = x + 2;
+			if (x > 2)
+				++y;
+		}
+
+2. Variable declarations
+	i. integers
+		int variable_name < = expression >;
+	ii. arrays
+		int array_name[integer];
+
+3. Control flow
+	i. if statement
+		if (expr)
+			block1
+		< else
+			block2 >
+	ii. while statement
+		while (expr)
+			block
+
+	iii. for statement
+		for (<init>; <condition>; <increment>)
+			block
+	
+	     init, condition, increment are expressions.
+	     if condition is ommitted, the compiler writes in
+	     "1 == 1" (always true) instead.
+
+	     In general, the statement will be rewritten as:
+
+		init;
+		while (condition) {
+			block;
+			increment;
+		}
+
+4. Arithmetic
+	Operands are any kind of expression: number, variable, array
+	index, etc.
+	e.g. 
+		1 + 2 * 3 		(evaluates to 7)
+		(1 + 2) * 3		(evaluates to 9)
+		z - x * x + 123		(evalutes to something)	
+		-x + 5
+		
+5. Assignment operators
+	Left operand is an lvalue, right operand is an expression.
+	e.g.
+		x += 3;
+		foo += foo * bar;
+		variable = 123;
+		array[12] = 34;
+		z -= 56;
+
+6. lvalues (essentially, objects to which you can assign values)
+	e.g.
+		table[index]
+		variable
+
+7. C-style increments and decrements
+	The operand is any lvalue.
+	e.g.
+		++foo;		tab[bobobo]--;
+		--bar;		mystery++;
+
+8. Special instructions
+	echo(n); writes out an integer and a newline to stdout.
+
+9. Relational operators
+		exprA == exprB
+		exprA != exprB
+		exprA >= exprB
+		exprA <= exprB
+		exprA > exprB
+		exprA < exprB
+
+   These work as in C, and follow C's convention of "nonzero true, 
+   zero false".
+
+10. Comments
+	/* this is a C-style comment */
+	// this is a C++ -style comment.
+	// (C++ -style comments last till the end of the line)
+
+11. Calling libc routines
+
+	It is possible to call libc routines like printf(),
+	getchar(), etc, just as you would in C.
+	
+	For example:
+		printf("herp derp hello world\n");
+		int c = getchar();
+
+	etc.
+
+	For some reason, scanf("%s") crashes, though. Will try to fix.
+
+12. Custom procedures
+
+	See examples: test/lexical, test/procedure, test/square,
+	test/tco.
+
+	Recursion is allowed. Tail-call optimization is done when it
+	can be done. Everything is pass-by-value; passing arrays around
+	has not yet been considered by the author and will probably make
+	bad things happen. You are allowed to return nothing from a 
+	function and even to assign the return value of a function
+	returning nothing to a variable. Your computer should not crash,
+	but you	will get arbitrary data in the variable. Consider
+	the following:
+
+			proc bob() {
+				;
+			}
+
+			int x = bob();
+			echo(x);
+
+	It runs fine for me and I get the result-number 1, which is
+	never mentioned anywhere in the program, nor in the
+	generated assembly. What a mystery.
+
+13. Pointers
+
+	The & (address-of) and * (dereference) operators from C
+	have been implemented. Note that the language is typeless;
+	everything is an "int", including pointers. Every "int"
+	becomes a 32-bit word. (Maybe I should change the keyword
+	to "word" or something like that).
+
+	* can be applied to any expression
+	& can be applied to lvalues only
+
+	Arrays symbols are implicitly converted to pointers to 
+	the first element of the array.
+
+	For example:
+		int array[32];
+		int ptr = array;
+		*array = 123;
+		printf("%d\n", array[0]);	// 123
+
+14. String constants
+
+	Examples:
+
+	"bob 123"
+	printf("hello\n");
+
+.............................................................................
+
+			-------------------------
+			Operator precedence table
+			-------------------------
+
+From greatest to lowest precedence:
+
+	unary -, ( ), ++, --, procedure calls
+	* /
+	+ -
+	> >= < <= == !=
+	= += -= *= /=
+
+All arithmetic operators are left-associative.
+
+Assignment is right-associative.
+
+Comparison operators are not associative: expressions like 1 < 2 < 3
+will raise syntax errors.
+
+.............................................................................

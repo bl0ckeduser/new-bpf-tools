@@ -1,38 +1,15 @@
-This a new [December 2012] set of programming tools targeting my 
-ancient [2007; I was a very big noob] "BPF" virtual machine. 32-bit
-x86 using GNU assembler has also been added as target.
+This project is a personal exercise in compiler programming.
 
-This project is meant as a personal exercise in compiler programming.
+It consists mainly in a compiler for a subset of C (with somewhat modified
+syntax, for now). It targets 32-bit x86 (via GNU assembler). It can also 
+target my terrible old bytecode VM, arbitrarily named "BPF" -- for details, 
+see "README-BPF".
 
-The x86 compiler is frequently tested on FreeBSD and Linux.
-It can also be built and used on MinGW, but I don't test that as often.
+Note that the BPF compiler supports a much smaller subset of C than does 
+the x86 compiler.
 
-Below are some implementations of the "BPF" VM.
-Both include the VM specs document and some demo programs in their tree.
-
- * https://github.com/bl0ckeduser/blokvm
-	Was made in collaboration with darkf. Single clean 294-line
-	SDL/C file.
-
- * https://sites.google.com/site/bl0ckeduserssoftware/past-projects#oldvm
-	Made by me. 461 lines of SDL/C code spread across a few files.
-	Not as lean as blokvm, but faster and more polished.
-
-The License is an MIT one.
-
-bpf-asm
-=======
-An assembler for BPF bytecodes. complete.
-
-bpf-compiler
-============
-Pseudo-BASIC-with-C-like syntax compiler. Let's say it's 99% complete;
-all the things I could initially think of are there, but I could make
-small additions or fix bugs etc.
-
-The "test" directory in the main directory here contains complete
-test programs, but there also test subdirectories for the compiler
-and assembler.
+The x86 compiler is tested on FreeBSD and Linux. It can also be built
+and used on Windows using MinGW, but I haven't tested that recently.
 
 -------------------------------------------------------------------------
 

@@ -1,0 +1,23 @@
+The "bpf-asm" directory contains an "assembler" for BPF bytecodes.
+
+The "compiler" directory contains a pseudo-BASIC-with-C-like syntax 
+compiler. Let's say it's 99% complete; all the things I could initially 
+think of are there, but I could make small additions or fix bugs etc.
+
+The "bpf-test" directory in the main directory here contains complete
+test programs, but there also "test" subdirectories for the BPF compiler
+and assembler.
+
+				--------------
+
+Below are links to some "BPFVM" bytecode interpreters.
+Both include the VM specs document and some demo programs in their tree.
+
+ * https://github.com/bl0ckeduser/blokvm
+	Was made in collaboration with darkf. Single clean 294-line
+	SDL/C file.
+
+ * https://sites.google.com/site/bl0ckeduserssoftware/past-projects#oldvm
+	Made by me. 461 lines of SDL/C code spread across a few files.
+	Not as lean as blokvm, but faster and more polished.
+
