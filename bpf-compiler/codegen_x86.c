@@ -391,7 +391,7 @@ char* registerize(char *stor)
  */
 char* codegen(exp_tree_t* tree)
 {
-	char *sto, *sto2, *sto3;
+	char *sto, *sto2, *sto3, *sto4;
 	char *str, *str2;
 	char *name;
 	char *proc_args[32];
@@ -418,6 +418,51 @@ char* codegen(exp_tree_t* tree)
 		/* clear temporary memory and registers */
 		new_temp_mem();
 		new_temp_reg();
+	}
+
+	/* &x */
+	if (tree->head_type == ADDR
+		&& tree->child_count == 1
+		&& tree->child[0]->head_type == VARIABLE) {
+		
+		sto = get_temp_reg();
+
+		/* LEA: load effective address */
+		printf("leal %s, %s\n",
+				symstack(sym_lookup(tree->child[0]->tok)),
+				sto);
+
+		return sto;
+	}
+
+	/* &(a[v]) = &a + 4 * v */
+	if (tree->head_type == ADDR
+		&& tree->child_count == 1
+		&& tree->child[0]->head_type == ARRAY) {
+		
+		sto = get_temp_reg();
+
+		printf("leal %s, %s\n",
+				symstack(sym_lookup(tree->child[0]->child[0]->tok)),
+				sto);
+
+		sto2 = registerize(codegen(tree->child[0]->child[1]));
+		printf("imull $-4, %s\n", sto2);
+		printf("addl %s, %s\n", sto2, sto);
+
+		return sto;
+	}
+
+
+	/* *(exp) */
+	if (tree->head_type == DEREF
+		&& tree->child_count == 1) {
+		
+		sto = registerize(codegen(tree->child[0]));
+		sto2 = get_temp_reg();
+		printf("movl (%s), %s\n", sto, sto2);
+		
+		return sto2;
 	}
 
 	/* procedure call */

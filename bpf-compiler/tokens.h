@@ -56,7 +56,9 @@ enum {
 	CPP_CMNT,
 	TOK_PROC,
 	TOK_RET,
-	TOK_FOR
+	TOK_FOR,
+	TOK_ADDR,
+	TOK_DEREF
 };
 
 static char* tok_nam[] = {
@@ -108,7 +110,9 @@ static char* tok_nam[] = {
 	"CPP_CMNT",
 	"TOK_PROC",
 	"TOK_RET",
-	"TOK_FOR"
+	"TOK_FOR",
+	"TOK_ADDR",
+	"TOK_DEREF"
 };
 
 static char* tok_desc[] = {

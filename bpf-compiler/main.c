@@ -3,7 +3,7 @@
  * and now also 32-bit x86. It could easily
  * target other things given sufficient time.
  *
- * by Bl0ckeduser, December 2012 - January 2013
+ * by Bl0ckeduser, December 2012 - August 2013
  * Enjoy !
  */
 

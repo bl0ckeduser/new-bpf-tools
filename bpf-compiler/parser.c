@@ -420,10 +420,20 @@ exp_tree_t expr()
 		}
 		return tree;
 	}
-	/* 'int' ident [ ( '=' expr ) |  ('[' integer ']') ] */
+	/* 'int' { '*' } ident [ ( '=' expr ) |  ('[' integer ']') ] */
 	if(peek().type == TOK_INT) {
 		++indx;	/* eat int token */
 		tree = new_exp_tree(INT_DECL, NULL);
+		/* 
+		 * Eat pointer-qualification 
+		 * stars (as in "int ***ptr") for now. 
+		 * The language currently compiled is actually
+		 * typeless, but I need to write the star-qualifiers
+		 * in the test code so automatic comparison with
+		 * gcc-compiled output is possible.
+		 */
+		while (peek().type == TOK_MUL)
+			++indx;
 		tok = need(TOK_IDENT);
 		subtree = new_exp_tree(VARIABLE, &tok);
 		add_child(&tree, alloc_exptree(subtree));
@@ -662,6 +672,28 @@ exp_tree_t unary_expr()
 		} else
 			tree = subtree3;
 
+		return tree;
+	}
+
+	/* &x */
+	if (peek().type == TOK_ADDR) {
+		++indx;	/* eat & */
+		subtree = lval();
+		if (!valid_tree(subtree))
+			parse_fail("lvalue expected");
+		tree = new_exp_tree(ADDR, NULL);
+		add_child(&tree, alloc_exptree(subtree));
+		return tree;
+	}
+
+	/* *x */
+	if (peek().type == TOK_MUL) {
+		++indx;	/* eat * */
+		subtree = expr();
+		if (!valid_tree(subtree))
+			parse_fail("expression expected");
+		tree = new_exp_tree(DEREF, NULL);
+		add_child(&tree, alloc_exptree(subtree));
 		return tree;
 	}
 

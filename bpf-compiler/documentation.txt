@@ -2,9 +2,9 @@
   		  Some documentation on the compiler
 		  ==================================
 
-			 --------------
-			 Helper scripts
-			 --------------
+			     ---------
+			      Scripts
+			     ---------
 
 The scripts to use the x86-targeting compiler are:
 
@@ -29,6 +29,9 @@ For the BPFVM-targeting compiler the scripts are:
 	autotest.sh		-- test it
 	compile-run.sh		-- compile a program and run it using
 				   "bpfvm" command
+
+(BPFVM is a poorly-designed VM that I programmed when I was younger and 
+even more of a noob. It is rather difficult to generate code for it)
 
 			   ------------
 			   The language
@@ -116,7 +119,9 @@ an optional part in a construction.
 		++foo;		tab[bobobo]--;
 		--bar;		mystery++;
 
-8. BPF instructions
+8. BPFVM instructions
+   (BPFVM codegen only except for "echo" which has been ported to x86)
+
 	e.g.
 		echo(1 + 2 * 3);
 		wait(1, 2);
@@ -135,9 +140,6 @@ an optional part in a construction.
 		mx(stor);
 		array[i] = stor;
 	I'll try to do this rewriting automatically at one point.
-
-	[NOTE: "echo" is the only such routine supported by the 32-bit
-	x86 codegen]
 
 9. Relational operators
 		exprA == exprB
@@ -206,6 +208,17 @@ an optional part in a construction.
 	It runs fine for me and I get the result-number 1, which is
 	never mentioned anywhere in the program, nor in the
 	generated assembly. What a mystery.
+
+13. Pointers (x86 codegen only)
+
+	The & (address-of) and * (dereference) operators from C
+	have been implemented. Note that the language is typeless;
+	everything is an "int", including pointers. Every "int"
+	becomes a 32-bit word. (Maybe I should change the keyword
+	to "word" or something like that).
+
+	* can be applied to any expression
+	& can be applied to lvalues only
 
 .............................................................................
 

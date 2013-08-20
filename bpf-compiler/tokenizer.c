@@ -5,7 +5,7 @@
  * and additional bugs. The tokenization is
  * "greedy".
  *
- * Bl0ckeduser, December 2012 - January 2013
+ * Bl0ckeduser, December 2012 - August 2013
  */
 
 /* TODO: cleanup some of the more mysterious
@@ -522,6 +522,7 @@ void setup_tokenizer()
 	add_token(t[tc++], "\\*=", TOK_MULEQ);
 	add_token(t[tc++], "\\+\\+", TOK_PLUSPLUS);
 	add_token(t[tc++], "--", TOK_MINUSMINUS);
+	add_token(t[tc++], "&", TOK_ADDR);
 
 	/* special characters */
 	add_token(t[tc++], "{", TOK_LBRACE);
