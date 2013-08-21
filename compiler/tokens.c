@@ -44,6 +44,11 @@ int is_comp_op(char type)
 		|| type == TOK_EQ;
 }
 
+int is_basic_type(char type)
+{
+	return type == TOK_INT;
+}
+
 int is_instr(char type)
 {
 	return type == TOK_ECHO 

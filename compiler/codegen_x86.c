@@ -380,58 +380,92 @@ void deal_with_procs(exp_tree_t *tree)
 			deal_with_procs(tree->child[i]);
 }
 
+/* check if a declaration is an array,
+ * and if it is, return dimensions */
+int check_array(exp_tree_t *decl)
+{
+	int array = 0;
+	int i;
+	for (i = 0; i < decl->child_count; ++i)
+		if (decl->child[i]->head_type == ARRAY_DIM)
+			++array;
+	return array;
+}
+
 /* See codegen_proc above */
 void setup_symbols(exp_tree_t *tree)
 {
-	int i, sto;
+	int i, j, k, sto;
+	exp_tree_t *dc;
+	int array;
 	char *str;
 
-	/* variable declaration, with optional assignment */
 	if (tree->head_type == INT_DECL) {
-		/* create the storage and symbol */
-		if (!sym_check(tree->child[0]->tok))
-			(void)sym_add(tree->child[0]->tok);
-		/* preserve assignment, else discard tree */
-		if (tree->child_count == 2)
-			(*tree).head_type = ASGN;
-		else
-			(*tree).head_type = NULL_TREE;
-	}
+		for (i = 0; i < tree->child_count; ++i) {
+			dc = tree->child[i];
+			if (check_array(dc) > 1) {
+				fail("N-dimensional, where N > 1, arrays are "
+					 "currently unsupported");
+			} else if (check_array(dc) == 1) {
+				/*
+				 * Set up symbols and stack storage
+			 	 * for a 1-dimensional array
+				 */
+				/* number of elements (integer) */
+				sto = atoi(get_tok_str(*(dc->child[1]->tok)));
+				/* make a symbol named after the array
+				 * and store the *ADDRESS* of its first element there */
+				if (!sym_check(dc->child[0]->tok))
+					(void)sym_add(dc->child[0]->tok);
+				str = get_temp_reg();
+				sprintf(buf, "leal %s, %s\n",
+					symstack(sym_lookup(dc->child[0]->tok) + sto),
+					str);
+				strcat(entry_buf, buf);
+				sprintf(buf, "movl %s, %s\n",
+					str,
+					symstack(sym_lookup(dc->child[0]->tok)));
+				strcat(entry_buf, buf);
+				/* make nameless storage for the subsequent
+				 * indices -- when we deal with an expression
+				 * such as array[index] we only need to know
+				 * the starting point of the array and the
+				 * value "index" evaluates to */
+				for (j = 0; j < sto; j++)
+					(void)nameless_perm_storage();
+				/* discard tree */
+				*dc = null_tree;
+			} else {
+				/*
+				 * Set up symbols and stack storage
+			 	 * for a plain variable (e.g. "int x")
+				 */
+				/* create the storage and symbol */
+				if (!sym_check(dc->child[0]->tok))
+					(void)sym_add(dc->child[0]->tok);
+				/* preserve assignment, else discard tree */
+				if (dc->child_count == 2)
+					(*dc).head_type = ASGN;
+				else
+					(*dc).head_type = NULL_TREE;
+			}
+		}
 
-	/* array declaration */
-	if (tree->head_type == ARRAY_DECL) {
-		/* number of elements (integer) */
-		sto = atoi(get_tok_str(*(tree->child[1]->tok)));
-		/* make a symbol named after the array
-		 * and store the *ADDRESS* of its first element there */
-		if (!sym_check(tree->child[0]->tok))
-			(void)sym_add(tree->child[0]->tok);
-		str = get_temp_reg();
-		sprintf(buf, "leal %s, %s\n",
-			symstack(sym_lookup(tree->child[0]->tok) + sto),
-			str);
-		strcat(entry_buf, buf);
-		sprintf(buf, "movl %s, %s\n",
-			str,
-			symstack(sym_lookup(tree->child[0]->tok)));
-		strcat(entry_buf, buf);
-		/* make nameless storage for the subsequent
-		 * indices -- when we deal with an expression
-		 * such as array[index] we only need to know
-		 * the starting point of the array and the
-		 * value "index" evaluates to */
-		for (i = 0; i < sto; i++)
-			(void)nameless_perm_storage();
-		/* discard tree */
-		*tree = null_tree;
+		/* 
+		 * Turn the declaration sequence into
+		 * a standard code sequence, because at
+		 * this point the assignments are ASGN
+		 * and the rest are NULL_TREE
+		 */
+		tree->head_type = BLOCK;
 	}
+	
 
 	for (i = 0; i < tree->child_count; ++i)
 		if (tree->child[i]->head_type == BLOCK
 		||	tree->child[i]->head_type == IF
 		||	tree->child[i]->head_type == WHILE
-		||	tree->child[i]->head_type == INT_DECL
-		||	tree->child[i]->head_type == ARRAY_DECL)
+		||	tree->child[i]->head_type == INT_DECL)
 			setup_symbols(tree->child[i]);
 }
 

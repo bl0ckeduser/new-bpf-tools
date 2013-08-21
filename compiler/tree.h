@@ -43,6 +43,8 @@ enum {		/* head_type */
 	CC_OR,
 	CC_AND,
 	CC_NOT,
+	ARRAY_DIM,
+	DECL_CHILD,
 	/* special */
 	NULL_TREE
 };
@@ -86,6 +88,8 @@ static char* tree_nam[] = {
 	"CC_OR",
 	"CC_AND",
 	"CC_NOT",
+	"ARRAY_DIM",
+	"DECL_CHILD",
 	"NULL_TREE"
 };
 

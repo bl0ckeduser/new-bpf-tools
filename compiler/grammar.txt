@@ -1,4 +1,23 @@
+/* declaration stuff */
+
+basic-type := 'int'
+
+/* e.g. int a, b, c; */
+decl := basic-type decl2 { ',' decl2 }
+
+/*
+ * 	*foo
+ *	**foo = 123
+ *	foo[12]
+ *	*foo[12]
+ */	
+decl2 := { '*' } ident [ ('=' expr) | ('[' integer ']') ]
+
+
+/* ====================================================== */
+
 block := expr ';' 
+	| decl ';'
 	| if '(' expr ')' block [else block] 
 	| while '(' expr ')' block 
 	| for '(' [expr] ';' [expr] ';' [expr] ')' block
@@ -11,9 +30,15 @@ block := expr ';'
 
 expr := lvalue asg-op expr 
 	| ccor_expr
-	| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
 	| str-const
 
+/*
+ * Notice [] binds tighter than *
+ * Also, if n-dimensional arrays were supported,
+ * it would be ...
+ *
+ *        ident { '[' expr ']' }
+ */
 lvalue := ident [ '[' expr ']' ]  | '*' lvalue
 
 ccor_expr := ccand_expr ['||' ccand_expr]

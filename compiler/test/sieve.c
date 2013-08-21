@@ -1,7 +1,8 @@
-int MAX = 100;
-int sieve[128];
-int k;
-int n;
+/*
+ * Support for sequenced declarations like this one
+ * has been added
+ */
+int MAX = 100, sieve[128], k, n;
 
 sieve[1] = 1;
 k = 2;

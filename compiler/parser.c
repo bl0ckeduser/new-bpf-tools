@@ -1,4 +1,5 @@
 /* Parser (tokens -> tree) */
+/* See also: grammar.txt */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +20,8 @@ exp_tree_t unary_expr();
 exp_tree_t ccor_expr();
 exp_tree_t ccand_expr();
 exp_tree_t comp_expr();
+exp_tree_t decl();
+exp_tree_t decl2();
 void printout(exp_tree_t et);
 extern void fail(char* mesg);
 
@@ -113,6 +116,80 @@ exp_tree_t parse(token_t *t)
  * very unhappy.
  */
 
+/* 
+ * decl := basic-type decl2 { ','  decl2 } 
+ */
+int decl_dispatch(char type)
+{
+	switch (type) {
+		case TOK_INT:
+			return INT_DECL;
+		break;
+	}
+}
+exp_tree_t decl()
+{
+	token_t tok = peek();
+	exp_tree_t tree, subtree;
+
+	/* basic-type decl2 { ','  decl2 }  */
+	if(is_basic_type(tok.type)) {
+		++indx;	/* eat basic-type token */
+		tree = new_exp_tree(decl_dispatch(tok.type), NULL);
+		while (1) {
+			if (!valid_tree(subtree = decl2()))
+				parse_fail("bad declaration syntax");
+			add_child(&tree, alloc_exptree(subtree));
+			/* ',' decl2 */
+			if (peek().type != TOK_COMMA)
+				break;
+			else
+				++indx;
+		}
+		return tree;
+	}
+
+	return null_tree;
+}
+
+/*
+ * decl2 := { '*' } ident [ ('=' expr) | ('[' integer ']') ]
+ */
+exp_tree_t decl2()
+{
+	token_t tok = peek();
+	exp_tree_t tree, subtree, subtree2;
+
+	tree = new_exp_tree(DECL_CHILD, NULL);
+
+	/* 
+	 * Eat pointer-qualification 
+	 * stars (as in "int ***ptr") for now. 
+	 * The language currently compiled is actually
+	 * typeless, but I need to write the star-qualifiers
+	 * in the test code so automatic comparison with
+	 * gcc-compiled output is possible.
+	 */
+	while (peek().type == TOK_MUL)
+		++indx;
+	tok = need(TOK_IDENT);
+	subtree = new_exp_tree(VARIABLE, &tok);
+	add_child(&tree, alloc_exptree(subtree));
+	if (peek().type == TOK_ASGN) {
+		++indx;	/* eat = */
+		if (!valid_tree(subtree2 = expr()))
+			parse_fail("expected expression after =");
+		add_child(&tree, alloc_exptree(subtree2));
+	} else if(peek().type == TOK_LBRACK) {
+		++indx;	/* eat [ */
+		tok = need(TOK_INTEGER);
+		need(TOK_RBRACK);
+		add_child(&tree, 
+			alloc_exptree(new_exp_tree(ARRAY_DIM, &tok)));
+	}
+	return tree;
+}
+
 /* lvalue := ident [ '[' expr ']' ]  | '*' lvalue */
 exp_tree_t lval()
 {
@@ -152,6 +229,7 @@ exp_tree_t lval()
 
 /*
 	block := expr ';' 
+		| decl ';'
 		| if '(' expr ')' block [else block] 
 		| while '(' expr ')' block 
 		| for '(' [expr] ';' [expr] ';' [expr] ')' block
@@ -247,8 +325,13 @@ not_proc:
 		 * a label after all */
 		else --indx;
 	}
-	/* expr */
+	/* expr ';' */
 	if (valid_tree(tree = expr())) {
+		need(TOK_SEMICOLON);
+		return tree;
+	}
+	/* decl ';' */
+	if (valid_tree(tree = decl())) {
 		need(TOK_SEMICOLON);
 		return tree;
 	}
@@ -451,38 +534,6 @@ exp_tree_t expr()
 	}
 	/* ccor_expr */
 	if (valid_tree(tree = ccor_expr())) {
-		return tree;
-	}
-	/* 'int' { '*' } ident [ ( '=' expr ) |  ('[' integer ']') ] */
-	if(peek().type == TOK_INT) {
-		++indx;	/* eat int token */
-		tree = new_exp_tree(INT_DECL, NULL);
-		/* 
-		 * Eat pointer-qualification 
-		 * stars (as in "int ***ptr") for now. 
-		 * The language currently compiled is actually
-		 * typeless, but I need to write the star-qualifiers
-		 * in the test code so automatic comparison with
-		 * gcc-compiled output is possible.
-		 */
-		while (peek().type == TOK_MUL)
-			++indx;
-		tok = need(TOK_IDENT);
-		subtree = new_exp_tree(VARIABLE, &tok);
-		add_child(&tree, alloc_exptree(subtree));
-		if (peek().type == TOK_ASGN) {
-			++indx;	/* eat = */
-			if (!valid_tree(subtree2 = expr()))
-				parse_fail("expected expression after =");
-			add_child(&tree, alloc_exptree(subtree2));
-		} else if(peek().type == TOK_LBRACK) {
-			++indx;	/* eat [ */
-			tok = need(TOK_INTEGER);
-			need(TOK_RBRACK);
-			add_child(&tree, 
-				alloc_exptree(new_exp_tree(NUMBER, &tok)));
-			tree.head_type = ARRAY_DECL;
-		}
 		return tree;
 	}
 	/* "bob123" */

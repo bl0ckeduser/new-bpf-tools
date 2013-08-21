@@ -45,6 +45,18 @@ encoded_int_t encode(int n) {
 	return (encoded_int_t){ m, n };
 }
 
+/* check if a declaration is an array,
+ * and if it is, return dimensions */
+int check_array(exp_tree_t *decl)
+{
+	int array = 0;
+	int i;
+	for (i = 0; i < decl->child_count; ++i)
+		if (decl->child[i]->head_type == ARRAY_DIM)
+			++array;
+	return array;
+}
+
 /* 
  * Get a register address to be used temporarily.
  * for example, to evaluate the expression
@@ -318,7 +330,7 @@ codegen_t codegen(exp_tree_t* tree)
 	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	exp_tree_t *new, *new2;
-	exp_tree_t *temp;
+	exp_tree_t *temp, *dc;
 	exp_tree_t fake_tree;
 	exp_tree_t fake_tree_2;
 	extern int adr_microcode(int sto, int read, int set);
@@ -381,48 +393,51 @@ codegen_t codegen(exp_tree_t* tree)
 		return (codegen_t){ 0, bytesize };
 	}
 
-	/* variable declaration, with optional assignment */
+	/* variable and array declarations */
 	if (tree->head_type == INT_DECL) {
-		/* create the storage and symbol */
-		if (!sym_check(tree->child[0]->tok))
-			sym = sym_add(tree->child[0]->tok);
-		/* write the code for the assignment, if any */
-		if (tree->child_count == 2) {
-			if (tree->child[1]->head_type == NUMBER) {
-				sprintf(buf, "Do %d 10 1 %s\n", sym,
-					get_tok_str(*(tree->child[1]->tok)));
-				push_line(buf);
-				return (codegen_t){ 0, 5 };
-			} else if (tree->child[1]->head_type == VARIABLE) {
-				sto = sym_lookup(tree->child[1]->tok);
-				sprintf(buf, "Do %d 10 2 %d\n", sym, sto);
-				push_line(buf);
-				return (codegen_t){ 0, 5 };
-			} else {
-				cod = codegen(tree->child[1]);
-				sprintf(buf, "Do %d 10 2 %d\n", sym, cod.adr);
-				push_line(buf);
-				return (codegen_t){ 0, cod.bytes + 5 };
+		for (i = 0; i < tree->child_count; ++i) {
+			dc = tree->child[i];
+			/* variable, with optional assignment */
+			if (check_array(dc) == 0) {
+				/* create the storage and symbol */
+				if (!sym_check(dc->child[0]->tok))
+					sym = sym_add(dc->child[0]->tok);
+				/* write the code for the assignment, if any */
+				if (dc->child_count == 2) {
+					if (dc->child[1]->head_type == NUMBER) {
+						sprintf(buf, "Do %d 10 1 %s\n", sym,
+							get_tok_str(*(dc->child[1]->tok)));
+						push_line(buf);
+						bytesize += 5;
+					} else if (dc->child[1]->head_type == VARIABLE) {
+						sto = sym_lookup(dc->child[1]->tok);
+						sprintf(buf, "Do %d 10 2 %d\n", sym, sto);
+						push_line(buf);
+						bytesize += 5;
+					} else {
+						cod = codegen(dc->child[1]);
+						sprintf(buf, "Do %d 10 2 %d\n", sym, cod.adr);
+						push_line(buf);
+						bytesize += cod.bytes + 5;
+					}
+				}
+			/* array declaration */
+			} else if (check_array(dc) == 1) {
+				/* make a symbol named after the array
+				 * at its index 0 */
+				if (!sym_check(dc->child[0]->tok))
+					(void)sym_add(dc->child[0]->tok);
+				/* make nameless storage for the subsequent
+				 * indices -- when we deal with an expression
+				 * such as array[index] we only need to know
+				 * the starting point of the array and the
+				 * value "index" evaluates to */
+				sto = atoi(get_tok_str(*(dc->child[1]->tok)));
+				for (j = 0; j < sto - 1; j++)
+					(void)nameless_perm_storage();
 			}
 		}
-		return (codegen_t){ 0, 0 };
-	}
-
-	/* array declaration */
-	if (tree->head_type == ARRAY_DECL) {
-		/* make a symbol named after the array
-		 * at its index 0 */
-		if (!sym_check(tree->child[0]->tok))
-			(void)sym_add(tree->child[0]->tok);
-		/* make nameless storage for the subsequent
-		 * indices -- when we deal with an expression
-		 * such as array[index] we only need to know
-		 * the starting point of the array and the
-		 * value "index" evaluates to */
-		sto = atoi(get_tok_str(*(tree->child[1]->tok)));
-		for (i = 0; i < sto - 1; i++)
-			(void)nameless_perm_storage();
-		return (codegen_t){ 0, 0 };
+		return (codegen_t){ 0, bytesize };
 	}
 
 	/* direct instruction */
