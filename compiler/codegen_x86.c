@@ -573,6 +573,16 @@ void setup_symbols(exp_tree_t *tree, int symty)
 							(void)glob_add(dc->child[0]->tok);
 							printf("%s: ",
 								get_tok_str(*(dc->child[0]->tok)));
+				
+							/*
+							 * Global initializers have to be integer
+							 * constants !!!
+							 */
+							if (dc->child_count == 2
+								&& dc->child[1]->head_type != NUMBER) {
+								fail("non-integer-constant global initializer");
+							}
+
 							/* 
 							 * If no initial value is given,
 							 * write a zero, otherwise write
