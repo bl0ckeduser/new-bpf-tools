@@ -551,6 +551,8 @@ void setup_tokenizer()
 	add_token(t[tc++], "&", TOK_ADDR);
 	add_token(t[tc++], "%", TOK_MOD);
 	add_token(t[tc++], "%=", TOK_MODEQ);
+	add_token(t[tc++], "||", TOK_CC_OR);
+	add_token(t[tc++], "&&", TOK_CC_AND);
 
 	/* special characters */
 	add_token(t[tc++], "{", TOK_LBRACE);

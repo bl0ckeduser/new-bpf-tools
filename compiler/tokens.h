@@ -62,6 +62,8 @@ enum {
 	TOK_MOD,
 	TOK_MODEQ,
 	TOK_DEREF,
+	TOK_CC_OR,
+	TOK_CC_AND,
 	TOK_CHAR_CONST
 };
 
@@ -120,6 +122,8 @@ static char* tok_nam[] = {
 	"TOK_MOD",
 	"TOK_MODEQ",
 	"TOK_DEREF",
+	"TOK_CC_OR",
+	"TOK_CC_AND",
 	"TOK_CHAR_CONST"
 };
 
@@ -178,6 +182,8 @@ static char* tok_desc[] = {
 	"%",
 	"%=",
 	"dereference",
+	"||",
+	"&&",
 	"character constant"
 };
 

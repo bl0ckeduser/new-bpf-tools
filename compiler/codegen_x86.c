@@ -30,6 +30,7 @@ int proc_ok = 1;
 int else_ret;
 int main_defined = 0;
 char entry_buf[1024], buf[1024];
+int ccid = 0;
 
 int stack_size;
 int intl_label = 0; /* internal label numbering */
@@ -712,6 +713,44 @@ char* codegen(exp_tree_t* tree)
 			codegen(tree->child[i]);
 		}
 		return NULL;
+	}
+
+	/* && - and with short-circuit */
+	if (tree->head_type == CC_AND) {
+		sto2 = get_temp_reg();
+		sto3 = get_temp_reg();
+		printf("movl $0, %s\n", sto2);
+		printf("movl $0, %s\n", sto3);
+		for (i = 0; i < tree->child_count; ++i) {
+			sto = codegen(tree->child[i]);
+			printf("cmpl %s, %s\n", sto, sto3);
+			printf("je cc%d\n", ccid);
+			free_temp_reg(sto);
+		}
+		printf("movl $1, %s\n", sto2);
+		printf("cc%d:\n", ccid);
+		++ccid;
+		free_temp_reg(sto3);
+		return sto2;
+	}
+
+	/* || - or with short-circuit */
+	if (tree->head_type == CC_OR) {
+		sto2 = get_temp_reg();
+		sto3 = get_temp_reg();
+		printf("movl $1, %s\n", sto2);
+		printf("movl $0, %s\n", sto3);
+		for (i = 0; i < tree->child_count; ++i) {
+			sto = codegen(tree->child[i]);
+			printf("cmpl %s, %s\n", sto, sto3);
+			printf("jne cc%d\n", ccid);
+			free_temp_reg(sto);
+		}
+		printf("movl $0, %s\n", sto2);
+		printf("cc%d:\n", ccid);
+		++ccid;
+		free_temp_reg(sto3);
+		return sto2;
 	}
 
 	/* pre-increment, pre-decrement of variable lvalue */

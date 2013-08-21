@@ -172,6 +172,10 @@ an optional part in a construction.
 	"bob 123"
 	printf("hello\n");
 
+15. Logical and, logical or
+
+		&& and || have been copied from C
+
 .............................................................................
 
 			-------------------------
@@ -180,10 +184,12 @@ an optional part in a construction.
 
 From greatest to lowest precedence:
 
-	unary -, ( ), ++, --, procedure calls
+	- (unary), ( ), ++, --, procedure calls, & (address-of)
 	* / %
 	+ -
 	> >= < <= == !=
+	&&
+	||
 	= += -= *= /=
 
 All arithmetic operators are left-associative.

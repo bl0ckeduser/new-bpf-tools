@@ -163,11 +163,11 @@ an optional part in a construction.
 
 From greatest to lowest precedence:
 
-	unary -, ( ), ++, --, procedure calls
-	* /
-	+ -
-	> >= < <= == !=
-	= += -= *= /=
+        - (unary), ( ), ++, --
+        * /
+        + -
+        > >= < <= == !=
+        = += -= *= /=
 
 All arithmetic operators are left-associative.
 

@@ -16,6 +16,9 @@ exp_tree_t expr();
 exp_tree_t sum_expr();
 exp_tree_t mul_expr();
 exp_tree_t unary_expr();
+exp_tree_t ccor_expr();
+exp_tree_t ccand_expr();
+exp_tree_t comp_expr();
 void printout(exp_tree_t et);
 extern void fail(char* mesg);
 
@@ -391,7 +394,7 @@ not_proc:
 
 /*
 	expr := lvalue asg-op expr 
-		| sum_expr [comp-op sum_expr]
+		| ccor_expr
 		| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
 		| str-const
 */
@@ -446,41 +449,8 @@ exp_tree_t expr()
 		} else
 			indx = save;
 	}
-	/* sum_expr [comp-op sum_expr] */
-	if (valid_tree(subtree = sum_expr())) {
-		if (!is_comp_op(peek().type)) {
-			return subtree;
-		}
-		if (is_comp_op(peek().type)) {
-			switch (peek().type) {
-				case TOK_GT:
-					tree = new_exp_tree(GT, NULL);
-					break;
-				case TOK_GTE:
-					tree = new_exp_tree(GTE, NULL);
-					break;
-				case TOK_LT:
-					tree = new_exp_tree(LT, NULL);
-					break;
-				case TOK_LTE:
-					tree = new_exp_tree(LTE, NULL);
-					break;
-				case TOK_EQ:
-					tree = new_exp_tree(EQL, NULL);
-					break;
-				case TOK_NEQ:
-					tree = new_exp_tree(NEQL, NULL);
-					break;
-				default:
-					parse_fail
-					 ("invalid comparison operator");
-			}
-			++indx;	/* eat comp-op */
-			add_child(&tree, alloc_exptree(subtree));
-			if (!valid_tree(subtree2 = sum_expr()))
-				parse_fail("expression expected");
-			add_child(&tree, alloc_exptree(subtree2));
-		}
+	/* ccor_expr */
+	if (valid_tree(tree = ccor_expr())) {
 		return tree;
 	}
 	/* 'int' { '*' } ident [ ( '=' expr ) |  ('[' integer ']') ] */
@@ -579,6 +549,78 @@ exp_tree_t parse_left_assoc(
 	}
 
 	return *tree_ptr;
+}
+
+/* ccor_expr := ccand_expr ['||' ccand_expr] */
+void ccor_dispatch(char oper, exp_tree_t *dest)
+{
+	switch (oper) {
+		case TOK_CC_OR:
+			*dest = new_exp_tree(CC_OR, NULL);
+		break;
+	}
+}
+int is_ccor_op(char ty) {
+	return ty == TOK_CC_OR;
+}
+exp_tree_t ccor_expr()
+{
+	return parse_left_assoc(
+		&ccand_expr,
+		&is_ccor_op,
+		&ccor_dispatch);
+}
+
+/* ccand_expr := comp_expr ['&&' comp_expr] */
+void ccand_dispatch(char oper, exp_tree_t *dest)
+{
+	switch (oper) {
+		case TOK_CC_AND:
+			*dest = new_exp_tree(CC_AND, NULL);
+		break;
+	}
+}
+int is_ccand_op(char ty) {
+	return ty == TOK_CC_AND;
+}
+exp_tree_t ccand_expr()
+{
+	return parse_left_assoc(
+		&comp_expr,
+		&is_ccand_op,
+		&ccand_dispatch);
+}
+
+/* comp_expr := sum_expr [comp-op sum_expr] */
+void comp_dispatch(char oper, exp_tree_t *dest)
+{
+	switch (oper) {
+		case TOK_GT:
+			*dest = new_exp_tree(GT, NULL);
+			break;
+		case TOK_GTE:
+			*dest = new_exp_tree(GTE, NULL);
+			break;
+		case TOK_LT:
+			*dest = new_exp_tree(LT, NULL);
+			break;
+		case TOK_LTE:
+			*dest = new_exp_tree(LTE, NULL);
+			break;
+		case TOK_EQ:
+			*dest = new_exp_tree(EQL, NULL);
+			break;
+		case TOK_NEQ:
+			*dest = new_exp_tree(NEQL, NULL);
+			break;
+	}
+}
+exp_tree_t comp_expr()
+{
+	return parse_left_assoc(
+		&sum_expr,
+		&is_comp_op,
+		&comp_dispatch);
 }
 
 /* sum_expr := mul_expr { add-op mul_expr } */

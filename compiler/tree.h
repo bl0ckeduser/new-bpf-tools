@@ -40,6 +40,8 @@ enum {		/* head_type */
 	DEREF,
 	STR_CONST,
 	MOD,
+	CC_OR,
+	CC_AND,
 	/* special */
 	NULL_TREE
 };
@@ -80,6 +82,8 @@ static char* tree_nam[] = {
 	"DEREF",
 	"STR_CONST",
 	"MOD",
+	"CC_OR",
+	"CC_AND",
 	"NULL_TREE"
 };
 

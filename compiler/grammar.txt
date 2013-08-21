@@ -12,9 +12,16 @@ block := expr ';'
 	| 'return' expr ';'
 
 expr := lvalue asg-op expr 
-	| sum_expr [comp-op sum_expr]
+	| ccor_expr
 	| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
 	| str-const
+
+
+ccor_expr := ccand_expr ['||' ccand_expr]
+
+ccand_expr := comp_expr ['&&' comp_expr]
+
+comp_expr := sum_expr [comp-op sum_expr]
 
 sum_expr := mul_expr { add-op mul_expr }
 
