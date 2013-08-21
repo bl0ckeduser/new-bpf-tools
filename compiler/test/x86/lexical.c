@@ -1,13 +1,17 @@
-// int x = 456;
-// BUG: globals outside main() are currently broken
+int x = 789;		// global
 
-bob() {
-	int x = 123;
+foo() {
+	int x = 123;	// local
+	bar();
+	printf("%d\n", x);
+}
+
+bar() {
+	int x = 456;	// local
 	printf("%d\n", x);
 }
 
 main() {
-	int x = 456;
-	bob();
+	foo();
 	printf("%d\n", x);
 }

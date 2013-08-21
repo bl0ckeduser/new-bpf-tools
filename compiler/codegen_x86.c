@@ -15,8 +15,14 @@
 #include <string.h>
 #include <stdio.h>
 
+enum {
+	SYMTYPE_STACK,
+	SYMTYPE_GLOBALS
+};
+
 char current_proc[64];
 char symtab[256][32] = {""};
+char globtab[256][32] = {""};
 char arg_symtab[256][32] = {""};
 char str_const_tab[256][32] = {""};
 char ts_used[TEMP_REGISTERS];
@@ -24,6 +30,7 @@ char tm_used[TEMP_MEM];
 int syms = 0;
 int arg_syms = 0;
 int str_consts = 0;
+int globs = 0;
 int temp_register = 0;
 int swap = 0;
 int proc_ok = 1;
@@ -38,6 +45,8 @@ int intl_label = 0; /* internal label numbering */
 extern void fail(char*);
 extern void compiler_fail(char *message, token_t *token,
 	int in_line, int in_chr);
+
+void setup_symbols(exp_tree_t* tree, int glob);
 
 void print_code() {
 	;
@@ -123,6 +132,22 @@ char* get_tok_str(token_t t)
 	return buf;
 }
 
+
+/* Check if a global is already defined */
+int glob_check(token_t* tok)
+{
+	int i;
+	char *s = get_tok_str(*tok);
+	char buf[128];
+
+	for (i = 0; i < globs; i++)
+		if (!strcmp(globtab[i], s)) {
+			sprintf(buf, "global symbol `%s' defined twice", s);
+			compiler_fail(buf, tok, 0, 0);
+		}
+	return 0;
+}
+
 /* Check if a symbol is already defined */
 int sym_check(token_t* tok)
 {
@@ -132,13 +157,14 @@ int sym_check(token_t* tok)
 
 	for (i = 0; i < syms; i++)
 		if (!strcmp(symtab[i], s)) {
-			sprintf(buf, "symbol `%s' defined twice", s);
+			sprintf(buf, "local symbol `%s' defined twice", s);
 			compiler_fail(buf, tok, 0, 0);
 		}
 
 	for (i = 0; i < arg_syms; i++)
 		if (!strcmp(arg_symtab[i], s)) {
-			sprintf(buf, "symbol `%s' defined twice", s);
+			sprintf(buf, "declaration of local symbol `%s' conflicts"
+						 " with an argument having the same name", s);
 			compiler_fail(buf, tok, 0, 0);
 		}
 	return 0;
@@ -151,6 +177,9 @@ int sym_check(token_t* tok)
  */
 char* nameless_perm_storage()
 {
+	/* it's important to clear this in case
+	 * there is some leftover stuff */
+	*(symtab[syms]) = 0;
 	return symstack(syms++);
 }
 
@@ -163,6 +192,16 @@ int sym_add(token_t *tok)
 	char *s = get_tok_str(*tok);
 	strcpy(symtab[syms], s);
 	return syms++; 
+}
+
+/*
+ * Create a new global
+ */ 
+int glob_add(token_t *tok)
+{
+	char *s = get_tok_str(*tok);
+	strcpy(globtab[globs], s);
+	return globs++; 
 }
 
 char *newstr(char *s)
@@ -179,13 +218,29 @@ char* sym_lookup(token_t* tok)
 	char *s = get_tok_str(*tok);
 	int i = 0;
 
+/*
+	fprintf(stderr, "proc: %s -- lo %s\n",
+		current_proc,
+		get_tok_str(*tok));
+	fprintf(stderr, "syms: %d, glob: %d, argsyms: %d\n",
+		syms, arg_syms, globs);
+*/
+
+	/* try stack locals */
 	for (i = 0; i < syms; i++)
 		if (!strcmp(symtab[i], s))
 			return newstr(symstack(i));
 
+	/* try arguments */
 	for (i = 0; i < arg_syms; i++)
 		if (!strcmp(arg_symtab[i], s))
 			return newstr(symstack(-2 - i));
+
+	/* try globals last -- they are shadowed
+	 * by locals and arguments */
+	for (i = 0; i < globs; ++i)
+		if (!strcmp(globtab[i], s))
+			return globtab[i];
 
 	sprintf(buf, "unknown symbol `%s'", s);
 	compiler_fail(buf, tok, 0, 0);
@@ -237,11 +292,11 @@ char* arith_op(int ty)
  */
 void codegen_proc(char *name, exp_tree_t *tree, char **args)
 {
-	extern void setup_symbols(exp_tree_t* tree);
 	char buf[1024];
 	char *buf2;
 	int i;
 
+	/* If syms is set to 0, funny things happen */
 	syms = 1;
 	arg_syms = 0;
 
@@ -257,13 +312,10 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 #endif
 	printf("%s:\n", name);
 
-	if (!strcmp(name, "main"))
-		main_defined = 1;
-
 	/* setup the identifier symbol table and make stack
 	 * space for all the variables in the program */
 	*entry_buf = 0;
-	setup_symbols(tree);
+	setup_symbols(tree, SYMTYPE_STACK);
 
 	for (i = 0; i < TEMP_MEM; ++i) {
 		buf2 = malloc(64);
@@ -295,6 +347,25 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	printf("ret\n\n");
 }
 
+int look_for_main(exp_tree_t *tree)
+{
+	int i;
+
+	if (tree->head_type == PROC) {
+		if (!strcmp(get_tok_str(*(tree->tok)),
+					"main"))
+			return 1;
+	}
+
+	for (i = 0; i < tree->child_count; ++i)
+		if (tree->child[i]->head_type == BLOCK
+		|| tree->child[i]->head_type == PROC)
+			if (look_for_main(tree->child[i]))
+				return 1;
+
+	return 0;
+}
+
 /* Starting point of the codegen */
 void run_codegen(exp_tree_t *tree)
 {
@@ -308,11 +379,35 @@ void run_codegen(exp_tree_t *tree)
 	char main_name[] = "main";
 #endif
 
+	/*
+	 * Define the format used for printf()
+	 * in the echo() code, then code the
+	 * user's string constants
+	 */
 	printf(".section .rodata\n");
+	printf("# start string constants ========\n");
 	printf("_echo_format: .string \"%%d\\n\"\n");
-
 	deal_with_str_consts(tree);
+	printf("# end string constants ==========\n\n");
 
+	/*
+	 * Find out if the user defined main()
+	 */
+	main_defined = look_for_main(tree);
+
+	/*
+	 * If there is a main() defined,
+	 * gotta do globals
+	 */
+	if (main_defined) {
+		printf("# start globals =============\n");
+		printf(".section .data\n");
+		setup_symbols(tree, SYMTYPE_GLOBALS);
+		printf(".section .text\n");
+		printf("# end globals =============\n\n");
+	}
+
+	/* Don't ask me why this is necessary */
 	printf(".section .text\n");
 	printf(".globl %s\n\n", main_name);
 
@@ -335,7 +430,7 @@ void run_codegen(exp_tree_t *tree)
 	if (!main_defined)
 		codegen_proc(main_name, tree, main_args);
 
-	/* echo utility routine */
+	/* code builtin echo utility routine */
 #ifndef MINGW_BUILD
 	printf(".type echo, @function\n");
 #endif
@@ -377,6 +472,8 @@ void deal_with_procs(exp_tree_t *tree)
 	int i;
 
 	if (tree->head_type == PROC) {
+		syms = 0;
+		arg_syms = 0;
 		codegen(tree);
 		(*tree).head_type = NULL_TREE;
 	}
@@ -400,7 +497,7 @@ int check_array(exp_tree_t *decl)
 }
 
 /* See codegen_proc above */
-void setup_symbols(exp_tree_t *tree)
+void setup_symbols(exp_tree_t *tree, int symty)
 {
 	int i, j, k, sto;
 	exp_tree_t *dc;
@@ -430,6 +527,11 @@ void setup_symbols(exp_tree_t *tree)
 				 * Set up symbols and stack storage
 			 	 * for a 1-dimensional array
 				 */
+
+				/* XXX: global arrays unsupported */
+				if (symty == SYMTYPE_GLOBALS)
+					fail("global arrays are currently unsupported");
+
 				/* number of elements (integer) */
 				sto = atoi(get_tok_str(*(dc->child[1]->tok)));
 				/* make a symbol named after the array
@@ -459,11 +561,40 @@ void setup_symbols(exp_tree_t *tree)
 				 * Set up symbols and stack storage
 			 	 * for a plain variable (e.g. "int x")
 				 */
+
 				/* create the storage and symbol */
-				if (!sym_check(dc->child[0]->tok))
-					(void)sym_add(dc->child[0]->tok);
-				/* preserve assignment, else discard tree */
-				if (dc->child_count == 2)
+				switch (symty) {
+					case SYMTYPE_STACK:
+						if (!sym_check(dc->child[0]->tok))
+							(void)sym_add(dc->child[0]->tok);
+						break;
+					case SYMTYPE_GLOBALS:
+						if (!glob_check(dc->child[0]->tok)) {
+							(void)glob_add(dc->child[0]->tok);
+							printf("%s: ",
+								get_tok_str(*(dc->child[0]->tok)));
+							/* 
+							 * If no initial value is given,
+							 * write a zero, otherwise write
+							 * the initial value.
+							 */
+							printf(".long %s\n.globl x\n\n",
+								dc->child_count == 2 ?
+									get_tok_str(*(dc->child[1]->tok))
+									: "0");
+						}
+						break;
+					default:
+						fail("x86_codegen internal messup");
+				}
+
+				/* 
+				 * For stack variables, make the initial value
+				 * an assignment in the body of the relevant
+				 * procedure; otherwise, discard the tree 
+				 */
+				if (dc->child_count == 2 
+					&& symty == SYMTYPE_STACK)
 					(*dc).head_type = ASGN;
 				else
 					(*dc).head_type = NULL_TREE;
@@ -485,7 +616,7 @@ void setup_symbols(exp_tree_t *tree)
 		||	tree->child[i]->head_type == IF
 		||	tree->child[i]->head_type == WHILE
 		||	tree->child[i]->head_type == INT_DECL)
-			setup_symbols(tree->child[i]);
+			setup_symbols(tree->child[i], symty);
 }
 
 /*
