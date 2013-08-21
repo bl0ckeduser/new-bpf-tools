@@ -8,9 +8,9 @@
 
 For the BPFVM-targeting compiler the scripts are:
 
-	build.sh		-- build the BPFVM compiler
-	autotest.sh		-- test it
-	compile-run.sh		-- compile a program and run it using
+	build-bpf.sh		-- build the BPFVM compiler
+	autotest-bpf.sh		-- test it
+	compile-run-bpf.sh	-- compile a program and run it using
 				   "bpfvm" command
 
 			   ------------
