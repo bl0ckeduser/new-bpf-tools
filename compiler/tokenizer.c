@@ -20,9 +20,10 @@
 #include <string.h>
 
 char *code_lines[1024];
-char err_buf[1024];
 extern void fail(char* mesg);
 extern void sanity_requires(int exp);
+extern void compiler_fail(char *message, token_t *token,
+	int in_line, int in_chr);
 
 typedef struct match_struct {
 	/* accept number, if any */
@@ -378,11 +379,15 @@ valid:		if (frk)
 trie *t[100];
 int tc = 0;
 
+#define TOK_FAIL(msg)	\
+	{ strcpy(fail_msg, msg); goto tok_fail; }
+
 token_t* tokenize(char *buf)
 {
 	match_t m;
 	match_t c;
 	char buf2[1024];
+	char fail_msg[1024] = "";
 	char *p;
 	int max;
 	int i;
@@ -421,17 +426,8 @@ token_t* tokenize(char *buf)
 				++p;
 				continue;
 			}
-			/* tokenization failed.. give a verbose diagnostic */
-			sprintf(err_buf, "tokenization failed: ");
-			sprintf(err_buf, "%scharacter '%c', near '", err_buf, *p);
-			i = 10;
-			while (--i && *(p - 1) && *(p - 1) != '\n')
-				--p;
-
-			for (i = 0; *p && *p != '\n' && i < 30; ++i)
-				sprintf(err_buf, "%s%c", err_buf, *p++);
-			sprintf(err_buf, "%s', line %d", err_buf, line);
-			fail(err_buf);
+			/* tokenization failed */
+			TOK_FAIL("tokenization failed -- unknown pattern");
 		} else {
 			/* spot keywords. they are initially
 			 * recognized as identifiers. */
@@ -447,18 +443,18 @@ token_t* tokenize(char *buf)
 			/* comments */
 			if (c.token == C_CMNT_OPEN) {
 				if (in_comment == 2)
-					fail("don't nest comments, please");
+					TOK_FAIL("nested comments are illegal");
 				in_comment = 2;
 			} else if (c.token == C_CMNT_CLOSE) {
 				if (in_comment == 2) {
 					in_comment = 0;
 					goto advance;
 				} else {
-					fail("dafuq is a */ doing there ?");
+					TOK_FAIL("dafuq is a */ doing there ?");
 				}
 			} else if (c.token == CPP_CMNT) {
 				if (in_comment == 2)
-					fail("don't mix and nest comments, please");
+					TOK_FAIL("don't mix and nest comments, please");
 				in_comment = 1;		
 			}
 			if (in_comment == 1 && c.token == TOK_NEWLINE) {
@@ -509,6 +505,12 @@ advance:
 	code_lines[line] = line_start;
 
 	return toks;
+
+tok_fail:
+	code_lines[line] = line_start;
+	compiler_fail(fail_msg,
+		NULL,
+		line, p - line_start + 1);
 }
 
 void setup_tokenizer()
