@@ -163,6 +163,7 @@ an optional part in a construction.
 
 From greatest to lowest precedence:
 
+	[] (array subscript)
         - (unary), ( ), ++, --
         * /
         + -

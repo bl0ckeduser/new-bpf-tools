@@ -1,5 +1,3 @@
-lvalue := ident [ '[' expr ']' ]  | '*' lvalue
-
 block := expr ';' 
 	| if '(' expr ')' block [else block] 
 	| while '(' expr ')' block 
@@ -16,6 +14,7 @@ expr := lvalue asg-op expr
 	| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
 	| str-const
 
+lvalue := ident [ '[' expr ']' ]  | '*' lvalue
 
 ccor_expr := ccand_expr ['||' ccand_expr]
 

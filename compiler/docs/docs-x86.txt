@@ -184,8 +184,10 @@ an optional part in a construction.
 
 From greatest to lowest precedence:
 
+	[] (array subscript)
+	* (dereference)
 	- (unary), ( ), ++, --, procedure calls, & (address-of)
-	* / %
+	* (multiplication) / %
 	+ -
 	> >= < <= == !=
 	&&
