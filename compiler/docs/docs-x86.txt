@@ -172,9 +172,9 @@ an optional part in a construction.
 	"bob 123"
 	printf("hello\n");
 
-15. Logical and, logical or
+15. Logical operations
 
-		&& and || have been copied from C
+		&&, ||, and ! have been copied from C
 
 .............................................................................
 
@@ -186,7 +186,7 @@ From greatest to lowest precedence:
 
 	[] (array subscript)
 	* (dereference)
-	- (unary), ( ), ++, --, procedure calls, & (address-of)
+	- (unary), ( ), ++, --, procedure calls, & (address-of), !
 	* (multiplication) / %
 	+ -
 	> >= < <= == !=

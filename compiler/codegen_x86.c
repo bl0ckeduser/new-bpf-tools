@@ -715,6 +715,21 @@ char* codegen(exp_tree_t* tree)
 		return NULL;
 	}
 
+	/* ! -- logical not (0 if X is not 1) */
+	if (tree->head_type == CC_NOT) {		
+		sto = codegen(tree->child[0]);
+		sto2 = get_temp_reg();
+		printf("movl $0, %s\n", sto2);
+		printf("cmp %s, %s\n", sto, sto2);
+		printf("movl $1, %s\n", sto2);
+		free_temp_reg(sto);
+		printf("je cc%d\n", ccid);
+		printf("movl $0, %s\n", sto2);
+		printf("cc%d:\n", ccid);
+		++ccid;
+		return sto2;
+	}
+
 	/* && - and with short-circuit */
 	if (tree->head_type == CC_AND) {
 		sto2 = get_temp_reg();

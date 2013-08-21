@@ -675,6 +675,7 @@ exp_tree_t mul_expr()
 			| -- lvalue
 			| ident '(' expr1, expr2, exprN ')'
 			| '&' lvalue
+			| '!' expr
 */
 exp_tree_t unary_expr()
 {
@@ -717,18 +718,27 @@ exp_tree_t unary_expr()
 	}
 
 	if (peek().type == TOK_PLUSPLUS
-	||  peek().type == TOK_MINUSMINUS) {
-		switch (peek().type) {
+	||  peek().type == TOK_MINUSMINUS
+	||  peek().type == TOK_CC_NOT) {
+		switch ((tok = peek()).type) {
 			case TOK_PLUSPLUS:
 				subtree = new_exp_tree(INC, NULL);
 				break;
 			case TOK_MINUSMINUS:
 				subtree = new_exp_tree(DEC, NULL);
 				break;
+			case TOK_CC_NOT:
+				subtree = new_exp_tree(CC_NOT, NULL);
+				break;
 			}
 			++indx;	/* eat operator */
-			if (!valid_tree(subtree2 = lval()))
-				parse_fail("lvalue expected");
+			if (tok.type == TOK_CC_NOT) {
+				if (!valid_tree(subtree2 = expr()))
+					parse_fail("expression expected");				
+			} else {
+				if (!valid_tree(subtree2 = lval()))
+					parse_fail("lvalue expected");
+			}
 			add_child(&subtree, alloc_exptree(subtree2));	
 		if (valid_tree(tree)) {	/* negative sign ? */
 			add_child(&tree, alloc_exptree(subtree));
