@@ -909,6 +909,7 @@ char* codegen(exp_tree_t* tree)
 		sto = registerize(codegen(tree->child[0]));
 		sto2 = get_temp_reg();
 		printf("movl (%s), %s\n", sto, sto2);		
+		free_temp_reg(sto);
 
 		return sto2;
 	}
