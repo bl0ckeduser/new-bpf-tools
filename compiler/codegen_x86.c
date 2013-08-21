@@ -39,20 +39,38 @@ enum {
 	SYMTYPE_GLOBALS
 };
 
+/*
+ * Stuff used for describing the type
+ * of an object
+ */
+enum {
+	BASETYPE_INT
+};
+
+typedef struct {
+	int base_type;	/* e.g. BASETYPE_INT for "int" */
+	int ptr;		/* e.g. 2 for "int **" */
+	int arr;		/* e.g. 3 for "int [12][34][56]" */
+	int *arr_dim;	/* e.g. {12, 34, 56} for "int [12][34][56]" */
+} typedesc_t;
+
 /* Name of function currently being coded */
 char current_proc[64];
 
 /* Table of local symbols */
 char symtab[256][32] = {""};
 int syms = 0;
+typedesc_t symtyp[256];
 
 /* Table of global symbols */
 char globtab[256][32] = {""};
 int globs = 0;
+typedesc_t globtyp[256];
 
 /* Table of function-argument symbols */
 char arg_symtab[256][32] = {""};
 int arg_syms = 0;
+typedesc_t argtyp[256];
 
 /* Table of string-constant symbols */
 char str_const_tab[256][32] = {""};
@@ -76,6 +94,16 @@ int stack_size;
 int intl_label = 0; /* internal label numbering */
 
 /* ====================================================== */
+
+typedesc_t mk_typedesc(int bt, int ptr, int arr)
+{
+	typedesc_t td;
+	td.base_type = bt;
+	td.ptr = ptr;
+	td.arr = arr;
+	td.arr_dim = NULL;
+	return td;
+}
 
 void print_code() {
 	;
@@ -292,6 +320,38 @@ char* sym_lookup(token_t* tok)
 	for (i = 0; i < globs; ++i)
 		if (!strcmp(globtab[i], s))
 			return globtab[i];
+
+	sprintf(buf, "unknown symbol `%s'", s);
+	compiler_fail(buf, tok, 0, 0);
+}
+
+/* 
+ * Lookup a symbol and return
+ * information about its type
+ */
+typedesc_t sym_lookup_type(token_t* tok)
+{
+	char buf[1024];
+	char *s = get_tok_str(*tok);
+	int i = 0;
+
+	/* Try stack locals */
+	for (i = 0; i < syms; i++)
+		if (!strcmp(symtab[i], s))
+			return symtyp[i];
+
+	/* Try arguments */
+	for (i = 0; i < arg_syms; i++)
+		if (!strcmp(arg_symtab[i], s))
+			return argtyp[i];
+
+	/* 
+	 * Try globals last -- they are shadowed
+	 * by locals and arguments 
+	 */
+	for (i = 0; i < globs; ++i)
+		if (!strcmp(globtab[i], s))
+			return globtyp[i];
 
 	sprintf(buf, "unknown symbol `%s'", s);
 	compiler_fail(buf, tok, 0, 0);
@@ -586,12 +646,15 @@ void setup_symbols(exp_tree_t *tree, int symty)
 	int stars, newlen;
 	char *str;
 	int array_ptr;
+	int sym_num;
 
 	if (tree->head_type == INT_DECL) {
 		for (i = 0; i < tree->child_count; ++i) {
 			dc = tree->child[i];
 
-			/* count & eat up the stars */
+			/* 
+			 * Count & eat up the stars
+		 	 */
 			stars = newlen = 0;
 			for (j = 0; j < dc->child_count; ++j)
 				if (dc->child[j]->head_type == DECL_STAR)
@@ -599,8 +662,11 @@ void setup_symbols(exp_tree_t *tree, int symty)
 					++stars,
 					dc->child[j]->head_type = NULL_TREE;
 			if (stars)
-				dc->child_count = newlen;			
-
+				dc->child_count = newlen;
+	
+			/* 
+			 * Do the actual relevant part 
+			 */
 			if (check_array(dc) > 1) {
 				fail("N-dimensional, where N > 1, arrays are "
 					 "currently unsupported");
@@ -619,7 +685,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				/* make a symbol named after the array
 				 * and store the *ADDRESS* of its first element there */
 				if (!sym_check(dc->child[0]->tok))
-					array_ptr = sym_add(dc->child[0]->tok);
+					sym_num = array_ptr = sym_add(dc->child[0]->tok);
 				str = get_temp_reg();
 				sprintf(buf, "leal %s, %s\n",
 					symstack(array_ptr + sto),
@@ -648,11 +714,11 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				switch (symty) {
 					case SYMTYPE_STACK:
 						if (!sym_check(dc->child[0]->tok))
-							(void)sym_add(dc->child[0]->tok);
+							sym_num = sym_add(dc->child[0]->tok);
 						break;
 					case SYMTYPE_GLOBALS:
 						if (!glob_check(dc->child[0]->tok)) {
-							(void)glob_add(dc->child[0]->tok);
+							sym_num = glob_add(dc->child[0]->tok);
 							printf("%s: ",
 								get_tok_str(*(dc->child[0]->tok)));
 				
@@ -690,6 +756,15 @@ void setup_symbols(exp_tree_t *tree, int symty)
 					(*dc).head_type = ASGN;
 				else
 					(*dc).head_type = NULL_TREE;
+			}
+
+			/*
+			 * Store information about the type of the object
+		 	 */
+			if (symty == SYMTYPE_STACK) {
+				symtyp[sym_num] = mk_typedesc(BASETYPE_INT, stars, check_array(dc));
+			} else if (symty == SYMTYPE_GLOBALS) {
+				globtyp[sym_num] = mk_typedesc(BASETYPE_INT, stars, check_array(dc));
 			}
 		}
 
