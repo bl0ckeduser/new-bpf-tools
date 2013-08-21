@@ -159,6 +159,8 @@ exp_tree_t decl2()
 {
 	token_t tok = peek();
 	exp_tree_t tree, subtree, subtree2;
+	int stars = 0;
+	int i;	
 
 	tree = new_exp_tree(DECL_CHILD, NULL);
 
@@ -171,7 +173,7 @@ exp_tree_t decl2()
 	 * gcc-compiled output is possible.
 	 */
 	while (peek().type == TOK_MUL)
-		++indx;
+		++indx, ++stars;
 	tok = need(TOK_IDENT);
 	subtree = new_exp_tree(VARIABLE, &tok);
 	add_child(&tree, alloc_exptree(subtree));
@@ -190,6 +192,15 @@ multi_array_decl:
 		if (peek().type == TOK_LBRACK)
 			goto multi_array_decl;
 	}
+	
+	/* add the pointer-stars */
+	if (stars) {
+		subtree = new_exp_tree(DECL_STAR, NULL);
+		for (i = 0; i < stars; ++i)
+			add_child(&tree,
+				alloc_exptree(subtree));
+	}
+
 	return tree;
 }
 

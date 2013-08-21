@@ -397,12 +397,23 @@ void setup_symbols(exp_tree_t *tree)
 {
 	int i, j, k, sto;
 	exp_tree_t *dc;
-	int array;
+	int stars, newlen;
 	char *str;
 
 	if (tree->head_type == INT_DECL) {
 		for (i = 0; i < tree->child_count; ++i) {
 			dc = tree->child[i];
+
+			/* count & eat up the stars */
+			stars = newlen = 0;
+			for (j = 0; j < dc->child_count; ++j)
+				if (dc->child[j]->head_type == DECL_STAR)
+					newlen = newlen ? newlen : j,
+					++stars,
+					dc->child[j]->head_type = NULL_TREE;
+			if (stars)
+				dc->child_count = newlen;			
+
 			if (check_array(dc) > 1) {
 				fail("N-dimensional, where N > 1, arrays are "
 					 "currently unsupported");
