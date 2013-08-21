@@ -619,6 +619,7 @@ char* codegen(exp_tree_t* tree)
 		codegen_proc(buf,
 			tree->child[1],
 			proc_args);
+		free(buf);
 
 		proc_ok = 1;
 
