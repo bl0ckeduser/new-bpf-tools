@@ -95,6 +95,11 @@ int intl_label = 0; /* internal label numbering */
 
 /* ====================================================== */
 
+void codegen_fail(char *msg, token_t *tok)
+{
+	compiler_fail(msg, tok, 0, 0);
+}
+
 int basetype_size_dispatch(int bt)
 {
 	switch (bt) {
@@ -679,8 +684,8 @@ void setup_symbols(exp_tree_t *tree, int symty)
 			 * Do the actual relevant part 
 			 */
 			if (check_array(dc) > 1) {
-				fail("N-dimensional, where N > 1, arrays are "
-					 "currently unsupported");
+				codegen_fail("N-dimensional, where N > 1, arrays are "
+					         "currently unsupported", dc->child[0]->tok);
 			} else if (check_array(dc) == 1) {
 				/*
 				 * Set up symbols and stack storage
@@ -689,7 +694,8 @@ void setup_symbols(exp_tree_t *tree, int symty)
 
 				/* XXX: global arrays unsupported */
 				if (symty == SYMTYPE_GLOBALS)
-					fail("global arrays are currently unsupported");
+					codegen_fail("global arrays are currently unsupported",
+						dc->child[0]->tok);
 
 				/* number of elements (integer) */
 				sto = atoi(get_tok_str(*(dc->child[1]->tok)));
@@ -729,18 +735,19 @@ void setup_symbols(exp_tree_t *tree, int symty)
 						break;
 					case SYMTYPE_GLOBALS:
 						if (!glob_check(dc->child[0]->tok)) {
-							sym_num = glob_add(dc->child[0]->tok);
-							printf("%s: ",
-								get_tok_str(*(dc->child[0]->tok)));
-				
 							/*
 							 * Global initializers have to be integer
 							 * constants !!!
 							 */
 							if (dc->child_count == 2
 								&& dc->child[1]->head_type != NUMBER) {
-								fail("non-integer-constant global initializer");
+								codegen_fail("non-integer-constant global initializer",
+									dc->child[0]->tok);
 							}
+
+							sym_num = glob_add(dc->child[0]->tok);
+							printf("%s: ",
+								get_tok_str(*(dc->child[0]->tok)));
 
 							/* 
 							 * If no initial value is given,
@@ -1328,7 +1335,8 @@ char* codegen(exp_tree_t* tree)
 						sym_lookup_type(tree->child[i]->tok).base_type);
 					ptr_memb = i;
 					if (ptr_count++)
-						fail("please don't add pointers");
+						codegen_fail("please don't add pointers",
+							tree->child[i]->tok);
 				}
 			}
 		}
