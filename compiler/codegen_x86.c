@@ -98,7 +98,7 @@ void codegen_fail(char *msg, token_t *tok)
 /* 
  * INT_DECL => 4 because int is 4 bytes, etc.
  */
-int decl_size_dispatch(int bt)
+int decl2siz(int bt)
 {
 	switch (bt) {
 		case INT_DECL:
@@ -107,6 +107,18 @@ int decl_size_dispatch(int bt)
 			return 1;
 		default:
 			return 0;
+	}
+}
+
+char *move_conv_to_long(int membsiz)
+{
+	switch (membsiz) {
+		case 1:
+			return "movsbl";
+		case 4:
+			return "movl";
+		default:
+			fail("type conversion codegen fail");
 	}
 }
 
@@ -776,7 +788,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 			if (stars || check_array(dc))
 				membsiz = 4;
 			else
-				membsiz = decl_size_dispatch(decl);
+				membsiz = decl2siz(decl);
 	
 			/* 
 			 * Switch symbols/stack setup code
@@ -979,6 +991,7 @@ char* codegen(exp_tree_t* tree)
 	char *sav1, *sav2;
 	int my_ccid;
 	int ptr_arith_mode, obj_siz, ptr_memb, ptr_count;
+	int membsiz;
 
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
@@ -1469,7 +1482,10 @@ char* codegen(exp_tree_t* tree)
 		return sto3;
 	}
 
-	/* array retrieval */
+	/* 
+	 * array retrieval -- works for int and char
+	 * char data gets converted to an int register
+	 */
 	if (tree->head_type == ARRAY && tree->child_count == 2) {
 		/* head address */
 		sym_s = sym_lookup(tree->child[0]->tok);
@@ -1477,14 +1493,16 @@ char* codegen(exp_tree_t* tree)
 		printf("# index expr\n");
 		str = codegen(tree->child[1]);
 		sto2 = registerize(str);
+		/* member size */
+		membsiz = decl2siz(sym_lookup_type(tree->child[0]->tok).ty);
 
 		sto = get_temp_reg();
 		printf("# build ptr\n");
-		/* XXX: FIXME: $4 assumes int members */
-		printf("imull $4, %s\n", sto2);
+		/* multiply offset by member size */
+		printf("imull $%d, %s\n", membsiz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
-		/* XXX: movl assumes int members */
-		printf("movl (%s), %s\n", sto2, sto);
+		printf("%s (%s), %s\n", 
+			move_conv_to_long(membsiz), sto2, sto);
 
 		free_temp_reg(sto2);
 
@@ -1533,7 +1551,7 @@ char* codegen(exp_tree_t* tree)
 					&& (sym_lookup_type(tree->child[i]->tok).ptr
 					|| sym_lookup_type(tree->child[i]->tok).arr)) {
 					ptr_arith_mode = 1;
-					obj_siz = decl_size_dispatch(
+					obj_siz = decl2siz(
 						sym_lookup_type(tree->child[i]->tok).ty);
 					ptr_memb = i;
 					if (ptr_count++)
