@@ -149,9 +149,9 @@ int sym_check(token_t* tok)
  * giving it a symbol name. Useful for special 
  * registers created by the compiler. 
  */
-int nameless_perm_storage()
+char* nameless_perm_storage()
 {
-	return syms++;
+	return symstack(syms++);
 }
 
 /*
@@ -165,8 +165,15 @@ int sym_add(token_t *tok)
 	return syms++; 
 }
 
+char *newstr(char *s)
+{
+	char *new = malloc(strlen(s) + 1);
+	strcpy(new, s);
+	return new;
+}
+
 /* Lookup storage address of a symbol */
-int sym_lookup(token_t* tok)
+char* sym_lookup(token_t* tok)
 {
 	char buf[1024];
 	char *s = get_tok_str(*tok);
@@ -174,11 +181,11 @@ int sym_lookup(token_t* tok)
 
 	for (i = 0; i < syms; i++)
 		if (!strcmp(symtab[i], s))
-			return i;
+			return newstr(symstack(i));
 
 	for (i = 0; i < arg_syms; i++)
 		if (!strcmp(arg_symtab[i], s))
-			return -2 - i;
+			return newstr(symstack(-2 - i));
 
 	sprintf(buf, "unknown symbol `%s'", s);
 	compiler_fail(buf, tok, 0, 0);
@@ -260,7 +267,7 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 
 	for (i = 0; i < TEMP_MEM; ++i) {
 		buf2 = malloc(64);
-		strcpy(buf2, symstack(nameless_perm_storage()));
+		strcpy(buf2, nameless_perm_storage());
 		temp_mem[i] = buf2;
 	}
 
@@ -399,6 +406,7 @@ void setup_symbols(exp_tree_t *tree)
 	exp_tree_t *dc;
 	int stars, newlen;
 	char *str;
+	int array_ptr;
 
 	if (tree->head_type == INT_DECL) {
 		for (i = 0; i < tree->child_count; ++i) {
@@ -427,15 +435,15 @@ void setup_symbols(exp_tree_t *tree)
 				/* make a symbol named after the array
 				 * and store the *ADDRESS* of its first element there */
 				if (!sym_check(dc->child[0]->tok))
-					(void)sym_add(dc->child[0]->tok);
+					array_ptr = sym_add(dc->child[0]->tok);
 				str = get_temp_reg();
 				sprintf(buf, "leal %s, %s\n",
-					symstack(sym_lookup(dc->child[0]->tok) + sto),
+					symstack(array_ptr + sto),
 					str);
 				strcat(entry_buf, buf);
 				sprintf(buf, "movl %s, %s\n",
 					str,
-					symstack(sym_lookup(dc->child[0]->tok)));
+					symstack(array_ptr));
 				strcat(entry_buf, buf);
 				/* make nameless storage for the subsequent
 				 * indices -- when we deal with an expression
@@ -517,7 +525,7 @@ char* codegen(exp_tree_t* tree)
 	char my_ts_used[TEMP_REGISTERS];
 	char *buf;
 	int i;
-	int sym;
+	char *sym_s;
 	char *oper;
 	char *arith;
 	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
@@ -558,7 +566,7 @@ char* codegen(exp_tree_t* tree)
 
 		/* LEA: load effective address */
 		printf("leal %s, %s\n",
-				symstack(sym_lookup(tree->child[0]->tok)),
+				sym_lookup(tree->child[0]->tok),
 				sto);
 
 		return sto;
@@ -572,7 +580,7 @@ char* codegen(exp_tree_t* tree)
 		sto = get_temp_reg();
 
 		printf("movl %s, %s\n",
-				symstack(sym_lookup(tree->child[0]->child[0]->tok)),
+				sym_lookup(tree->child[0]->child[0]->tok),
 				sto);
 
 		sto2 = registerize(codegen(tree->child[0]->child[1]));
@@ -735,7 +743,7 @@ char* codegen(exp_tree_t* tree)
 					get_tok_str(*(tree->child[0]->tok)));
 			} else if (tree->child[0]->head_type == VARIABLE) {
 				/* optimized code for variable operand */
-				sto = symstack(sym_lookup(tree->child[0]->tok));
+				sto = sym_lookup(tree->child[0]->tok);
 				printf("pushl %s\n", sto);
 			} else {
 				/* general case */
@@ -816,10 +824,10 @@ char* codegen(exp_tree_t* tree)
 	if ((tree->head_type == INC
 		|| tree->head_type == DEC)
 		&& tree->child[0]->head_type == VARIABLE) {
-		sym = sym_lookup(tree->child[0]->tok);
+		sym_s = sym_lookup(tree->child[0]->tok);
 		printf("%s %s\n", tree->head_type == INC ?
-			"incl" : "decl", symstack(sym));
-		return symstack(sym);
+			"incl" : "decl", sym_s);
+		return sym_s;
 	}
 
 	/* pre-increment, pre-decrement of array lvalue */
@@ -828,7 +836,7 @@ char* codegen(exp_tree_t* tree)
 		&& tree->child[0]->head_type == ARRAY) {
 
 		/* head address */
-		sym = sym_lookup(tree->child[0]->child[0]->tok);
+		sym_s = sym_lookup(tree->child[0]->child[0]->tok);
 
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
@@ -837,7 +845,7 @@ char* codegen(exp_tree_t* tree)
 		/* build pointer */
 		sto = get_temp_reg();
 		printf("imull $4, %s\n", sto2);
-		printf("addl %s, %s\n", symstack(sym), sto2);
+		printf("addl %s, %s\n", sym_s, sto2);
 		printf("movl %s, %s\n", sto2, sto);
 		free_temp_reg(sto2);
 
@@ -855,15 +863,15 @@ char* codegen(exp_tree_t* tree)
 	if ((tree->head_type == POST_INC
 		|| tree->head_type == POST_DEC)
 		&& tree->child[0]->head_type == VARIABLE) {
-		sym = sym_lookup(tree->child[0]->tok);
+		sym_s = sym_lookup(tree->child[0]->tok);
 		sto = get_temp_reg();
 		/* store the variable's value to temp
 		 * storage then bump it and return
 		 * the temp storage */
-		printf("movl %s, %s\n", symstack(sym), sto);
+		printf("movl %s, %s\n", sym_s, sto);
 		printf("%s %s\n",
 			tree->head_type == POST_INC ? "incl" : "decl",
-			symstack(sym));
+			sym_s);
 		return sto;
 	}
 
@@ -897,27 +905,27 @@ char* codegen(exp_tree_t* tree)
 	/* simple variable assignment */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == VARIABLE) {
-		sym = sym_lookup(tree->child[0]->tok);
+		sym_s = sym_lookup(tree->child[0]->tok);
 		if (tree->child[1]->head_type == NUMBER) {
 			/* optimized code for number operand */
 			printf("movl $%s, %s\n",
-				get_tok_str(*(tree->child[1]->tok)), symstack(sym));
-			return symstack(sym);
+				get_tok_str(*(tree->child[1]->tok)), sym_s);
+			return sym_s;
 		} else if (tree->child[1]->head_type == VARIABLE) {
 			/* optimized code for variable operand */
-			sto = symstack(sym_lookup(tree->child[1]->tok));
+			sto = sym_lookup(tree->child[1]->tok);
 			sto2 = get_temp_reg();
 			printf("movl %s, %s\n", sto, sto2);
-			printf("movl %s, %s\n", sto2, symstack(sym));
+			printf("movl %s, %s\n", sto2, sym_s);
 			free_temp_reg(sto2);
-			return symstack(sym);
+			return sym_s;
 		} else {
 			/* general case */
 			sto = codegen(tree->child[1]);
 			sto2 = registerize(sto);
-			printf("movl %s, %s\n", sto2, symstack(sym));
+			printf("movl %s, %s\n", sto2, sym_s);
 			free_temp_reg(sto2);
-			return symstack(sym);
+			return sym_s;
 		}
 	}
 
@@ -925,7 +933,7 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == ARRAY) {
 		/* head address */
-		sym = sym_lookup(tree->child[0]->child[0]->tok);
+		sym_s = sym_lookup(tree->child[0]->child[0]->tok);
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
 		sto2 = registerize(str);
@@ -934,7 +942,7 @@ char* codegen(exp_tree_t* tree)
 		sto3 = registerize(str2);
 
 		printf("imull $4, %s\n", sto2);
-		printf("addl %s, %s\n", symstack(sym), sto2);
+		printf("addl %s, %s\n", sym_s, sto2);
 		printf("movl %s, (%s)\n", sto3, sto2);
 
 		free_temp_reg(sto2);
@@ -946,7 +954,7 @@ char* codegen(exp_tree_t* tree)
 	/* array retrieval */
 	if (tree->head_type == ARRAY && tree->child_count == 2) {
 		/* head address */
-		sym = sym_lookup(tree->child[0]->tok);
+		sym_s = sym_lookup(tree->child[0]->tok);
 		/* index expression */
 		printf("# index expr\n");
 		str = codegen(tree->child[1]);
@@ -955,7 +963,7 @@ char* codegen(exp_tree_t* tree)
 		sto = get_temp_reg();
 		printf("# build ptr\n");
 		printf("imull $4, %s\n", sto2);
-		printf("addl %s, %s\n", symstack(sym), sto2);
+		printf("addl %s, %s\n", sym_s, sto2);
 		printf("movl (%s), %s\n", sto2, sto);
 
 		free_temp_reg(sto2);
@@ -975,9 +983,9 @@ char* codegen(exp_tree_t* tree)
 	/* variable */
 	if (tree->head_type == VARIABLE) {
 		sto = get_temp_reg();
-		sym = sym_lookup(tree->tok);
+		sym_s = sym_lookup(tree->tok);
 		printf("movl %s, %s\n", 
-			symstack(sym), sto);
+			sym_s, sto);
 		return sto;
 	}
 
@@ -992,8 +1000,8 @@ char* codegen(exp_tree_t* tree)
 				printf("%s $%s, %s\n", 
 					oper, get_tok_str(*(tree->child[i]->tok)), sto);
 			} else if(tree->child[i]->head_type == VARIABLE) {
-				sym = sym_lookup(tree->child[i]->tok);
-				printf("%s %s, %s\n", oper, symstack(sym), sto);
+				sym_s = sym_lookup(tree->child[i]->tok);
+				printf("%s %s, %s\n", oper, sym_s, sto);
 			} else {
 				str = codegen(tree->child[i]);
 				printf("%s %s, %s\n", oper, str, sto);
@@ -1040,8 +1048,8 @@ char* codegen(exp_tree_t* tree)
 		for (i = 1; i < tree->child_count; i++) {
 			/* (can't idivl directly by a number, eh ?) */
 			if(tree->child[i]->head_type == VARIABLE) {
-				sym = sym_lookup(tree->child[i]->tok);
-				printf("idivl %s\n", symstack(sym));
+				sym_s = sym_lookup(tree->child[i]->tok);
+				printf("idivl %s\n", sym_s);
 				if (tree->head_type != MOD) {
 					printf("xor %%edx, %%edx\n");
 					printf("cdq\n");
