@@ -867,6 +867,17 @@ char* codegen(exp_tree_t* tree)
 		new_temp_reg();
 	}
 
+	/* 
+	 * XXX: CAST tree -- might want to have some code here,
+	 * e.g. for int -> char conversion or whatever,
+	 * if that ever gets implemented 
+	 */
+	/* (CAST (CAST_TYPE (BASE_TYPE (INT_DECL))) (NUMBER:3)) */
+	/* (CAST (CAST_TYPE (BASE_TYPE (INT_DECL)) (DECL_STAR)) (VARIABLE:p)) */
+	if (tree->head_type == CAST) {
+		return codegen(tree->child[1]);
+	}
+
 	/* "bob123" */
 	if (tree->head_type == STR_CONST) {
 		sto = get_temp_reg();
@@ -1320,8 +1331,9 @@ char* codegen(exp_tree_t* tree)
 		 * at least one pointer-typed object.
 		 *
 		 * XXX: doesn't work for pointers that aren't directly
-		 * variables because codegen() doesn't track types
-		 * and function do not have tracked types either
+		 * pointer variables. Fix would be to run
+		 * some kind of type analysis routine on tree->child[i]
+		 * to figure out its type.
 		 */
 		ptr_arith_mode = 0;
 		ptr_count = 0;
