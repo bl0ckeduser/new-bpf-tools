@@ -95,6 +95,17 @@ int intl_label = 0; /* internal label numbering */
 
 /* ====================================================== */
 
+int basetype_size_dispatch(int bt)
+{
+	switch (bt) {
+		/* 32-bit x86 -- sizeof(int) = 4 */
+		case BASETYPE_INT:
+			return 4;
+		default:
+			return 0;
+	}
+}
+
 typedesc_t mk_typedesc(int bt, int ptr, int arr)
 {
 	typedesc_t td;
@@ -703,7 +714,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				for (j = 0; j < sto; j++)
 					(void)nameless_perm_storage();
 				/* discard tree */
-				*dc = null_tree;
+				dc->head_type = NULL_TREE;
 			} else {
 				/*
 				 * Set up symbols and stack storage
@@ -761,7 +772,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 			/*
 			 * Store information about the type of the object
 		 	 */
-			if (symty == SYMTYPE_STACK) {
+			if (symty == SYMTYPE_STACK) {				
 				symtyp[sym_num] = mk_typedesc(BASETYPE_INT, stars, check_array(dc));
 			} else if (symty == SYMTYPE_GLOBALS) {
 				globtyp[sym_num] = mk_typedesc(BASETYPE_INT, stars, check_array(dc));
@@ -838,6 +849,7 @@ char* codegen(exp_tree_t* tree)
 	int lab1, lab2;
 	char *sav1, *sav2;
 	int my_ccid;
+	int ptr_arith_mode, obj_siz, ptr_memb, ptr_count;
 
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
@@ -896,8 +908,8 @@ char* codegen(exp_tree_t* tree)
 		
 		sto = registerize(codegen(tree->child[0]));
 		sto2 = get_temp_reg();
-		printf("movl (%s), %s\n", sto, sto2);
-		
+		printf("movl (%s), %s\n", sto, sto2);		
+
 		return sto2;
 	}
 
@@ -1293,9 +1305,46 @@ char* codegen(exp_tree_t* tree)
 		/* (with optimized code for number and variable operands
 		 * that avoids wasting temporary registes) */
 		sto = get_temp_reg();
+		
+		/*
+		 * Check if "pointer arithmetic" is necessary --
+		 * this happens in the case of additions containing
+		 * at least one pointer-typed object.
+		 *
+		 * XXX: doesn't work for pointers that aren't directly
+		 * variables because codegen() doesn't track types
+		 * and function do not have tracked types either
+		 */
+		ptr_arith_mode = 0;
+		ptr_count = 0;
+		if (tree->head_type == ADD) {
+			for (i = 0; i < tree->child_count; ++i) {
+				if (tree->child[i]->head_type == VARIABLE
+					&& (sym_lookup_type(tree->child[i]->tok).ptr
+					|| sym_lookup_type(tree->child[i]->tok).arr)) {
+					ptr_arith_mode = 1;
+					obj_siz = basetype_size_dispatch(
+						sym_lookup_type(tree->child[i]->tok).base_type);
+					ptr_memb = i;
+					if (ptr_count++)
+						fail("please don't add pointers");
+				}
+			}
+		}
+
 		for (i = 0; i < tree->child_count; i++) {
 			oper = i ? arith : "movl";
-			if (tree->child[i]->head_type == NUMBER) {
+			/* 
+			 * Pointer arithmetic mode -- e.g. if 
+			 * `p' is an `int *', p + 5 becomes
+			 * p + 5 * sizeof(int)
+			 */
+			if (ptr_arith_mode && i != ptr_memb) {
+				str = codegen(tree->child[i]);
+				printf("imull $%d, %s\n", obj_siz, str);
+				printf("%s %s, %s\n", oper, str, sto);
+				free_temp_reg(str);
+			} else if (tree->child[i]->head_type == NUMBER) {
 				printf("%s $%s, %s\n", 
 					oper, get_tok_str(*(tree->child[i]->tok)), sto);
 			} else if(tree->child[i]->head_type == VARIABLE) {
