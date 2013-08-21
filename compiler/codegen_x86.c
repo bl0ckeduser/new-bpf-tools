@@ -995,7 +995,10 @@ char* codegen(exp_tree_t* tree)
 
 		sto2 = registerize(codegen(tree->child[0]->child[1]));
 
-		/* XXX: $4 assumes int */
+		/* 
+		 * XXX: $4 assumes int (the rest is okay 
+		 * because pointers are always `l')
+		 */
 		printf("imull $4, %s\n", sto2);
 		printf("addl %s, %s\n", sto2, sto);
 
@@ -1008,7 +1011,10 @@ char* codegen(exp_tree_t* tree)
 		
 		sto = registerize(codegen(tree->child[0]));
 		sto2 = get_temp_reg();
-		/* XXX: l suffix assumes int ? */
+		/* 
+		 * XXX: `l' suffix assumes int.
+		 * conversions may be necessary.
+		 */
 		printf("movl (%s), %s\n", sto, sto2);		
 		free_temp_reg(sto);
 
@@ -1027,6 +1033,14 @@ char* codegen(exp_tree_t* tree)
 		/* push the arguments in reverse order */
 		for (i = tree->child_count - 1; i >= 0; --i) {
 			sto = codegen(tree->child[i]);
+			/* 
+			 * XXX: need to convert args to function type,
+			 * e.g. char argument becomes int because prototype
+			 * of function needs int. note that int is the
+			 * default type in C.
+			 */
+  
+			/* XXX: pushl is only for int args */
 			printf("pushl %s\t# argument %d to %s\n", sto, i,
 				 get_tok_str(*(tree->tok)));
 			free_temp_reg(sto);
@@ -1036,7 +1050,11 @@ char* codegen(exp_tree_t* tree)
 		printf("call %s\n", get_tok_str(*(tree->tok)));
 
 		/* throw off the arguments from the stack */
-		/* XXX: FIXME: if everything is not an `int', it's not 4 * x !!! */
+		/* 
+		 * XXX: FIXME: 4 * tree... assumes int args.
+		 * must instead know the size in bytes of the
+		 * whole argument stack
+		 */
 		printf("addl $%d, %%esp\t# throw off %d arg%s\n",
 			4 * tree->child_count, tree->child_count,
 			tree->child_count > 1 ? "s" : "");
@@ -1044,6 +1062,13 @@ char* codegen(exp_tree_t* tree)
 		/* move the return-value register (EAX)
 		 * to temporary stack-based storage */
 		sto = get_temp_mem();
+		/* 
+		 * XXX: what if the return type isn't int ?
+		 * i don't even know what the convention would
+		 * be for that.
+		 * 
+		 * int is the default return type in C.
+		 */
 		printf("movl %%eax, %s\n", sto);
 
 		/* restore the registers as they were
@@ -1129,6 +1154,7 @@ char* codegen(exp_tree_t* tree)
 		 * routine */
 		printf("# return value\n");
 		if (strcmp(sto, "%eax"))
+			/* XXX: this assumes int */
 			printf("movl %s, %%eax # ret\n", sto, str);
 		printf("jmp _ret_%s\n", current_proc);
 		return NULL;
@@ -1190,6 +1216,7 @@ char* codegen(exp_tree_t* tree)
 		my_ccid = ccid++;
 		sto = codegen(tree->child[0]);
 		sto2 = get_temp_reg();
+		/* XXX: convert to int first */
 		printf("movl $0, %s\n", sto2);
 		printf("cmp %s, %s\n", sto, sto2);
 		printf("movl $1, %s\n", sto2);
@@ -1204,6 +1231,7 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == CC_AND) {
 		my_ccid = ccid++;
 		sto2 = get_temp_reg();
+		/* XXX: must convert other types to int */
 		printf("movl $0, %s\n", sto2);
 		for (i = 0; i < tree->child_count; ++i) {
 			sto = codegen(tree->child[i]);
@@ -1220,6 +1248,7 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == CC_OR) {
 		my_ccid = ccid++;
 		sto2 = get_temp_reg();
+		/* XXX: must convert other types to int */
 		printf("movl $0, %s\n", sto2);
 		for (i = 0; i < tree->child_count; ++i) {
 			sto = codegen(tree->child[i]);
@@ -1240,6 +1269,7 @@ char* codegen(exp_tree_t* tree)
 		|| tree->head_type == DEC)
 		&& tree->child[0]->head_type == VARIABLE) {
 		sym_s = sym_lookup(tree->child[0]->tok);
+		/* XXX: use type suffixes */
 		printf("%s %s\n", tree->head_type == INC ?
 			"incl" : "decl", sym_s);
 		return sym_s;
@@ -1284,6 +1314,7 @@ char* codegen(exp_tree_t* tree)
 		/* store the variable's value to temp
 		 * storage then bump it and return
 		 * the temp storage */
+		/* XXX: use type suffixes */
 		printf("movl %s, %s\n", sym_s, sto);
 		printf("%s %s\n",
 			tree->head_type == POST_INC ? "incl" : "decl",
@@ -1311,6 +1342,8 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == DEREF) {
 
+		/* XXX: assumes int */
+
 		sto = registerize(codegen(tree->child[0]->child[0]));
 		sto2 = registerize(codegen(tree->child[1]));
 		printf("movl %s, (%s)\n", sto2, sto);
@@ -1321,6 +1354,10 @@ char* codegen(exp_tree_t* tree)
 	/* simple variable assignment */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == VARIABLE) {
+		/* 
+		 * XXX: assumes int. conversions and suffixes
+		 * needed otherwise
+		 */
 		sym_s = sym_lookup(tree->child[0]->tok);
 		if (tree->child[1]->head_type == NUMBER) {
 			/* optimized code for number operand */
@@ -1360,6 +1397,7 @@ char* codegen(exp_tree_t* tree)
 		/* XXX: FIXME: $4 assumes int members */
 		printf("imull $4, %s\n", sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
+		/* XXX: movl assumes int members */
 		printf("movl %s, (%s)\n", sto3, sto2);
 
 		free_temp_reg(sto2);
@@ -1382,6 +1420,7 @@ char* codegen(exp_tree_t* tree)
 		/* XXX: FIXME: $4 assumes int members */
 		printf("imull $4, %s\n", sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
+		/* XXX: movl assumes int members */
 		printf("movl (%s), %s\n", sto2, sto);
 
 		free_temp_reg(sto2);
