@@ -11,7 +11,7 @@ decl := basic-type decl2 { ',' decl2 }
  *	foo[12]
  *	*foo[12]
  */	
-decl2 := { '*' } ident [ ('=' expr) | ('[' integer ']') ]
+decl2 := { '*' } ident [ ('=' expr) | { ('[' integer ']') } ]
 
 
 /* ====================================================== */
@@ -34,12 +34,8 @@ expr := lvalue asg-op expr
 
 /*
  * Notice [] binds tighter than *
- * Also, if n-dimensional arrays were supported,
- * it would be ...
- *
- *        ident { '[' expr ']' }
  */
-lvalue := ident [ '[' expr ']' ]  | '*' lvalue
+lvalue := ident { '[' expr ']' }  | '*' lvalue
 
 ccor_expr := ccand_expr ['||' ccand_expr]
 

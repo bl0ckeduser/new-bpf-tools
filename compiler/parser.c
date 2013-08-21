@@ -153,7 +153,7 @@ exp_tree_t decl()
 }
 
 /*
- * decl2 := { '*' } ident [ ('=' expr) | ('[' integer ']') ]
+ * decl2 := { '*' } ident [ ('=' expr) | { ('[' integer ']') } ]
  */
 exp_tree_t decl2()
 {
@@ -181,16 +181,19 @@ exp_tree_t decl2()
 			parse_fail("expected expression after =");
 		add_child(&tree, alloc_exptree(subtree2));
 	} else if(peek().type == TOK_LBRACK) {
+multi_array_decl:
 		++indx;	/* eat [ */
 		tok = need(TOK_INTEGER);
 		need(TOK_RBRACK);
 		add_child(&tree, 
 			alloc_exptree(new_exp_tree(ARRAY_DIM, &tok)));
+		if (peek().type == TOK_LBRACK)
+			goto multi_array_decl;
 	}
 	return tree;
 }
 
-/* lvalue := ident [ '[' expr ']' ]  | '*' lvalue */
+/* lvalue := ident { '[' expr ']' }  | '*' lvalue */
 exp_tree_t lval()
 {
 	token_t tok = peek();
@@ -207,16 +210,21 @@ exp_tree_t lval()
 		return tree;
 	}
 	else if (tok.type == TOK_IDENT) {
-		/* array expression: identifier[index] */
+		/* array access: identifier[index][index2]... */
 		if(tokens[indx + 1].type == TOK_LBRACK) {
 			tree = new_exp_tree(ARRAY, NULL);
 			add_child(&tree,
 				alloc_exptree(new_exp_tree(VARIABLE, &tok)));
 			indx += 2;	/* eat the identifier and the [ */
+multi_array_access:
 			if (!valid_tree(subtree = expr()))
 				parse_fail("expression expected");
 			add_child(&tree, alloc_exptree(subtree));
 			need(TOK_RBRACK);
+			if (peek().type == TOK_LBRACK) {
+				++indx;
+				goto multi_array_access;
+			}
 			return tree;	
 		/* identifier alone -- variable */		
 		} else {
