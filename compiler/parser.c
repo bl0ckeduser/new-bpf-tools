@@ -32,10 +32,9 @@ extern void fail(char* mesg);
 /* give the current token */
 token_t peek()
 {
+	token_t end = { TOK_NOMORETOKENSLEFT, "", 0, 0, 0 };
 	if (indx >= tok_count)
-		/* past the end of the token stream;
-		 * give the last one to avoid errors */
-		return tokens[tok_count - 1];
+		return end;
 	else
 		return tokens[indx];
 }
