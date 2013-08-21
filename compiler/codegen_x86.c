@@ -1,13 +1,16 @@
-/* Syntax tree -> 32-bit x86 assembly (GAS syntax) generator 
- * (it's my first time [quickly] doing x86 so it's probably far
- * from optimal). The essence of this module is juggling with
+/* 
+ * Syntax tree ==> 32-bit x86 assembly (GAS syntax) generator 
+ * 
+ * It's my first time (quickly) doing x86 so it's probably far
+ * from optimal. The essence of this module is juggling with
  * registers and coping with permitted parameter-types. 
- *		=>	Many improvements possible.	<=
- */
-
-/* NOTE: this code generator uses the standard C boolean
+ * Many improvements are possible.
+ *
+ * Note that this code generator uses the standard C boolean
  * idiom of 0 = false, nonzero = true, unlike the BPFVM one.
  */
+
+/* ====================================================== */
 
 #include "tree.h"
 #include "tokens.h"
@@ -15,22 +18,52 @@
 #include <string.h>
 #include <stdio.h>
 
+extern void fail(char*);
+extern void compiler_fail(char *message, token_t *token,
+	int in_line, int in_chr);
+void setup_symbols(exp_tree_t* tree, int glob);
+
+/* ====================================================== */
+
+/*
+ * Modes for the symbol setup
+ * routine which populates the
+ * various symbol tables and
+ * which sets aside memory
+ */
 enum {
+	/* symbol is local to a function */
 	SYMTYPE_STACK,
+
+	/* symbol is a global */
 	SYMTYPE_GLOBALS
 };
 
+/* Name of function currently being coded */
 char current_proc[64];
+
+/* Table of local symbols */
 char symtab[256][32] = {""};
-char globtab[256][32] = {""};
-char arg_symtab[256][32] = {""};
-char str_const_tab[256][32] = {""};
-char ts_used[TEMP_REGISTERS];
-char tm_used[TEMP_MEM];
 int syms = 0;
-int arg_syms = 0;
-int str_consts = 0;
+
+/* Table of global symbols */
+char globtab[256][32] = {""};
 int globs = 0;
+
+/* Table of function-argument symbols */
+char arg_symtab[256][32] = {""};
+int arg_syms = 0;
+
+/* Table of string-constant symbols */
+char str_const_tab[256][32] = {""};
+int str_consts = 0;
+
+/* Temporary-use registers currently in use */
+char ts_used[TEMP_REGISTERS];
+
+/* Temporary-use stack offsets currently in use */
+char tm_used[TEMP_MEM];
+
 int temp_register = 0;
 int swap = 0;
 int proc_ok = 1;
@@ -42,26 +75,26 @@ int ccid = 0;
 int stack_size;
 int intl_label = 0; /* internal label numbering */
 
-extern void fail(char*);
-extern void compiler_fail(char *message, token_t *token,
-	int in_line, int in_chr);
-
-void setup_symbols(exp_tree_t* tree, int glob);
+/* ====================================================== */
 
 void print_code() {
 	;
 }
 
-/* make all the general-purpose registers
- * available for temporary use */
+/* 
+ * Release all temporary registers
+ * for new use
+ */
 void new_temp_reg() {
 	int i;
 	for (i = 0; i < TEMP_REGISTERS; ++i)
 		ts_used[i] = 0;
 }
 
-/* get a general-purpose register for
- * temporary use */
+/* 
+ * Get a general-purpose X86 register for
+ * temporary use 
+ */
 char* get_temp_reg() {
 	int i;
 	for (i = 0; i < TEMP_REGISTERS; ++i)
@@ -72,7 +105,9 @@ char* get_temp_reg() {
 	fail("out of registers");
 }
 
-/* let go of a temporary register */
+/* 
+ * Explicitly let go of a temporary register 
+ */
 void free_temp_reg(char *reg) {
 	int i;
 
@@ -81,16 +116,19 @@ void free_temp_reg(char *reg) {
 			ts_used[i] = 0;
 }
 
-/* make all the stack-based temporary
- * storage available for use */
+/* 
+ * Release all temporary stack-based
+ * storage for new use
+ */
 void new_temp_mem() {
 	int i;
 	for (i = 0; i < TEMP_MEM; ++i)
 		tm_used[i] = 0;
 }
 
-/* use some stack-based temporary
- * storage */
+/* 
+ * Get some temporary stack storage
+ */
 char* get_temp_mem() {
 	int i;
 	for (i = 0; i < TEMP_MEM; ++i)
@@ -101,7 +139,9 @@ char* get_temp_mem() {
 	fail("out of temporary memory");
 }
 
-/* let go of temporary stack memory */
+/* 
+ * Explicitly let go of temporary stack memory
+ */
 void free_temp_mem(char *reg) {
 	int i;
 
@@ -110,8 +150,10 @@ void free_temp_mem(char *reg) {
 			tm_used[i] = 0;
 }
 
-/* get the GAS syntax for a symbol
- * stored in the stack */
+/* 
+ * Get a GNU x86 assembler syntax string
+ * for a symbol stored in the stack
+ */
 char *symstack(int id) {
 	static char buf[128];
 	if (!id)
@@ -123,7 +165,9 @@ char *symstack(int id) {
 	return buf;
 }
 
-/* Extract the raw string from a token */
+/* 
+ * Extract the raw string from a token 
+ */
 char* get_tok_str(token_t t)
 {
 	static char buf[1024];
@@ -133,7 +177,9 @@ char* get_tok_str(token_t t)
 }
 
 
-/* Check if a global is already defined */
+/* 
+ * Check if a global is already defined 
+ */
 int glob_check(token_t* tok)
 {
 	int i;
@@ -148,7 +194,10 @@ int glob_check(token_t* tok)
 	return 0;
 }
 
-/* Check if a symbol is already defined */
+/* 
+ * Check if a local (stack) symbol is 
+ * already defined 
+ */
 int sym_check(token_t* tok)
 {
 	int i;
@@ -177,8 +226,10 @@ int sym_check(token_t* tok)
  */
 char* nameless_perm_storage()
 {
-	/* it's important to clear this in case
-	 * there is some leftover stuff */
+	/* 
+	 * It's important to clear this in case
+	 * there is some leftover stuff 
+	 */
 	*(symtab[syms]) = 0;
 	return symstack(syms++);
 }
@@ -211,33 +262,33 @@ char *newstr(char *s)
 	return new;
 }
 
-/* Lookup storage address of a symbol */
+/* 
+ * Lookup a symbol and return
+ * a GAS-syntax string for its
+ * address. (It could be a stack
+ * symbol or it could be a static
+ * heap symbol, or whatever...)
+ */
 char* sym_lookup(token_t* tok)
 {
 	char buf[1024];
 	char *s = get_tok_str(*tok);
 	int i = 0;
 
-/*
-	fprintf(stderr, "proc: %s -- lo %s\n",
-		current_proc,
-		get_tok_str(*tok));
-	fprintf(stderr, "syms: %d, glob: %d, argsyms: %d\n",
-		syms, arg_syms, globs);
-*/
-
-	/* try stack locals */
+	/* Try stack locals */
 	for (i = 0; i < syms; i++)
 		if (!strcmp(symtab[i], s))
 			return newstr(symstack(i));
 
-	/* try arguments */
+	/* Try arguments */
 	for (i = 0; i < arg_syms; i++)
 		if (!strcmp(arg_symtab[i], s))
 			return newstr(symstack(-2 - i));
 
-	/* try globals last -- they are shadowed
-	 * by locals and arguments */
+	/* 
+	 * Try globals last -- they are shadowed
+	 * by locals and arguments 
+	 */
 	for (i = 0; i < globs; ++i)
 		if (!strcmp(globtab[i], s))
 			return globtab[i];
@@ -246,7 +297,9 @@ char* sym_lookup(token_t* tok)
 	compiler_fail(buf, tok, 0, 0);
 }
 
-/* Lookup storage number of a string constant */
+/* 
+ * Lookup storage number of a string constant
+ */
 int str_const_lookup(token_t* tok)
 {
 	char buf[1024];
@@ -261,7 +314,9 @@ int str_const_lookup(token_t* tok)
 	compiler_fail(buf, tok, 0, 0);
 }
 
-/* Add a string constant to the string constant table */
+/* 
+ * Add a string constant to the string constant table
+ */
 int str_const_add(token_t *tok)
 {
 	char *s = get_tok_str(*tok);
@@ -269,7 +324,12 @@ int str_const_add(token_t *tok)
 	return str_consts++; 
 }
 
-/* Tree type -> arithmetic routine */
+/* 
+ * Tree type -> arithmetic routine
+ * (this is for the easy general
+ * cases -- divison and remainders
+ * need special attention on X86)
+ */
 char* arith_op(int ty)
 {
 	switch (ty) {
@@ -302,18 +362,21 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 
 	strcpy(current_proc, name);
 
-	/* argument symbols */
+	/* Copy the argument symbols to the symbol table */
 	for (i = 0; args[i]; ++i)
 		strcpy(arg_symtab[arg_syms++], args[i]);
 
-	/* make the symbol and label for the procedure */
+	/* Make the symbol and label for the procedure */
 #ifndef MINGW_BUILD
 	printf(".type %s, @function\n", name);
 #endif
 	printf("%s:\n", name);
 
-	/* setup the identifier symbol table and make stack
-	 * space for all the variables in the program */
+	/* 
+	 * Populate the symbol table with the
+	 * function's local variables and set aside
+	 * stack space for them
+	 */
 	*entry_buf = 0;
 	setup_symbols(tree, SYMTYPE_STACK);
 
@@ -323,9 +386,11 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 		temp_mem[i] = buf2;
 	}
 
-	/* do the usual x86 function entry process,
-	 * and set aside stack memory for local
-	 * variables */
+	/* 
+	 * Do the usual x86 function entry process,
+	 * moving down the stack pointer to make
+	 * space for the local variables 
+	 */
 	printf("# set up stack space\n");
 	printf("pushl %%ebp\n");
 	printf("movl %%esp, %%ebp\n");
@@ -335,18 +400,24 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	printf("_tco_%s:\n", name);	/* hook for TCO */
 	puts(entry_buf);
 
-	/* code the body of the procedure */
+	/* 
+	 * Code the body of the procedure
+	 */
 	codegen(tree);
 
-	/* typical x86 function return */
+	/* Do a typical x86 function return */
 	printf("\n# clean up stack and return\n");
-	printf("_ret_%s:\n", name);	/* hook for value returns */
+	printf("_ret_%s:\n", name);	/* hook for 'return' */
 	printf("addl $%d, %%esp\n", syms * 4);
 	printf("movl %%ebp, %%esp\n");
 	printf("popl %%ebp\n");
 	printf("ret\n\n");
 }
 
+/*
+ * Determine if main() is defined
+ * in a user's program.
+ */
 int look_for_main(exp_tree_t *tree)
 {
 	int i;
@@ -366,7 +437,9 @@ int look_for_main(exp_tree_t *tree)
 	return 0;
 }
 
-/* Starting point of the codegen */
+/* 
+ * Entry point of the x86 codegen
+ */
 void run_codegen(exp_tree_t *tree)
 {
 	char *main_args[] = { NULL };
@@ -430,7 +503,9 @@ void run_codegen(exp_tree_t *tree)
 	if (!main_defined)
 		codegen_proc(main_name, tree, main_args);
 
-	/* code builtin echo utility routine */
+	/*
+	 * Code a builtin echo(int n) utility routine
+	 */
 #ifndef MINGW_BUILD
 	printf(".type echo, @function\n");
 #endif
@@ -447,6 +522,9 @@ void run_codegen(exp_tree_t *tree)
     printf("ret\n");
 }
 
+/*
+ * Compile string constants
+ */
 void deal_with_str_consts(exp_tree_t *tree)
 {
 	int i;
@@ -466,7 +544,9 @@ void deal_with_str_consts(exp_tree_t *tree)
 }
 
 
-/* See run_codegen above */
+/* 
+ * Code all the function definitions in a program
+ */
 void deal_with_procs(exp_tree_t *tree)
 {
 	int i;
@@ -484,8 +564,10 @@ void deal_with_procs(exp_tree_t *tree)
 			deal_with_procs(tree->child[i]);
 }
 
-/* check if a declaration is an array,
- * and if it is, return dimensions */
+/* 
+ * Check if a declaration is for an array,
+ * and if it is, return dimensions 
+ */
 int check_array(exp_tree_t *decl)
 {
 	int array = 0;
@@ -633,7 +715,9 @@ void setup_symbols(exp_tree_t *tree, int symty)
  * If a temporary storage location is already
  * a register, give it back as is. Otherwise,
  * copy it to a new temporary register and give
- * this new register.
+ * this new register. (This is used because
+ * several x86 instructions seem to expect
+ * registers rather than stack offsets)
  */
 char* registerize(char *stor)
 {
@@ -731,7 +815,6 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
-
 	/* *(exp) */
 	if (tree->head_type == DEREF
 		&& tree->child_count == 1) {
@@ -786,7 +869,7 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
-	/* procedure */
+	/* procedure definition */
 	if (tree->head_type == PROC) {
 		if (!proc_ok)
 			compiler_fail("proc not allowed here", tree->tok, 0, 0);
@@ -1367,27 +1450,27 @@ char* codegen(exp_tree_t* tree)
  */
 char* cheap_relational(exp_tree_t* tree, char *oppcheck)
 {
-		char *sto, *sto2, *sto3;
-		char *str, *str2;
-		sto3 = get_temp_reg();
-		printf("movl $0, %s\n", sto3);
-		sto = codegen(tree->child[0]);
-		str = get_temp_reg();
-		printf("movl %s, %s\n", sto, str);
-		free_temp_reg(sto);
-		sto2 = codegen(tree->child[1]);
-		str2 = get_temp_reg();
-		printf("movl %s, %s\n", sto2, str2);
-		free_temp_reg(sto2);
-		printf("cmpl %s, %s\n", str2, str);
-		free_temp_reg(str);
-		free_temp_reg(str2);
-		printf("%s IL%d\n", oppcheck, intl_label);
-		printf("movl $1, %s\n", sto3);
-		printf("IL%d: \n", intl_label++);
-		free_temp_reg(sto);
-		free_temp_reg(sto2);
-		return sto3;
+	char *sto, *sto2, *sto3;
+	char *str, *str2;
+	sto3 = get_temp_reg();
+	printf("movl $0, %s\n", sto3);
+	sto = codegen(tree->child[0]);
+	str = get_temp_reg();
+	printf("movl %s, %s\n", sto, str);
+	free_temp_reg(sto);
+	sto2 = codegen(tree->child[1]);
+	str2 = get_temp_reg();
+	printf("movl %s, %s\n", sto2, str2);
+	free_temp_reg(sto2);
+	printf("cmpl %s, %s\n", str2, str);
+	free_temp_reg(str);
+	free_temp_reg(str2);
+	printf("%s IL%d\n", oppcheck, intl_label);
+	printf("movl $1, %s\n", sto3);
+	printf("IL%d: \n", intl_label++);
+	free_temp_reg(sto);
+	free_temp_reg(sto2);
+	return sto3;
 }
 
 /* 
