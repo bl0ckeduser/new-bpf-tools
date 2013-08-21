@@ -78,16 +78,15 @@ char ts_used[TEMP_REGISTERS];
 /* Temporary-use stack offsets currently in use */
 char tm_used[TEMP_MEM];
 
-int temp_register = 0;
-int swap = 0;
 int proc_ok = 1;
-int else_ret;
-int main_defined = 0;
-char entry_buf[1024], buf[1024];
+int else_ret;			/* used for "else return" optimization */
+int main_defined = 0;	/* set if user-defined main() exists */
 int ccid = 0;
 
 int stack_size;
 int intl_label = 0; /* internal label numbering */
+
+char entry_buf[1024], buf[1024];
 
 /* ====================================================== */
 
@@ -96,6 +95,9 @@ void codegen_fail(char *msg, token_t *tok)
 	compiler_fail(msg, tok, 0, 0);
 }
 
+/* 
+ * INT_DECL => 4 because int is 4 bytes, etc.
+ */
 int decl_size_dispatch(int bt)
 {
 	switch (bt) {
@@ -108,6 +110,9 @@ int decl_size_dispatch(int bt)
 	}
 }
 
+/* 
+ * Build a type-description structure
+ */
 typedesc_t mk_typedesc(int bt, int ptr, int arr)
 {
 	typedesc_t td;
@@ -118,6 +123,9 @@ typedesc_t mk_typedesc(int bt, int ptr, int arr)
 	return td;
 }
 
+/* 
+ * Required by main()
+ */
 void print_code() {
 	;
 }
@@ -301,6 +309,9 @@ int glob_add(token_t *tok)
 	return globs++; 
 }
 
+/*
+ * Copy a string to new memory
+ */
 char *newstr(char *s)
 {
 	char *new = malloc(strlen(s) + 1);
@@ -528,6 +539,7 @@ int look_for_main(exp_tree_t *tree)
 			return 1;
 	}
 
+	/* child-recursion */
 	for (i = 0; i < tree->child_count; ++i)
 		if (tree->child[i]->head_type == BLOCK
 		|| tree->child[i]->head_type == PROC)
@@ -632,13 +644,18 @@ void deal_with_str_consts(exp_tree_t *tree)
 
 	if (tree->head_type == STR_CONST) {
 		id = str_const_add(tree->tok);
-		/* the quotes are part of the token string */
+		/* 
+		 * The quotation marks are part of the
+		 * token string, so there is no need 
+		 * to write them again.
+		 */
 		printf("_str_const_%d: .string %s\n", 
 			id, get_tok_str(*(tree->tok)));
 
-		/* TODO: escape sequences like \n ... */
+		/* XXX: TODO: escape sequences like \n ... */
 	}
 
+	/* child recursion */
 	for (i = 0; i < tree->child_count; ++i)
 		deal_with_str_consts(tree->child[i]);
 }
@@ -658,6 +675,7 @@ void deal_with_procs(exp_tree_t *tree)
 		(*tree).head_type = NULL_TREE;
 	}
 
+	/* child recursion */
 	for (i = 0; i < tree->child_count; ++i)
 		if (tree->child[i]->head_type == BLOCK
 		|| tree->child[i]->head_type == PROC)
@@ -694,6 +712,10 @@ char *decl2suffix(char ty)
 	}
 }
 
+/*
+ * 		Byte size of an integer object
+ * =>	GAS instruction suffix
+ */
 char *siz2suffix(char siz)
 {
 	switch (siz) {
@@ -728,12 +750,14 @@ void setup_symbols(exp_tree_t *tree, int symty)
 	int decl = tree->head_type;
 	char *suffx = decl2suffix(decl);
 
+	/* Only integer (i.e. char, int) types are supported */
 	if (int_type_decl(decl)) {
 		for (i = 0; i < tree->child_count; ++i) {
 			dc = tree->child[i];
 
 			/* 
-			 * Count & eat up the stars
+			 * Count & eat up the pointer-qualification stars,
+			 * as in e.g. "int ***herp_derp"
 		 	 */
 			stars = newlen = 0;
 			for (j = 0; j < dc->child_count; ++j)
@@ -755,7 +779,8 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				membsiz = decl_size_dispatch(decl);
 	
 			/* 
-			 * Do the actual relevant part 
+			 * Switch symbols/stack setup code
+			 * based on array dimensions of object
 			 */
 			if (check_array(dc) > 1) {
 				codegen_fail("N-dimensional, where N > 1, arrays are "
@@ -771,17 +796,23 @@ void setup_symbols(exp_tree_t *tree, int symty)
 					codegen_fail("global arrays are currently unsupported",
 						dc->child[0]->tok);
 
-				/* number of elements (integer) */
+				/* Get number of elements (constant integer) */
+				/* XXX: check it's actually an integer */
 				sto = atoi(get_tok_str(*(dc->child[1]->tok)));
-				/* make a symbol named after the array
-				 * and store the *ADDRESS* of its first element there */
+
+				/* 
+				 * Make a symbol named after the array
+				 * and store the *ADDRESS* of its first 
+				 * element there 
+				 */
 				start_bytes = symbytes;
-				if (!sym_check(dc->child[0]->tok))
+				if (!sym_check(dc->child[0]->tok)) {
 					/* 
 					 * 32-bit pointers must be always be 
 					 * 4 bytes, not `membsiz', hence the 4
 					 */
 					sym_num = array_ptr = sym_add(dc->child[0]->tok, 4);
+				}
 				str = get_temp_reg();
 				sprintf(buf, "leal %s, %s\n",
 					symstack(start_bytes + sto * membsiz),
@@ -791,11 +822,13 @@ void setup_symbols(exp_tree_t *tree, int symty)
 					str,
 					symstack(start_bytes));
 				strcat(entry_buf, buf);
-				/* make nameless storage for the subsequent
+				/* 
+				 * Make nameless storage for the subsequent
 				 * indices -- when we deal with an expression
 				 * such as array[index] we only need to know
 				 * the starting point of the array and the
-				 * value "index" evaluates to */
+				 * value "index" evaluates to
+				 */
 				for (j = 0; j < sto; j++)
 					(void)nameless_perm_storage(membsiz);
 				/* discard tree */
@@ -806,17 +839,22 @@ void setup_symbols(exp_tree_t *tree, int symty)
 			 	 * for a plain variable (e.g. "int x")
 				 */
 
-				/* create the storage and symbol */
 				switch (symty) {
 					case SYMTYPE_STACK:
+						/* 
+						 * Stack-based storage and symbol
+						 */
 						if (!sym_check(dc->child[0]->tok))
 							sym_num = sym_add(dc->child[0]->tok, membsiz);
 						break;
 					case SYMTYPE_GLOBALS:
+						/*
+						 * Global / heap storage and symbol
+						 */
 						if (!glob_check(dc->child[0]->tok)) {
 							/*
-							 * Global initializers have to be integer
-							 * constants !!!
+							 * If there is an initializer, make sure
+							 * it is an integer constant.
 							 */
 							if (dc->child_count == 2
 								&& dc->child[1]->head_type != NUMBER) {
@@ -824,6 +862,9 @@ void setup_symbols(exp_tree_t *tree, int symty)
 									dc->child[0]->tok);
 							}
 
+							/* 
+							 * Make the symbol and write out the label
+							 */
 							sym_num = glob_add(dc->child[0]->tok);
 							printf("%s: ",
 								get_tok_str(*(dc->child[0]->tok)));
@@ -875,7 +916,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 		tree->head_type = BLOCK;
 	}
 	
-
+	/* Child recursion */
 	for (i = 0; i < tree->child_count; ++i)
 		if (tree->child[i]->head_type == BLOCK
 		||	tree->child[i]->head_type == IF
@@ -1023,14 +1064,19 @@ char* codegen(exp_tree_t* tree)
 
 	/* procedure call */
 	if (tree->head_type == PROC_CALL) {
-		/* push all the registers being used */
+		/* 
+		 * Push all the temporary registers
+		 * that are currently in use
+		 */
 		for (i = 0; i < TEMP_REGISTERS; ++i)
 			if (ts_used[i])
 				printf("pushl %s\t# save temp register\n",
 					temp_reg[i]);
 		memcpy(my_ts_used, ts_used, TEMP_REGISTERS);
 
-		/* push the arguments in reverse order */
+		/* 
+		 * Push the arguments in reverse order
+		 */
 		for (i = tree->child_count - 1; i >= 0; --i) {
 			sto = codegen(tree->child[i]);
 			/* 
@@ -1046,10 +1092,14 @@ char* codegen(exp_tree_t* tree)
 			free_temp_reg(sto);
 		}
 
-		/* call that routine */
+		/* 
+		 * Call the subroutine
+		 */
 		printf("call %s\n", get_tok_str(*(tree->tok)));
 
-		/* throw off the arguments from the stack */
+		/* 
+		 * Throw off the arguments from the stack
+		 */
 		/* 
 		 * XXX: FIXME: 4 * tree... assumes int args.
 		 * must instead know the size in bytes of the
@@ -1059,8 +1109,10 @@ char* codegen(exp_tree_t* tree)
 			4 * tree->child_count, tree->child_count,
 			tree->child_count > 1 ? "s" : "");
 
-		/* move the return-value register (EAX)
-		 * to temporary stack-based storage */
+		/* 
+		 * Move the return-value register (EAX)
+		 * to temporary stack-based storage
+		 */
 		sto = get_temp_mem();
 		/* 
 		 * XXX: what if the return type isn't int ?
@@ -1071,16 +1123,20 @@ char* codegen(exp_tree_t* tree)
 		 */
 		printf("movl %%eax, %s\n", sto);
 
-		/* restore the registers as they were
+		/* 
+		 * Restore the registers as they were
 		 * prior to the call -- pop them in 
-		 * reverse order they were pushed */
+		 * reverse order they were pushed
+		 */
 		for (i = 0; i < TEMP_REGISTERS; ++i)
 			if (my_ts_used[TEMP_REGISTERS - (i + 1)])
 				printf("popl %s\t# restore temp register\n",
 					temp_reg[TEMP_REGISTERS - (i + 1)]);
 
-		/* give back the temporary stack storage
-		 * with the return value in it */
+		/* 
+		 * Give back the temporary stack storage
+		 * with the return value in it
+		 */
 		return sto;
 	}
 
@@ -1104,8 +1160,10 @@ char* codegen(exp_tree_t* tree)
 		/* can't nest procedure definitions */
 		proc_ok = 0;
 
-		/* do the boilerplate routine stuff and code
-		 * its body */
+		/* 
+		 * Do the boilerplate routine stuff and code
+		 * the procedure body (and symbols, etc.)
+		 */
 		buf = malloc(64);
 		strcpy(buf, get_tok_str(*(tree->tok)));
 		codegen_proc(buf,
@@ -1129,8 +1187,10 @@ char* codegen(exp_tree_t* tree)
 		new_temp_reg();
 		new_temp_mem();
 
-		/* move the arguments directly to the
-		 * callee stack offsets */
+		/* 
+		 * Move the arguments directly to the
+		 * callee stack offsets
+		 */
 		for (i = tree->child[0]->child_count - 1; i >= 0; --i) {
 			sto = codegen(tree->child[0]->child[i]);
 			str = registerize(sto);
@@ -1149,9 +1209,11 @@ char* codegen(exp_tree_t* tree)
 		new_temp_mem();
 		/* code the return expression */
 		sto = codegen(tree->child[0]);
-		/* put the return expression's value
+		/* 
+		 * Put the return expression's value
 		 * in EAX and jump to the end of the
-		 * routine */
+		 * routine
+		 */
 		printf("# return value\n");
 		if (strcmp(sto, "%eax"))
 			/* XXX: this assumes int */
@@ -1615,13 +1677,17 @@ char* codegen(exp_tree_t* tree)
 		printf("je IL%d\n",	lab1);
 		/* codegen "true" block */
 		codegen(tree->child[1]);
-		/* check for else-return pattern;
-		 * if it is encountered, the else
-		 * label and jump are not necessary */
+		/* 
+		 * Check for an "else-return" pattern;
+		 * if it is encountered, the "else"
+		 * label and jump are not necessary 
+		 */
 		else_ret = tree->child_count == 3
 		 && tree->child[2]->head_type == RET;
-		/* jump over else block if there
-		 * is one */
+		/* 
+		 * Jump over else block if there
+		 * is one
+		 */
 		if (tree->child_count == 3
 			&& !else_ret)
 			printf("jmp IL%d\n", lab2);
@@ -1767,13 +1833,17 @@ char* optimized_if(exp_tree_t* tree, char *oppcheck)
 	printf("%s IL%d\n", oppcheck, lab1);
 	/* codegen "true" block */
 	codegen(tree->child[1]);
-	/* check for else-return pattern;
+	/* 
+	 * Check for else-return pattern;
 	 * if it is encountered, the else
-	 * label and jump are not necessary */
+	 * label and jump are not necessary
+	 */
 	else_ret = tree->child_count == 3
 	 && tree->child[2]->head_type == RET;
-	/* jump over else block if there
-	 * is one */
+	/* 
+	 * Jump over else block if there
+	 * is one
+	 */
 	if (tree->child_count == 3
 		&& !else_ret)
 		printf("jmp IL%d\n", lab2);
