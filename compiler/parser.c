@@ -256,7 +256,11 @@ multi_array_decl:
 	return tree;
 }
 
-/* lvalue := ident { '[' expr ']' }  | '*' lvalue */
+/*
+ * lvalue := ident { '[' expr ']' }  | '*' lvalue
+ *          | '(' cast-type ') lvalue
+ */
+/* XXX: TODO: cast part */
 exp_tree_t lval()
 {
 	token_t tok = peek();
