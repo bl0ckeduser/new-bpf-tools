@@ -521,7 +521,10 @@ void setup_tokenizer()
 	for (i = 0; i < 100; i++)
 		t[i] = new_trie();
 
-	/* D: any digit */
+	/* D: any digit; B: letter or digit */
+	add_token(t[tc++], "0D+", TOK_OCTAL_INTEGER);
+	add_token(t[tc++], "0xB+", TOK_HEX_INTEGER);
+	add_token(t[tc++], "0XB+", TOK_HEX_INTEGER);
 	add_token(t[tc++], "D+", TOK_INTEGER);
 
 	/* W: any whitespace character */

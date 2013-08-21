@@ -65,6 +65,8 @@ enum {
 	TOK_CC_OR,
 	TOK_CC_AND,
 	TOK_CC_NOT,
+	TOK_OCTAL_INTEGER,
+	TOK_HEX_INTEGER,
 	TOK_CHAR_CONST
 };
 
@@ -126,6 +128,8 @@ static char* tok_nam[] = {
 	"TOK_CC_OR",
 	"TOK_CC_AND",
 	"TOK_CC_NOT",
+	"TOK_OCTAL_INTEGER",
+	"TOK_HEX_INTEGER",
 	"TOK_CHAR_CONST"
 };
 
@@ -187,6 +191,8 @@ static char* tok_desc[] = {
 	"||",
 	"&&",
 	"!",
+	"octal numeral",
+	"hexadecimal numeral",
 	"character constant"
 };
 

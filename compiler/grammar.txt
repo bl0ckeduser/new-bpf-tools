@@ -26,7 +26,11 @@ sum_expr := mul_expr { add-op mul_expr }
 
 mul_expr := unary_expr { mul-op unary_expr }
 
-unary_expr := ([ - ] ( lvalue | integer | char-const | unary_expr ) ) 
+unary_expr := ([ - ] ( lvalue | integer
+			      | char-const 
+		  	      | unary_expr
+		 	      | octal-integer
+		  	      | hex-integer ) ) 
 		|  '(' expr ')' 
 		| lvalue ++ 
 		| lvalue --
@@ -34,4 +38,4 @@ unary_expr := ([ - ] ( lvalue | integer | char-const | unary_expr ) )
 		| -- lvalue
 		| ident '(' expr1, expr2, exprN ')'
 		| '&' lvalue
-
+		| '!' unary_expr
