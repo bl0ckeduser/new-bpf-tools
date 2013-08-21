@@ -46,6 +46,9 @@ enum {		/* head_type */
 	ARRAY_DIM,
 	DECL_CHILD,
 	DECL_STAR,
+	CAST,
+	BASE_TYPE,
+	CAST_TYPE,
 	/* special */
 	NULL_TREE
 };
@@ -92,6 +95,9 @@ static char* tree_nam[] = {
 	"ARRAY_DIM",
 	"DECL_CHILD",
 	"DECL_STAR",
+	"CAST",
+	"BASE_TYPE",
+	"CAST_TYPE",
 	"NULL_TREE"
 };
 

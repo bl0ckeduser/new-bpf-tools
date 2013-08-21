@@ -1,6 +1,11 @@
-/* declaration stuff */
+/* types */
+/* TODO: structs and whatever else */
 
 basic-type := 'int'
+
+/* ====================================================== */
+
+/* declaration stuff */
 
 /* e.g. int a, b, c; */
 decl := basic-type decl2 { ',' decl2 }
@@ -13,6 +18,19 @@ decl := basic-type decl2 { ',' decl2 }
  */	
 decl2 := { '*' } ident [ ('=' expr) | { ('[' integer ']') } ]
 
+
+/* ====================================================== */
+
+/* casts */
+/* TODO: non-basic types ... */
+
+/*
+ *	(int *) p
+ *	(CAST (CAST_TYPE (BASE_TYPE (INT_DECL)) (DECL_STAR)) (VARIABLE:p)) 
+ */
+
+cast := '(' cast-type ')' unary_expr
+cast-type := basic-type {'*'}
 
 /* ====================================================== */
 
@@ -60,3 +78,4 @@ unary_expr := ([ - ] ( lvalue | integer
 		| ident '(' expr1, expr2, exprN ')'
 		| '&' lvalue
 		| '!' unary_expr
+		| cast

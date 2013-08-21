@@ -22,6 +22,10 @@ exp_tree_t ccand_expr();
 exp_tree_t comp_expr();
 exp_tree_t decl();
 exp_tree_t decl2();
+exp_tree_t cast();
+exp_tree_t cast_type();
+int decl_dispatch(char type);
+
 void printout(exp_tree_t et);
 extern void fail(char* mesg);
 
@@ -115,6 +119,54 @@ exp_tree_t parse(token_t *t)
  * "index" made some compilers on some systems
  * very unhappy.
  */
+
+/*
+ * cast := '(' cast-type ')' unary_expr
+ */
+exp_tree_t cast()
+{
+	exp_tree_t tree, ct, ue;
+	int restor;
+
+	if (peek().type == TOK_LPAREN) {
+		restor = indx++;	/* eat '(' */
+		if (valid_tree(ct = cast_type())) {
+			/* okay, it has to be a cast */
+			tree = new_exp_tree(CAST, NULL);
+			add_child(&tree, alloc_exptree(ct));
+			need(TOK_RPAREN);	/* eat and check ')' */
+			if (!valid_tree(ue = unary_expr()))
+				parse_fail("unary expression expected after cast");
+			add_child(&tree, alloc_exptree(ue));
+			return tree;
+		} else
+			indx = restor;	/* backtrack and leave */
+	}
+	return null_tree;
+}
+
+/*
+ * cast-type := basic-type {'*'}
+ */
+exp_tree_t cast_type()
+{
+	token_t bt;
+	exp_tree_t btt, btct, ct, star;
+
+	if (is_basic_type((bt = peek()).type)) {
+		++indx;			/* eat basic-type */
+		ct = new_exp_tree(CAST_TYPE, NULL);
+		btct = new_exp_tree(decl_dispatch(bt.type), NULL);
+		btt = new_exp_tree(BASE_TYPE, NULL);
+		add_child(&btt, alloc_exptree(btct));
+		add_child(&ct, alloc_exptree(btt));
+		star = new_exp_tree(DECL_STAR, NULL);
+		while (peek().type == TOK_MUL)
+			++indx, add_child(&ct, alloc_exptree(star));
+		return ct;
+	} else
+		return null_tree;
+}
 
 /* 
  * decl := basic-type decl2 { ','  decl2 } 
@@ -750,6 +802,7 @@ exp_tree_t mul_expr()
 			| ident '(' expr1, expr2, exprN ')'
 			| '&' lvalue
 			| '!' unary_expr
+			| cast
 */
 exp_tree_t unary_expr()
 {
@@ -759,8 +812,10 @@ exp_tree_t unary_expr()
 	token_t fake_int;
 	char *buff;
 	int val;
+	int neg = 0;
 
 	if (peek().type == TOK_MINUS) {
+		neg = 1;
 		tree = new_exp_tree(NEGATIVE, NULL);
 		++indx;	/* eat sign */
 	}
@@ -898,12 +953,27 @@ exp_tree_t unary_expr()
 
 	/* &x */
 	if (peek().type == TOK_ADDR) {
+		/* i'm too lazy to deal with negatives,
+		 * and anyway it would make no sense */
+		if (neg)
+			parse_fail("minus address-of ??? seriously ??? forget about it");
 		++indx;	/* eat & */
 		subtree = lval();
 		if (!valid_tree(subtree))
 			parse_fail("lvalue expected");
 		tree = new_exp_tree(ADDR, NULL);
 		add_child(&tree, alloc_exptree(subtree));
+		return tree;
+	}
+
+	/* cast */
+	if (valid_tree(subtree = cast())) {
+
+		if (valid_tree(tree)) {	/* negative sign ? */
+			add_child(&tree, alloc_exptree(subtree));
+		} else
+			tree = subtree;
+
 		return tree;
 	}
 
