@@ -39,16 +39,8 @@ enum {
 	SYMTYPE_GLOBALS
 };
 
-/*
- * Stuff used for describing the type
- * of an object
- */
-enum {
-	BASETYPE_INT
-};
-
 typedef struct {
-	int base_type;	/* e.g. BASETYPE_INT for "int" */
+	int ty;			/* e.g. INT_DECL for "int" */
 	int ptr;		/* e.g. 2 for "int **" */
 	int arr;		/* e.g. 3 for "int [12][34][56]" */
 	int *arr_dim;	/* e.g. {12, 34, 56} for "int [12][34][56]" */
@@ -59,17 +51,21 @@ char current_proc[64];
 
 /* Table of local symbols */
 char symtab[256][32] = {""};
-int syms = 0;
+int syms = 0;			/* count */
+int symbytes = 0;		/* stack size in bytes */
+int symsiz[256] = {0};	/* size of each object */
 typedesc_t symtyp[256];
 
 /* Table of global symbols */
 char globtab[256][32] = {""};
-int globs = 0;
+int globs = 0;	/* count */
 typedesc_t globtyp[256];
 
 /* Table of function-argument symbols */
 char arg_symtab[256][32] = {""};
-int arg_syms = 0;
+int arg_syms = 0;		/* count */
+int argbytes = 0;		/* total size in bytes */
+int argsiz[256] = {0};	/* size of each object */
 typedesc_t argtyp[256];
 
 /* Table of string-constant symbols */
@@ -100,12 +96,13 @@ void codegen_fail(char *msg, token_t *tok)
 	compiler_fail(msg, tok, 0, 0);
 }
 
-int basetype_size_dispatch(int bt)
+int decl_size_dispatch(int bt)
 {
 	switch (bt) {
-		/* 32-bit x86 -- sizeof(int) = 4 */
-		case BASETYPE_INT:
+		case INT_DECL:
 			return 4;
+		case CHAR_DECL:
+			return 1;
 		default:
 			return 0;
 	}
@@ -114,7 +111,7 @@ int basetype_size_dispatch(int bt)
 typedesc_t mk_typedesc(int bt, int ptr, int arr)
 {
 	typedesc_t td;
-	td.base_type = bt;
+	td.ty = bt;
 	td.ptr = ptr;
 	td.arr = arr;
 	td.arr_dim = NULL;
@@ -196,16 +193,16 @@ void free_temp_mem(char *reg) {
 
 /* 
  * Get a GNU x86 assembler syntax string
- * for a symbol stored in the stack
+ * for a stack byte offset
  */
 char *symstack(int id) {
 	static char buf[128];
 	if (!id)
 		sprintf(buf, "(%%ebp)");
 	else if (id < 0)
-		sprintf(buf, "%d(%%ebp)", -id * 4);
+		sprintf(buf, "%d(%%ebp)", -id /* * 4 */);
 	else
-		sprintf(buf, "-%d(%%ebp)", id * 4);
+		sprintf(buf, "-%d(%%ebp)", id /* * 4 */);
 	return buf;
 }
 
@@ -268,24 +265,29 @@ int sym_check(token_t* tok)
  * giving it a symbol name. Useful for special 
  * registers created by the compiler. 
  */
-char* nameless_perm_storage()
+char* nameless_perm_storage(int siz)
 {
 	/* 
 	 * It's important to clear this in case
 	 * there is some leftover stuff 
 	 */
 	*(symtab[syms]) = 0;
-	return symstack(syms++);
+
+	symsiz[syms++] = siz;
+
+	return symstack((symbytes += siz) - siz);
 }
 
 /*
  * Create a new symbol, obtaining its permanent
  * storage address.
  */ 
-int sym_add(token_t *tok)
+int sym_add(token_t *tok, int size)
 {
 	char *s = get_tok_str(*tok);
 	strcpy(symtab[syms], s);
+	symsiz[syms] = size;
+	symbytes += size;
 	return syms++; 
 }
 
@@ -306,12 +308,26 @@ char *newstr(char *s)
 	return new;
 }
 
+/*
+ * Compute the address offset of 
+ * an object in memory containing
+ * mixed-sized objects
+ */
+int offs(int *sizes, int ndx)
+{
+	int i;
+	int o = 0;
+	for (i = 0; i < ndx; ++i)
+		o += sizes[i];
+	return o;
+}
+
 /* 
- * Lookup a symbol and return
- * a GAS-syntax string for its
- * address. (It could be a stack
- * symbol or it could be a static
- * heap symbol, or whatever...)
+ * Find the GAS syntax for the address of 
+ * a symbol, which could be a local stack
+ * symbol, a global, or a function argument
+ * (which is also on the stack, but in a
+ * a funny position).
  */
 char* sym_lookup(token_t* tok)
 {
@@ -321,13 +337,14 @@ char* sym_lookup(token_t* tok)
 
 	/* Try stack locals */
 	for (i = 0; i < syms; i++)
-		if (!strcmp(symtab[i], s))
-			return newstr(symstack(i));
+		if (!strcmp(symtab[i], s)) {
+			return newstr(symstack(offs(symsiz, i)));
+		}
 
 	/* Try arguments */
 	for (i = 0; i < arg_syms; i++)
 		if (!strcmp(arg_symtab[i], s))
-			return newstr(symstack(-2 - i));
+			return newstr(symstack(-2*4 - offs(argsiz, i)));
 
 	/* 
 	 * Try globals last -- they are shadowed
@@ -434,13 +451,20 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 
 	/* If syms is set to 0, funny things happen */
 	syms = 1;
+	symbytes = 4;
+	symsiz[0] = 4;
 	arg_syms = 0;
 
 	strcpy(current_proc, name);
 
 	/* Copy the argument symbols to the symbol table */
-	for (i = 0; args[i]; ++i)
-		strcpy(arg_symtab[arg_syms++], args[i]);
+	for (i = 0; args[i]; ++i) {
+		strcpy(arg_symtab[arg_syms], args[i]);
+		/* XXX: assumes int args */
+		argsiz[arg_syms] = 4;
+		argbytes += 4;
+		++arg_syms;
+	}
 
 	/* Make the symbol and label for the procedure */
 #ifndef MINGW_BUILD
@@ -458,7 +482,7 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 
 	for (i = 0; i < TEMP_MEM; ++i) {
 		buf2 = malloc(64);
-		strcpy(buf2, nameless_perm_storage());
+		strcpy(buf2, nameless_perm_storage(4));
 		temp_mem[i] = buf2;
 	}
 
@@ -470,7 +494,7 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	printf("# set up stack space\n");
 	printf("pushl %%ebp\n");
 	printf("movl %%esp, %%ebp\n");
-	printf("subl $%d, %%esp\n", syms * 4);
+	printf("subl $%d, %%esp\n", symbytes);
 	printf("\n# >>> compiled code for '%s'\n", name);
 
 	printf("_tco_%s:\n", name);	/* hook for TCO */
@@ -484,7 +508,7 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	/* Do a typical x86 function return */
 	printf("\n# clean up stack and return\n");
 	printf("_ret_%s:\n", name);	/* hook for 'return' */
-	printf("addl $%d, %%esp\n", syms * 4);
+	printf("addl $%d, %%esp\n", symbytes);
 	printf("movl %%ebp, %%esp\n");
 	printf("popl %%ebp\n");
 	printf("ret\n\n");
@@ -654,6 +678,42 @@ int check_array(exp_tree_t *decl)
 	return array;
 }
 
+/* 
+ * Get a GAS X86 instruction suffix
+ * from a type declaration code
+ */
+char *decl2suffix(char ty)
+{
+	switch (ty) {
+		case INT_DECL:
+			return "l";
+		case CHAR_DECL:
+			return "b";
+		default:
+			return "";
+	}
+}
+
+char *siz2suffix(char siz)
+{
+	switch (siz) {
+		case 4:
+			return "l";
+		case 1:
+			return "b";
+		default:
+			return "";
+	}
+}
+
+/* 
+ * Check for integer-type type declaration codes
+ */
+int int_type_decl(char ty)
+{
+	return ty == CHAR_DECL || ty == INT_DECL;
+}
+
 /* See codegen_proc above */
 void setup_symbols(exp_tree_t *tree, int symty)
 {
@@ -663,8 +723,12 @@ void setup_symbols(exp_tree_t *tree, int symty)
 	char *str;
 	int array_ptr;
 	int sym_num;
+	int membsiz;
+	int start_bytes;
+	int decl = tree->head_type;
+	char *suffx = decl2suffix(decl);
 
-	if (tree->head_type == INT_DECL) {
+	if (int_type_decl(decl)) {
 		for (i = 0; i < tree->child_count; ++i) {
 			dc = tree->child[i];
 
@@ -679,6 +743,16 @@ void setup_symbols(exp_tree_t *tree, int symty)
 					dc->child[j]->head_type = NULL_TREE;
 			if (stars)
 				dc->child_count = newlen;
+
+			/*
+			 * The default member size is sizeof(basetype),
+			 * but if it's an array or a pointer 32 bits
+			 *  = 4 bytes are needed.
+			 */
+			if (stars || check_array(dc))
+				membsiz = 4;
+			else
+				membsiz = decl_size_dispatch(decl);
 	
 			/* 
 			 * Do the actual relevant part 
@@ -701,16 +775,21 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				sto = atoi(get_tok_str(*(dc->child[1]->tok)));
 				/* make a symbol named after the array
 				 * and store the *ADDRESS* of its first element there */
+				start_bytes = symbytes;
 				if (!sym_check(dc->child[0]->tok))
-					sym_num = array_ptr = sym_add(dc->child[0]->tok);
+					/* 
+					 * 32-bit pointers must be always be 
+					 * 4 bytes, not `membsiz', hence the 4
+					 */
+					sym_num = array_ptr = sym_add(dc->child[0]->tok, 4);
 				str = get_temp_reg();
 				sprintf(buf, "leal %s, %s\n",
-					symstack(array_ptr + sto),
+					symstack(start_bytes + sto * membsiz),
 					str);
 				strcat(entry_buf, buf);
 				sprintf(buf, "movl %s, %s\n",
 					str,
-					symstack(array_ptr));
+					symstack(start_bytes));
 				strcat(entry_buf, buf);
 				/* make nameless storage for the subsequent
 				 * indices -- when we deal with an expression
@@ -718,7 +797,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				 * the starting point of the array and the
 				 * value "index" evaluates to */
 				for (j = 0; j < sto; j++)
-					(void)nameless_perm_storage();
+					(void)nameless_perm_storage(membsiz);
 				/* discard tree */
 				dc->head_type = NULL_TREE;
 			} else {
@@ -731,7 +810,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				switch (symty) {
 					case SYMTYPE_STACK:
 						if (!sym_check(dc->child[0]->tok))
-							sym_num = sym_add(dc->child[0]->tok);
+							sym_num = sym_add(dc->child[0]->tok, membsiz);
 						break;
 					case SYMTYPE_GLOBALS:
 						if (!glob_check(dc->child[0]->tok)) {
@@ -754,6 +833,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 							 * write a zero, otherwise write
 							 * the initial value.
 							 */
+							/* XXX: change .long for types other than `int' */
 							printf(".long %s\n.globl x\n\n",
 								dc->child_count == 2 ?
 									get_tok_str(*(dc->child[1]->tok))
@@ -780,9 +860,9 @@ void setup_symbols(exp_tree_t *tree, int symty)
 			 * Store information about the type of the object
 		 	 */
 			if (symty == SYMTYPE_STACK) {				
-				symtyp[sym_num] = mk_typedesc(BASETYPE_INT, stars, check_array(dc));
+				symtyp[sym_num] = mk_typedesc(decl, stars, check_array(dc));
 			} else if (symty == SYMTYPE_GLOBALS) {
-				globtyp[sym_num] = mk_typedesc(BASETYPE_INT, stars, check_array(dc));
+				globtyp[sym_num] = mk_typedesc(decl, stars, check_array(dc));
 			}
 		}
 
@@ -800,7 +880,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 		if (tree->child[i]->head_type == BLOCK
 		||	tree->child[i]->head_type == IF
 		||	tree->child[i]->head_type == WHILE
-		||	tree->child[i]->head_type == INT_DECL)
+		||	int_type_decl(tree->child[i]->head_type))
 			setup_symbols(tree->child[i], symty);
 }
 
@@ -872,8 +952,8 @@ char* codegen(exp_tree_t* tree)
 	 * e.g. for int -> char conversion or whatever,
 	 * if that ever gets implemented 
 	 */
-	/* (CAST (CAST_TYPE (BASE_TYPE (INT_DECL))) (NUMBER:3)) */
-	/* (CAST (CAST_TYPE (BASE_TYPE (INT_DECL)) (DECL_STAR)) (VARIABLE:p)) */
+	/* (CAST (CAST_TYPE (ty (INT_DECL))) (NUMBER:3)) */
+	/* (CAST (CAST_TYPE (ty (INT_DECL)) (DECL_STAR)) (VARIABLE:p)) */
 	if (tree->head_type == CAST) {
 		return codegen(tree->child[1]);
 	}
@@ -914,6 +994,8 @@ char* codegen(exp_tree_t* tree)
 				sto);
 
 		sto2 = registerize(codegen(tree->child[0]->child[1]));
+
+		/* XXX: $4 assumes int */
 		printf("imull $4, %s\n", sto2);
 		printf("addl %s, %s\n", sto2, sto);
 
@@ -926,6 +1008,7 @@ char* codegen(exp_tree_t* tree)
 		
 		sto = registerize(codegen(tree->child[0]));
 		sto2 = get_temp_reg();
+		/* XXX: l suffix assumes int ? */
 		printf("movl (%s), %s\n", sto, sto2);		
 		free_temp_reg(sto);
 
@@ -953,6 +1036,7 @@ char* codegen(exp_tree_t* tree)
 		printf("call %s\n", get_tok_str(*(tree->tok)));
 
 		/* throw off the arguments from the stack */
+		/* XXX: FIXME: if everything is not an `int', it's not 4 * x !!! */
 		printf("addl $%d, %%esp\t# throw off %d arg%s\n",
 			4 * tree->child_count, tree->child_count,
 			tree->child_count > 1 ? "s" : "");
@@ -1025,7 +1109,8 @@ char* codegen(exp_tree_t* tree)
 		for (i = tree->child[0]->child_count - 1; i >= 0; --i) {
 			sto = codegen(tree->child[0]->child[i]);
 			str = registerize(sto);
-			printf("movl %s, %s\n", str, symstack(-2 - i));
+			/* XXX: assumes int arguments */
+			printf("movl %s, %s\n", str, symstack((-2 - i) * 4));
 			free_temp_reg(str);
 		}
 
@@ -1044,7 +1129,7 @@ char* codegen(exp_tree_t* tree)
 		 * routine */
 		printf("# return value\n");
 		if (strcmp(sto, "%eax"))
-			printf("movl %s, %%eax\n", sto, str);
+			printf("movl %s, %%eax # ret\n", sto, str);
 		printf("jmp _ret_%s\n", current_proc);
 		return NULL;
 	}
@@ -1174,6 +1259,7 @@ char* codegen(exp_tree_t* tree)
 
 		/* build pointer */
 		sto = get_temp_reg();
+		/* XXX: FIXME: assumes int */
 		printf("imull $4, %s\n", sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
 		printf("movl %s, %s\n", sto2, sto);
@@ -1271,6 +1357,7 @@ char* codegen(exp_tree_t* tree)
 		str2 = codegen(tree->child[1]);
 		sto3 = registerize(str2);
 
+		/* XXX: FIXME: $4 assumes int members */
 		printf("imull $4, %s\n", sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
 		printf("movl %s, (%s)\n", sto3, sto2);
@@ -1292,6 +1379,7 @@ char* codegen(exp_tree_t* tree)
 
 		sto = get_temp_reg();
 		printf("# build ptr\n");
+		/* XXX: FIXME: $4 assumes int members */
 		printf("imull $4, %s\n", sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
 		printf("movl (%s), %s\n", sto2, sto);
@@ -1343,8 +1431,8 @@ char* codegen(exp_tree_t* tree)
 					&& (sym_lookup_type(tree->child[i]->tok).ptr
 					|| sym_lookup_type(tree->child[i]->tok).arr)) {
 					ptr_arith_mode = 1;
-					obj_siz = basetype_size_dispatch(
-						sym_lookup_type(tree->child[i]->tok).base_type);
+					obj_siz = decl_size_dispatch(
+						sym_lookup_type(tree->child[i]->tok).ty);
 					ptr_memb = i;
 					if (ptr_count++)
 						codegen_fail("please don't add pointers",
