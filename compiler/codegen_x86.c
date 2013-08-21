@@ -823,15 +823,16 @@ void setup_symbols(exp_tree_t *tree, int symty)
 					symstack(start_bytes));
 				strcat(entry_buf, buf);
 				/* 
-				 * Make nameless storage for the subsequent
-				 * indices -- when we deal with an expression
+				 * Make storage for the subsequent
+				 * indices -- (when we deal with an expression
 				 * such as array[index] we only need to know
 				 * the starting point of the array and the
-				 * value "index" evaluates to
+				 * value "index" evaluates to)
 				 */
-				for (j = 0; j < sto; j++)
-					(void)nameless_perm_storage(membsiz);
-				/* discard tree */
+				++syms;
+				symbytes += membsiz * sto;
+
+				/* Discard the tree */
 				dc->head_type = NULL_TREE;
 			} else {
 				/*
