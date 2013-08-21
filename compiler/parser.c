@@ -969,6 +969,27 @@ exp_tree_t unary_expr()
 		return tree;
 	}
 
+	/* - (unary_expr) */
+	if (valid_tree(tree)) {
+		if (valid_tree(subtree = unary_expr())) {
+			add_child(&tree, alloc_exptree(subtree));
+			return tree;
+		}
+	}
+
+	/* cast */
+	/* (this has to come before the 
+	 * parenthesized expression thing) */
+	if (valid_tree(subtree = cast())) {
+
+		if (valid_tree(tree)) {	/* negative sign ? */
+			add_child(&tree, alloc_exptree(subtree));
+		} else
+			tree = subtree;
+
+		return tree;
+	}
+
 	/* parenthesized expression */
 	if(peek().type == TOK_LPAREN) {
 		++indx;	/* eat ( */
@@ -980,25 +1001,6 @@ exp_tree_t unary_expr()
 		else
 			tree = subtree;
 		
-		return tree;
-	}
-
-	/* - (unary_expr) */
-	if (valid_tree(tree)) {
-		if (valid_tree(subtree = unary_expr())) {
-			add_child(&tree, alloc_exptree(subtree));
-			return tree;
-		}
-	}
-
-	/* cast */
-	if (valid_tree(subtree = cast())) {
-
-		if (valid_tree(tree)) {	/* negative sign ? */
-			add_child(&tree, alloc_exptree(subtree));
-		} else
-			tree = subtree;
-
 		return tree;
 	}
 
