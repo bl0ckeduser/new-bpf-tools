@@ -675,7 +675,7 @@ exp_tree_t mul_expr()
 			| -- lvalue
 			| ident '(' expr1, expr2, exprN ')'
 			| '&' lvalue
-			| '!' expr
+			| '!' unary_expr
 */
 exp_tree_t unary_expr()
 {
@@ -733,7 +733,7 @@ exp_tree_t unary_expr()
 			}
 			++indx;	/* eat operator */
 			if (tok.type == TOK_CC_NOT) {
-				if (!valid_tree(subtree2 = expr()))
+				if (!valid_tree(subtree2 = unary_expr()))
 					parse_fail("expression expected");				
 			} else {
 				if (!valid_tree(subtree2 = lval()))

@@ -484,6 +484,7 @@ char* codegen(exp_tree_t* tree)
 	extern char* optimized_while(exp_tree_t* tree, char *oppcheck);
 	int lab1, lab2;
 	char *sav1, *sav2;
+	int my_ccid;
 
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
@@ -716,55 +717,52 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* ! -- logical not (0 if X is not 1) */
-	if (tree->head_type == CC_NOT) {		
+	if (tree->head_type == CC_NOT) {
+		my_ccid = ccid++;
 		sto = codegen(tree->child[0]);
 		sto2 = get_temp_reg();
 		printf("movl $0, %s\n", sto2);
 		printf("cmp %s, %s\n", sto, sto2);
 		printf("movl $1, %s\n", sto2);
 		free_temp_reg(sto);
-		printf("je cc%d\n", ccid);
+		printf("je cc%d\n", my_ccid);
 		printf("movl $0, %s\n", sto2);
-		printf("cc%d:\n", ccid);
-		++ccid;
+		printf("cc%d:\n", my_ccid);
 		return sto2;
 	}
 
 	/* && - and with short-circuit */
 	if (tree->head_type == CC_AND) {
+		my_ccid = ccid++;
 		sto2 = get_temp_reg();
-		sto3 = get_temp_reg();
 		printf("movl $0, %s\n", sto2);
-		printf("movl $0, %s\n", sto3);
 		for (i = 0; i < tree->child_count; ++i) {
 			sto = codegen(tree->child[i]);
-			printf("cmpl %s, %s\n", sto, sto3);
-			printf("je cc%d\n", ccid);
+			printf("cmpl %s, %s\n", sto, sto2);
+			printf("je cc%d\n", my_ccid);
 			free_temp_reg(sto);
 		}
 		printf("movl $1, %s\n", sto2);
-		printf("cc%d:\n", ccid);
-		++ccid;
-		free_temp_reg(sto3);
+		printf("cc%d:\n", my_ccid);
 		return sto2;
 	}
 
 	/* || - or with short-circuit */
 	if (tree->head_type == CC_OR) {
+		my_ccid = ccid++;
 		sto2 = get_temp_reg();
-		sto3 = get_temp_reg();
-		printf("movl $1, %s\n", sto2);
-		printf("movl $0, %s\n", sto3);
+		printf("movl $0, %s\n", sto2);
 		for (i = 0; i < tree->child_count; ++i) {
 			sto = codegen(tree->child[i]);
-			printf("cmpl %s, %s\n", sto, sto3);
-			printf("jne cc%d\n", ccid);
+			printf("cmpl %s, %s\n", sto, sto2);
+			printf("jne cc%d\n", my_ccid);
 			free_temp_reg(sto);
 		}
 		printf("movl $0, %s\n", sto2);
-		printf("cc%d:\n", ccid);
-		++ccid;
-		free_temp_reg(sto3);
+		printf("jmp cc%d_2\n", my_ccid);
+		printf("cc%d:\n", my_ccid);
+		printf("movl $1, %s\n", sto2);
+		printf("cc%d_2:\n", my_ccid);
 		return sto2;
 	}
 
