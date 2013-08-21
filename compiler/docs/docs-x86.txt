@@ -186,6 +186,11 @@ an optional part in a construction.
 	directly be a pointer *VARIABLE*, without any operators
 	around it or anything, for this to work.
 
+17. Casts
+
+	Casts are a work-in-progress. As of writing, 
+	they parse, but do nothing.
+
 .............................................................................
 
 			-------------------------
@@ -197,6 +202,7 @@ From greatest to lowest precedence:
 	[] (array subscript)
 	* (dereference)
 	- (unary), ( ), ++, --, procedure calls, & (address-of), !
+	(...)  (cast)
 	* (multiplication) / %
 	+ -
 	> >= < <= == !=
