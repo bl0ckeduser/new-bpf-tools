@@ -176,6 +176,9 @@ int decl_dispatch(char type)
 		case TOK_INT:
 			return INT_DECL;
 		break;
+		case TOK_CHAR:
+			return CHAR_DECL;
+		break;
 	}
 }
 exp_tree_t decl()

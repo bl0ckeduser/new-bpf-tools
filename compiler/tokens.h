@@ -68,7 +68,8 @@ enum {
 	TOK_OCTAL_INTEGER,
 	TOK_HEX_INTEGER,
 	TOK_CHAR_CONST,
-	TOK_NOMORETOKENSLEFT
+	TOK_NOMORETOKENSLEFT,
+	TOK_CHAR
 };
 
 static char* tok_nam[] = {
@@ -132,7 +133,8 @@ static char* tok_nam[] = {
 	"TOK_OCTAL_INTEGER",
 	"TOK_HEX_INTEGER",
 	"TOK_CHAR_CONST",
-	"TOK_NOMORETOKENSLEFT"
+	"TOK_NOMORETOKENSLEFT",
+	"TOK_CHAR"
 };
 
 static char* tok_desc[] = {
@@ -196,7 +198,8 @@ static char* tok_desc[] = {
 	"octal numeral",
 	"hexadecimal numeral",
 	"character constant",
-	"nothing"
+	"nothing",
+	"char"
 };
 
 /* keywords */
@@ -206,13 +209,14 @@ struct bpf_kw {
 	char tok;
 };
 
-#define KW_COUNT 16
+#define KW_COUNT 17
 
 static struct bpf_kw kw_tab[] = 
 {
 	{ "if", TOK_IF },
 	{ "while", TOK_WHILE },
 	{ "int", TOK_INT },
+	{ "char", TOK_CHAR },
 	{ "echo", TOK_ECHO },
 	{ "draw", TOK_DRAW },
 	{ "wait", TOK_WAIT },

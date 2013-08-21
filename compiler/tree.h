@@ -49,6 +49,7 @@ enum {		/* head_type */
 	CAST,
 	BASE_TYPE,
 	CAST_TYPE,
+	CHAR_DECL,
 	/* special */
 	NULL_TREE
 };
@@ -98,6 +99,7 @@ static char* tree_nam[] = {
 	"CAST",
 	"BASE_TYPE",
 	"CAST_TYPE",
+	"CHAR_DECL",
 	"NULL_TREE"
 };
 
