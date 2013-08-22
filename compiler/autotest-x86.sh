@@ -12,6 +12,7 @@ SUM_TOOL=sum
 
 for x in test/*.c test/x86/*.c
 do
+	rm -rf autotest-tmp
 	mkdir autotest-tmp
 	SRC_FILE=autotest-tmp/test-temp.c
 	echo "#include <stdio.h>" >$SRC_FILE
