@@ -47,6 +47,14 @@ an optional part in a construction.
 		int variable_name < = expression >;
 	ii. arrays
 		int array_name[integer];
+	iii. pointers
+		int *ptr;
+	iv. characters
+		char c;
+
+	You can also do stuff like char ****ptr,
+	int *ptr[32], etc., but that hasn't been very well tested
+	yet.
 
 3. Control flow
 	i. if statement
@@ -148,10 +156,7 @@ an optional part in a construction.
 13. Pointers
 
 	The & (address-of) and * (dereference) operators from C
-	have been implemented. Note that the language is typeless;
-	everything is an "int", including pointers. Every "int"
-	becomes a 32-bit word. (Maybe I should change the keyword
-	to "word" or something like that).
+	have been implemented.
 
 	* can be applied to any expression
 	& can be applied to lvalues only
@@ -180,7 +185,7 @@ an optional part in a construction.
 
 	There is basic support for pointer arithmetic, another
 	strange feature from C. See "test/x86/ptr-arith.c"
-	for example code.
+	and "test/x86/incdec.c" for example code.
 
 	As it is, one of the terms of the addition has to be
 	directly be a pointer *VARIABLE*, without any operators
@@ -190,6 +195,12 @@ an optional part in a construction.
 
 	Casts are a work-in-progress. As of writing, 
 	they parse, but do nothing.
+
+18. Type system
+
+	C's "char", "int", and 1-d arrays and/or n-depth pointers
+	of these can be declared and used, but as of writing some
+	operations only work properly for "int" and "int *".
 
 .............................................................................
 
