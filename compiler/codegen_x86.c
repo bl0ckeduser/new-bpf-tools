@@ -110,6 +110,16 @@ int decl2siz(int bt)
 	}
 }
 
+/* type data => size in bytes */
+int type2siz(typedesc_t ty)
+{
+	/* 
+	 * If it's any kind of pointer, it's 4 bytes
+	 * (32-bit word), otherwise it's the base type
+	 */
+	return ty.ptr || ty.arr ? 4 : decl2siz(ty.ty);
+}
+
 char *move_conv_to_long(int membsiz)
 {
 	switch (membsiz) {
@@ -1467,14 +1477,22 @@ char* codegen(exp_tree_t* tree)
 	/* simple variable assignment */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == VARIABLE) {
-		/* 
-		 * XXX: assumes int. conversions and suffixes
-		 * needed otherwise
-		 */
 		sym_s = sym_lookup(tree->child[0]->tok);
+		/*
+		 * XXX: handles char <- number constant,
+		 *      int <- int, pointer <- pointer,
+		 *      but not other cases like
+		 *		char <- int, int <- char
+		 */
 		if (tree->child[1]->head_type == NUMBER) {
-			/* optimized code for number operand */
-			printf("movl $%s, %s\n",
+			/*
+			 * optimized code for number operand 
+			 */
+			/* get type of dest */
+			typedat = sym_lookup_type(tree->child[0]->tok);
+			membsiz = type2siz(typedat);
+			printf("mov%s", siz2suffix(membsiz));
+			printf(" $%s, %s\n",
 				get_tok_str(*(tree->child[1]->tok)), sym_s);
 			return sym_s;
 		} else if (tree->child[1]->head_type == VARIABLE) {
@@ -1566,9 +1584,7 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == VARIABLE) {
 		sto = get_temp_reg();
 		sym_s = sym_lookup(tree->tok);
-		typedat = sym_lookup_type(tree->tok);
-		/* if it's any kind of pointer, it's 4 bytes */
-		membsiz = typedat.ptr || typedat.arr ? 4 : decl2siz(typedat.ty);
+		membsiz = type2siz(sym_lookup_type(tree->tok));
 		printf("%s %s, %s\n",
 			move_conv_to_long(membsiz),
 			sym_s, sto);
