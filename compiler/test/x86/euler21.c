@@ -15,7 +15,7 @@ sumDivisors(i)
 	return x;
 }
 
-main(argc, argv)
+main()
 {
 	int *done = malloc(10000 * 4);
 	int a = 1;
