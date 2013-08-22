@@ -1077,6 +1077,8 @@ char* codegen(exp_tree_t* tree)
 		/* 
 		 * XXX: `l' suffix assumes int.
 		 * conversions may be necessary.
+		 * Will need a routine that figures out
+	 	 * the type of a given expression...
 		 */
 		printf("movl (%s), %s\n", sto, sto2);		
 		free_temp_reg(sto);
@@ -1348,7 +1350,10 @@ char* codegen(exp_tree_t* tree)
 		return sto2;
 	}
 
-	/* pre-increment, pre-decrement of variable lvalue */
+	/* 
+	 * pre-increment, pre-decrement of variable lvalue
+	 * -- this works for int, int *, char, char *
+	 */
 	if ((tree->head_type == INC
 		|| tree->head_type == DEC)
 		&& tree->child[0]->head_type == VARIABLE) {
