@@ -23,6 +23,13 @@ extern int int_type_decl(char ty);
 extern char *arith_op(char ty);
 extern int decl2siz(int);
 
+/* hook to error printout code */
+void compiler_fail(char *message, token_t *token,
+	int in_line, int in_chr);
+
+/* hook to token finder */
+extern token_t *findtok(exp_tree_t *et);
+
 /*
  * Write out typdesc_t data
  */
@@ -199,7 +206,8 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 
 	/*
 	 * For arithmetic, promote to the
-	 * largest and "most-starred" type:
+	 * largest and "most-starred" type,
+	 * if the operation is an addition.
 	 * 
 	 *		int *i;
 	 *		i + 1 + 2; <-- type "int *"
@@ -207,7 +215,12 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	 *		int i;
 	 * 		3 + 1 + &x;	<-- type "int *"
 	 * 
-	 * XXX: not sure if correct behaviour
+	 * If two pointers are being subtracted
+	 * return type "int".
+	 *
+	 * If pointers are being multiplied or
+	 * divided or remainder'ed, put up
+	 * a warning message.
 	 */
 	if (arith_op(tp->head_type) != NULL) {
 		/* initialize type with data from first member */
@@ -230,6 +243,17 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 		td.ty = max_decl;
 		td.arr = 0;
 		td.ptr = max_ptr;
+
+		/* handle subtraction case */
+		if (tp->head_type == SUB && td.ptr && tp->child_count == 2) {
+			td.ty = INT_DECL;
+			td.arr = td.ptr = 0;
+		}
+
+		/* warning on strange arithmetic */
+		if (tp->head_type != ADD && td.ptr)
+			compiler_fail("please don't use pointers in incomprehensible ways",
+				findtok(tp), 0, 0);
 
 		return td;
 	}
