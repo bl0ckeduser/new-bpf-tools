@@ -94,7 +94,11 @@ void codegen_fail(char *msg, token_t *tok)
 }
 
 /* 
- * INT_DECL => 4 because int is 4 bytes, etc.
+ * INT_DECL => 4 because "int" is 4 bytes, etc.
+ * (this program compiles code specifically 
+ * for 32-bit x86, so I can say that 
+ * "int" is 4 bytes with no fear of being 
+ * crucified by pedants).
  */
 int decl2siz(int bt)
 {
@@ -108,18 +112,22 @@ int decl2siz(int bt)
 	}
 }
 
-/* type data => size in bytes */
+/* 
+ * Type description => size of datum in bytes
+ */
 int type2siz(typedesc_t ty)
 {
 	/* 
-	 * "Negative-depth" pointers in nincompoop cases like *3 
+	 * Special case for "Negative-depth" pointers in 
+	 * nincompoop situations like *3 
 	 */
 	if (ty.ptr < 0 || ty.arr < 0)
 		return 0;
 
 	/* 
-	 * If it's any kind of pointer, it's 4 bytes
-	 * (32-bit word), otherwise it's the base type
+	 * If it's any kind of pointer, the size is 
+	 * 4 bytes (32-bit word), otherwise it's the size 
+ 	 * of the base type
 	 */
 	return ty.ptr || ty.arr ? 4 : decl2siz(ty.ty);
 }
@@ -153,6 +161,21 @@ char *fixreg(char *r, int siz)
 	return r;
 }
 
+/*
+ * Generate the GNU x86 MOV instruction
+ * for reading a `membsiz'-sized integer
+ * datum into 32-bit word.
+ * 
+ * I found out about this by looking
+ * at "gcc -S" x86 output.
+ *
+ * This is used for example to retrieve
+ * the contents of a 1-byte `char' variable 
+ * into a 32-bit word register like EAX.
+ *
+ * XXX: I don't know if it's signed
+ * or unsigned or whatever for bytes
+ */
 char *move_conv_to_long(int membsiz)
 {
 	switch (membsiz) {
@@ -179,7 +202,9 @@ typedesc_t mk_typedesc(int bt, int ptr, int arr)
 }
 
 /* 
- * Required by main()
+ * This is required by main(), because
+ * it is used in the BPFVM codegen
+ * which was written before this one.
  */
 void print_code() {
 	;
