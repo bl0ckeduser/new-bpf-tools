@@ -484,6 +484,9 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	for (i = 0; args[i]; ++i) {
 		strcpy(arg_symtab[arg_syms], args[i]);
 		/* XXX: assumes int args */
+		argtyp[arg_syms].ty = INT_DECL;
+		argtyp[arg_syms].arr = 0;
+		argtyp[arg_syms].ptr = 0;
 		argsiz[arg_syms] = 4;
 		argbytes += 4;
 		++arg_syms;
@@ -1557,11 +1560,17 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
-	/* variable */
+	/* variable retrieval
+	 * -- converts char to int
+	 */
 	if (tree->head_type == VARIABLE) {
 		sto = get_temp_reg();
 		sym_s = sym_lookup(tree->tok);
-		printf("movl %s, %s\n", 
+		typedat = sym_lookup_type(tree->tok);
+		/* if it's any kind of pointer, it's 4 bytes */
+		membsiz = typedat.ptr || typedat.arr ? 4 : decl2siz(typedat.ty);
+		printf("%s %s, %s\n",
+			move_conv_to_long(membsiz),
 			sym_s, sto);
 		return sto;
 	}
