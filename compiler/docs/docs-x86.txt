@@ -6,15 +6,15 @@
 			      Scripts
 			     ---------
 
-The scripts to use the x86-targeting compiler are:
+The (unix shell) scripts to use the x86-targeting compiler are:
 
 	build-x86.sh 		-- build the x86 compiler
 	autotest-x86.sh 	-- test the x86 compiler against test/*.c
 	compile-run-x86.sh 	-- compile and run a program via x86
 
 Quick example:
-	$ sh build-x86.sh 
-	$ sh compile-run-x86.sh test/procedure 
+	$ ./build-x86.sh 
+	$ ./compile-run-x86.sh test/procedure 
 	120
 
 The 32-bit x86 code generator outputs GAS assembly and the test scripts
@@ -26,7 +26,9 @@ use clang if desired.
 			   ------------
 			
 Below is a quick overview of the language syntax. < > symbols denote
-an optional part in a construction.
+an optional part in a construction. If the choice of some paragraphs
+seems strange, remember that I'm trying to follow the grammar's 
+structure closely.
 
 1. Code blocks
 	i. empty block
@@ -52,9 +54,10 @@ an optional part in a construction.
 	iv. characters
 		char c;
 
-	You can also do stuff like char ****ptr,
+	You can also do combinations like char ****ptr,
 	int *ptr[32], etc., but that hasn't been very well tested
-	yet.
+	yet. In any event, test/x86/*.c gives an idea of the C subset
+	supported at any given point in the "development" of this project.
 
 3. Control flow
 	i. if statement
@@ -91,6 +94,13 @@ an optional part in a construction.
 		456 % 123		(evaluates to 87)
 		z - x * x + 123		(evaluates to something)	
 		-x + 5
+
+	The type of the result depends... If you add one or more
+	integers to a pointer, the result is a pointer. If you
+	subtract two pointers, the result is an integer. If you
+	try to multiply, subtract more than two, divide, or remainder 
+	pointers, the result is an unhappy compiler that tells you
+	it won't compile nonsense.
 		
 5. Assignment operators
 	Left operand is an lvalue, right operand is an expression.
@@ -101,19 +111,24 @@ an optional part in a construction.
 		array[12] = 34;
 		z -= 56;
 
+	The type is the type of the left operand, i.e. the "lvalue".
+
 6. lvalues (essentially, objects to which you can assign values)
 	e.g.
 		table[index]
 		variable
 
 7. C-style increments and decrements
-	The operand is any lvalue.
+	The operand is any lvalue. The type is the type of the operand.
 	e.g.
 		++foo;		tab[bobobo]--;
 		--bar;		mystery++;
 
-8. Special instructions
+8. "Special" instructions
 	echo(n); writes out an integer and a newline to stdout.
+	Might as well use printf("%d\n", n); instead -- that's
+	exactly how echo(n) is programmed but it'll work on real
+	C compiler unlike this echo nonsense.
 
 9. Relational operators
 		exprA == exprB
@@ -124,7 +139,10 @@ an optional part in a construction.
 		exprA < exprB
 
    These work as in C, and follow C's convention of "nonzero true, 
-   zero false".
+   zero false". The type of a comparison is always "int", regardless
+   of the type of its operands (the compiler will do its best to
+   convert the operands to int before comparing them, and then it'll
+   give you an int result).
 
 10. Comments
 	/* this is a C-style comment */
@@ -179,7 +197,12 @@ an optional part in a construction.
 
 15. Logical operations
 
-		&&, ||, and ! have been copied from C
+		&&, ||, and ! have been copied from C.
+	
+	Like for the relational operators (==, !=, et al.), the
+	result is of type "int", and the compiler will do its
+	best to convert the arguments to "int" before applying
+	the operation.
 
 16. Pointer arithmetic
 
@@ -187,20 +210,41 @@ an optional part in a construction.
 	strange feature from C. See "test/x86/ptr-arith.c"
 	and "test/x86/incdec.c" for example code.
 
-	As it is, one of the terms of the addition has to be
-	directly be a pointer *VARIABLE*, without any operators
-	around it or anything, for this to work.
+	For example, if you do this:
+		int *ptr;
+		
+	and then you use the expression:
+		ptr + 4
+
+	The compiler will play a funny old joke on you whereby
+	"ptr + 4" isn't literally "ptr + 4" but rather
+	"ptr + 4 * sizeof(int)" in a strict arithmetic sense.
+
+	This way you can write *(ptr + 4) to mean ptr[4].
+	Actually I think the real original UNIX C compiler internally
+	rewrote ptr[4] to *(ptr + 4), so there you go.
 
 17. Casts
 
-	Casts are a work-in-progress. As of writing, 
-	they parse, but do nothing.
+	Casts are a work-in-progress.
+
+	The type analyzer (coded in "typeof.c") takes notice of them.
+
+	At this point, the main use for them is for casted
+	pointer dereferences, e.g. *(char *)ptr
+	-- see test/x86/array-asst.c for an example of these.
 
 18. Type system
 
 	C's "char", "int", and 1-d arrays and/or n-depth pointers
 	of these can be declared and used, but as of writing some
-	operations only work properly for "int" and "int *".
+	operations only compile accurately for "int" and "int *", and
+	some operations may not compile at all. In any event, the
+	test/x86/*.c files give an idea of the subset of C that is
+	supported at any given point.
+
+	As soon as something is a pointer, whatever it happens to
+	point to, it has word- (i.e. 32-bit)- size.
 
 .............................................................................
 
@@ -226,6 +270,7 @@ All arithmetic operators are left-associative.
 Assignment is right-associative.
 
 Comparison operators are not associative: expressions like 1 < 2 < 3
-will raise syntax errors.
+will raise syntax errors. -- actually that needs to be fixed, the parser
+left-associates them as of writing because of a too-quick refactor storm.
 
 .............................................................................

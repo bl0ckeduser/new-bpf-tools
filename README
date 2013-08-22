@@ -1,15 +1,26 @@
-This project is a personal exercise in compiler programming.
+This project is a personal exercise in compiler programming. It is a 
+work-in-progress. It consists mainly in a compiler for a subset of C.
+It targets 32-bit x86 (via GNU assembler).
 
-It consists mainly in a compiler for a subset of C (with somewhat modified
-syntax, for now). It targets 32-bit x86 (via GNU assembler). It can also 
-target my terrible old bytecode VM, arbitrarily named "BPF" -- for details, 
-see "README-BPF".
+This 32-bit x86 compiler is tested on FreeBSD and Linux. It can also be built
+and used on Windows using MinGW, but I haven't tested that recently -- it's
+probably broken at this point.
+
+Please go in the "compiler" directory and read "compiler/docs/docs-x86.txt" 
+for more info.
+
+The test programs "compiler/test/x86/*.c" should give an idea of the subset
+of C accepted at this point. There are still bugs, especially in stuff not
+shown in the tests. Some expressions may not compile properly yet, or compile
+at all, for that matter.
+
+-------------------------------------------------------------------------
+
+This compiler can also target my terrible old bytecode VM, arbitrarily 
+named "BPF" -- for details, see "README-BPF" and "compiler/docs/docs-bpf.txt"
 
 Note that the BPF compiler supports a much smaller subset of C than does 
-the x86 compiler.
-
-The x86 compiler is tested on FreeBSD and Linux. It can also be built
-and used on Windows using MinGW, but I haven't tested that recently.
+the x86 compiler, and it may have some weird modifications.
 
 -------------------------------------------------------------------------
 
