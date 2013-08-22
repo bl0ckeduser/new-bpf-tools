@@ -802,6 +802,10 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				membsiz = 4;
 			else
 				membsiz = decl2siz(decl);
+
+			/* Add some padding; otherwise werid glitches happen */
+			if (membsiz < 4 && !check_array(dc))
+				membsiz = 4;
 	
 			/* 
 			 * Switch symbols/stack setup code
