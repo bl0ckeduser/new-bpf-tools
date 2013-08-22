@@ -394,7 +394,7 @@ token_t* tokenize(char *buf)
 	int line = 1;
 	char *line_start = buf;
 
-	token_t *toks = malloc(64 * sizeof(token_t));
+	token_t *toks = malloc(4096 * sizeof(token_t));
 	int tok_alloc = 64;
 	int tok_count = 0;
 	int in_comment = 0;

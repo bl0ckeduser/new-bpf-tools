@@ -976,6 +976,7 @@ char* codegen(exp_tree_t* tree)
 	char *proc_args[32];
 	char my_ts_used[TEMP_REGISTERS];
 	char *buf;
+	char sbuf[64];
 	int i;
 	char *sym_s;
 	char *oper;
@@ -992,6 +993,7 @@ char* codegen(exp_tree_t* tree)
 	int my_ccid;
 	int ptr_arith_mode, obj_siz, ptr_memb, ptr_count;
 	int membsiz;
+	typedesc_t typedat;
 
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
@@ -1351,9 +1353,28 @@ char* codegen(exp_tree_t* tree)
 		|| tree->head_type == DEC)
 		&& tree->child[0]->head_type == VARIABLE) {
 		sym_s = sym_lookup(tree->child[0]->tok);
-		/* XXX: use type suffixes */
-		printf("%s %s\n", tree->head_type == INC ?
-			"incl" : "decl", sym_s);
+		typedat = sym_lookup_type(tree->child[0]->tok);
+		if (typedat.ptr || typedat.arr) {
+			/* 
+			 * It's a pointer, so use `l' suffix
+			 * for the datum itself, but change
+			 * by the size of the pointed-to
+			 * elements.
+			 */
+			sprintf(sbuf, "%sl",
+				tree->head_type == INC ? "add" : "sub");
+			printf("%s $%d, %s\n",
+				sbuf, decl2siz(typedat.ty), sym_s);
+		} else {
+			/*
+			 * It's not a pointer, so use the
+			 * type's own suffix and change by 1
+			 */
+			sprintf(sbuf, "%s%s",
+				tree->head_type == INC ? "inc" : "dec",
+				decl2suffix(typedat.ty));
+			printf("%s %s\n", sbuf, sym_s);
+		}
 		return sym_s;
 	}
 
