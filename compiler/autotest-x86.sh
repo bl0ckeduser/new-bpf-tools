@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # Automatic testing script: compare program output from this compiler
 # to that from C_COMPILER, which is considered valid.
 
