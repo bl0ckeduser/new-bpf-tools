@@ -29,9 +29,9 @@ do
 		echo 'argc = argc; ' >>$SRC_FILE
 		echo "}" >>$SRC_FILE
 	fi
-	$C_COMPILER $SRC_FILE -o ./autotest-tmp/exec
+	$C_COMPILER $SRC_FILE -o ./autotest-tmp/exec 2>/dev/null
 	good_result=$(./autotest-tmp/exec | $SUM_TOOL)
-	blok_result=$(./compile-run-x86.sh $x | $SUM_TOOL)
+	blok_result=$(./compile-run-x86.sh $x 2>/dev/null | $SUM_TOOL)
 	if [ "$good_result" = "$blok_result" ];
 	then
 		echo "$x - PASS"
