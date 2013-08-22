@@ -120,6 +120,35 @@ int type2siz(typedesc_t ty)
 	return ty.ptr || ty.arr ? 4 : decl2siz(ty.ty);
 }
 
+/*
+ * This compiler uses GNU i386 assembler (or compatible), invoked
+ * via "gcc" or "clang" for assembling.
+ *
+ * GNU i386 assembler version 2.22 gives messages like this:
+ * "Warning: using `%bl' instead of `%ebx' due to `b' suffix"
+ * when it sees code like "movb %ebx, (%eax)", but it compiles
+ * without any further issues.
+ *
+ * GNU i386 assembler version 2.17.50 gives the diagnostic
+ * "error: invalid operand for instruction" for the same code and
+ * failes to compile.
+ *
+ * So here is a quick fix.
+ */
+char *fixreg(char *r, int siz)
+{
+	char *new;
+	if (siz == 1) {
+		if (strlen(r) == 4 && r[0] == '%'
+			&& r[1] == 'e' && r[3] == 'x') {
+			new = malloc(64);
+			sprintf(new, "%%%cl", r[2]);
+			return new;
+		}
+	}
+	return r;
+}
+
 char *move_conv_to_long(int membsiz)
 {
 	switch (membsiz) {
@@ -1525,7 +1554,7 @@ char* codegen(exp_tree_t* tree)
 		&& tree->child[0]->head_type == ARRAY) {
 		/* head address */
 		sym_s = sym_lookup(tree->child[0]->child[0]->tok);
-		typedat = sym_lookup_type(tree->child[0]->child[0]->tok);
+		membsiz = decl2siz(sym_lookup_type(tree->child[0]->child[0]->tok).ty);
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
 		sto2 = registerize(str);
@@ -1534,11 +1563,12 @@ char* codegen(exp_tree_t* tree)
 		sto3 = registerize(str2);
 
 		printf("imull $%d, %s\n", 
-			decl2siz(typedat.ty), sto2);
+			membsiz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
 		printf("mov%s %s, (%s)\n", 
-			decl2suffix(typedat.ty),
-			sto3, sto2);
+			siz2suffix(membsiz),
+			fixreg(sto3, membsiz),
+			sto2);
 
 		free_temp_reg(sto2);
 		free_temp_reg(sto3);
