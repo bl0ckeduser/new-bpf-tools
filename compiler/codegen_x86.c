@@ -1232,6 +1232,12 @@ char* codegen(exp_tree_t* tree)
 			compiler_fail("proc not allowed here", tree->tok, 0, 0);
 
 		/* put the list of arguments in char *proc_args */
+		/* 
+		 * XXX: if types were taken in consideration,
+		 * a similar list for types would have to be
+		 * built and codegen_proc() amended to accept
+		 * it as an argument
+		 */
 		if (tree->child[0]->child_count) {
 			for (i = 0; tree->child[0]->child[i]; ++i) {
 				buf = malloc(64);
@@ -1302,7 +1308,10 @@ char* codegen(exp_tree_t* tree)
 		 */
 		printf("# return value\n");
 		if (strcmp(sto, "%eax"))
-			/* XXX: this assumes int */
+			/* 
+			 * XXX: this assumes an int return value
+			 * (which is the default, anyway) 
+			 */
 			printf("movl %s, %%eax # ret\n", sto, str);
 		printf("jmp _ret_%s\n", current_proc);
 		return NULL;
