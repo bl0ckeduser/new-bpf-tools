@@ -841,7 +841,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				 * the starting point of the array and the
 				 * value "index" evaluates to)
 				 */
-				++syms;
+				symsiz[syms++] = membsiz * sto;
 				symbytes += membsiz * sto;
 
 				/* Discard the tree */
