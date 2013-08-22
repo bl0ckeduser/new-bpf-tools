@@ -4,8 +4,29 @@
 #include "tokens.h"
 #include <string.h>
 
+enum {
+	CF_ERROR,
+	CF_WARN
+};
+
+/* internal prototype */
+void compiler_fail_int(char *message, token_t *token,
+	int in_line, int in_chr, int mode);
+
 void compiler_fail(char *message, token_t *token,
 	int in_line, int in_chr)
+{
+	compiler_fail_int(message, token, in_line, in_chr, CF_ERROR);
+}
+
+void compiler_warn(char *message, token_t *token,
+	int in_line, int in_chr)
+{
+	compiler_fail_int(message, token, in_line, in_chr, CF_WARN);
+}
+
+void compiler_fail_int(char *message, token_t *token,
+	int in_line, int in_chr, int mode)
 {
 	char buf[1024];
 	int line;
@@ -43,8 +64,13 @@ void compiler_fail(char *message, token_t *token,
 
 	/* finally display line number and error
 	 * description */
+	if (mode == CF_ERROR)
+		fprintf(stderr, "error: ");
+	else
+		fprintf(stderr, "warning: ");
 	fprintf(stderr, "line %d: %s\n", 
 		line,
 		message);
-	exit(1);	
+	if (mode == CF_ERROR)
+		exit(1);
 }
