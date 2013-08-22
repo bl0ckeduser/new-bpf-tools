@@ -1413,20 +1413,22 @@ char* codegen(exp_tree_t* tree)
 		return sto3;
 	}
 
-	/* post-increment, post-decrement of variable lvalue */
+	/* 
+	 * post-increment, post-decrement of variable lvalue
+	 * -- this works for int, int *, char, char *
+	 */
 	if ((tree->head_type == POST_INC
 		|| tree->head_type == POST_DEC)
 		&& tree->child[0]->head_type == VARIABLE) {
-		sym_s = sym_lookup(tree->child[0]->tok);
-		sto = get_temp_reg();
-		/* store the variable's value to temp
-		 * storage then bump it and return
-		 * the temp storage */
-		/* XXX: use type suffixes */
-		printf("movl %s, %s\n", sym_s, sto);
-		printf("%s %s\n",
-			tree->head_type == POST_INC ? "incl" : "decl",
-			sym_s);
+		/* given foo++,
+		 * codegen foo, keep its value,
+		 * codegen ++foo; 
+		 * and give back the kept value */
+		sto = codegen(tree->child[0]);
+		fake_tree = new_exp_tree(tree->head_type == 
+			POST_INC ? INC : DEC, NULL);
+		add_child(&fake_tree, tree->child[0]);
+		codegen(&fake_tree);
 		return sto;
 	}
 

@@ -24,9 +24,17 @@ main()
 	for (i = 0; i < strlen(chars); ++i)
 		puts(++char_ptr);
 
+	char_ptr = &chars[0];
+	for (i = 0; i < strlen(chars); ++i)
+		puts(char_ptr++);
+
 	char_ptr = &chars[5];
 	for (i = 0; i < strlen(chars); ++i)
 		puts(--char_ptr);
+
+	char_ptr = &chars[5];
+	for (i = 0; i < strlen(chars); ++i)
+		puts(char_ptr--);
 
 
 	/*
