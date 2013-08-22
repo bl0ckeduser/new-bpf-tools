@@ -14,6 +14,7 @@
 
 #include "tree.h"
 #include "tokens.h"
+#include "typedesc.h"
 #include "codegen_x86.h"
 #include <string.h>
 #include <stdio.h>
@@ -38,13 +39,6 @@ enum {
 	/* symbol is a global */
 	SYMTYPE_GLOBALS
 };
-
-typedef struct {
-	int ty;			/* e.g. INT_DECL for "int" */
-	int ptr;		/* e.g. 2 for "int **" */
-	int arr;		/* e.g. 3 for "int [12][34][56]" */
-	int *arr_dim;	/* e.g. {12, 34, 56} for "int [12][34][56]" */
-} typedesc_t;
 
 /* Name of function currently being coded */
 char current_proc[64];
@@ -686,6 +680,18 @@ void run_codegen(exp_tree_t *tree)
 #endif
     printf("addl $12, %%esp  # get rid of the printf args\n");
     printf("ret\n");
+
+	/*
+	 * Test/debug the type analyzer
+	 */
+	#ifdef DEBUG
+		int i;
+		exp_tree_t *child;
+		for (i = 0; i < tree->child_count; ++i)
+			printout_tree(*(tree->child[i])),
+			 fprintf(stderr, "\n"),
+			 dump_td(tree_typeof(tree->child[i]));
+	#endif
 }
 
 /*

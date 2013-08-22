@@ -1,0 +1,273 @@
+#include "tree.h"
+#include "tokens.h"
+#include "typedesc.h"
+#include <string.h>
+#include <stdio.h>
+
+/*
+ * This module tries to figure out the type of
+ * an expression tree. It is meant to work
+ * with the x86 code generator found in the
+ * file codegen_x86.c
+ */
+
+/* Internal-use prototype */
+typedesc_t tree_typeof_iter(typedesc_t, exp_tree_t*);
+
+/* 
+ * Hooks to x86 codegen symbol-type query 
+ * / constant dispatch table stuff
+ */
+extern typedesc_t sym_lookup_type(token_t* tok);
+extern int int_type_decl(char ty);
+extern char *arith_op(char ty);
+extern int decl2siz(int);
+
+/*
+ * Write out typdesc_t data
+ */
+void dump_td(typedesc_t td)
+{
+	int i;
+	fprintf(stderr, "==== dump_td ======\n");
+	fprintf(stderr, "ty: %s\n", tree_nam[td.ty]);
+	if (td.ptr)
+		fprintf(stderr, "ptr: %d\n", td.ptr);
+	if (td.arr) {
+		fprintf(stderr, "arr: %d\n", td.arr);
+/*
+		fprintf(stderr, "arr_dim: ");
+		for (i = 0; i < td.arr; ++i)
+			fprintf(stderr, "%d ", td.arr_dim[i]);
+		fprintf(stderr, "\n");
+*/
+	}
+	fprintf(stderr, "===================\n");
+}
+
+/*
+ * Try to figure out the type of an expression tree
+ */
+typedesc_t tree_typeof(exp_tree_t *tp)
+{
+	typedesc_t td;
+	td.ty = TO_UNK;
+	td.ptr = 0;
+	td.arr = 0;
+	td.arr_dim = NULL;
+	return tree_typeof_iter(td, tp);
+}
+
+/*
+ * The actual recursive loop part for trying to figure
+ * out the type of an expression tree
+ */
+typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
+{
+	int i;
+	int max_decl, max_siz, max_ptr, siz;
+	typedesc_t ctd;
+
+	/* 
+	 * If a block has one child, find the type of that,
+	 * otherwise fail.
+	 */
+	if (tp->head_type == BLOCK && tp->child_count) {
+		if (tp->child_count == 1) {
+			return tree_typeof_iter(td, tp->child[0]);
+		} else {
+			td.ty = TO_UNK;
+			return td;
+		}
+	}
+
+	/*
+	 * Explicit casts are what this module is really
+	 * meant to parse and they give their type away ;)
+	 */
+	if (tp->head_type == CAST) {
+		if (tp->child[0]->child[0]->head_type != BASE_TYPE
+			|| tp->child[0]->child[0]->child_count != 1) {
+			/* XXX: TODO: casts to non-basic-type-based stuff */
+			td.ty = TO_UNK;
+			return td;
+		} else {
+			/*
+			 * e.g. "(int *)3" parses to
+		 	 * (CAST 
+			 *   (CAST_TYPE 
+			 *     (BASE_TYPE
+			 *       (INT_DECL)) 
+			 * 	   (DECL_STAR))
+			 *   (NUMBER:3))
+			 */
+			td.ty = tp->child[0]->child[0]->child[0]->head_type;
+			td.arr = 0;
+			td.ptr = tp->child[0]->child_count - 1;
+			return td;
+		}
+	}
+
+	/*
+	 * If it's a plain variable, query
+	 * the codegen's symbol-type table.
+	 */
+	if (tp->head_type == VARIABLE) {
+		return sym_lookup_type(tp->tok);
+	}
+
+	/*
+	 * Integers constants are given
+	 * type `int', not `char'
+	 *
+	 * XXX: if the language gets
+	 * bigger this should be changed
+	 * to support e.g. long constants
+	 */
+	if (tp->head_type == NUMBER) {
+		td.ty = INT_DECL;
+		return td;
+	}
+
+	/*
+	 * typeof(&u).ptr = typeof(u).ptr + 1
+	 */
+	if (tp->head_type == ADDR) {
+		td = tree_typeof_iter(td, tp->child[0]);
+		if (td.arr) {
+			td.ptr = td.ptr + td.arr + 1;
+			td.arr = 0;
+		}
+		else
+			++td.ptr;
+		return td;
+	}
+
+	/*
+	 * typeof(*u).ptr = typeof(u).ptr - 1
+	 */
+	if (tp->head_type == DEREF) {
+		td = tree_typeof_iter(td, tp->child[0]);
+		if (td.arr) {
+			td.ptr = td.ptr + td.arr - 1;
+			td.arr = 0;
+		}
+		else
+			--td.ptr;
+		return td;
+	}
+
+	/*
+	 * Array access
+	 */
+	if (tp->head_type == ARRAY) {
+		/* type of base */
+		td = tree_typeof_iter(td, tp->child[0]);
+		/* dereference by number of [] */
+		td.ptr = td.arr + td.ptr - (tp->child_count - 1);
+		td.arr = 0;
+		return td;
+	}
+
+	/*
+	 * Procedure call return values
+	 * are assumed of type `int' for now.
+	 * XXX: eventually non-int procedures
+	 * might be added to the language
+	 */
+	if (tp->head_type == PROC_CALL) {
+		td.ty = INT_DECL;
+		td.ptr = td.arr = 0;
+		return td;
+	}
+
+	/* 
+	 * For assignments, use the type of
+	 * the lvalue. (Note that compound
+	 * assignments do not have their
+	 * own tree-head-types and get
+	 * fully converted to non-compound
+	 * syntax).
+	 */
+	if (tp->head_type == ASGN)
+		return tree_typeof_iter(td, tp->child[0]);
+
+	/*
+	 * For arithmetic, promote to the
+	 * largest and "most-starred" type:
+	 * 
+	 *		int *i;
+	 *		i + 1 + 2; <-- type "int *"
+	 *
+	 *		int i;
+	 * 		3 + 1 + &x;	<-- type "int *"
+	 * 
+	 * XXX: not sure if correct behaviour
+	 */
+	if (arith_op(tp->head_type) != NULL) {
+		/* initialize type with data from first member */
+		max_siz = decl2siz((ctd = tree_typeof(tp->child[0])).ty);
+		max_decl = ctd.ty;
+		max_ptr = ctd.arr + ctd.ptr;
+
+		/* replace type with bigger one if any */
+		for (i = 0; i < tp->child_count; ++i) {
+			if ((siz = decl2siz((ctd = tree_typeof(tp->child[i])).ty))
+				&& siz >= max_siz
+				&& (ctd.arr + ctd.ptr) > max_ptr) {
+				max_siz = siz;
+				max_decl = ctd.ty;
+				max_ptr = ctd.arr + ctd.ptr;
+			}
+		}
+
+		/* populate typedesc field */
+		td.ty = max_decl;
+		td.arr = 0;
+		td.ptr = max_ptr;
+
+		return td;
+	}
+
+	/*
+	 * String constants have type "char *"
+	 */
+	if (tp->head_type == STR_CONST) {
+		td.ty = CHAR_DECL;
+		td.ptr = 1;
+		td.arr = 0;
+	}
+
+	/*
+	 * For relationals and logical ops, return int
+	 */
+	if (tp->head_type == LT
+		 || tp->head_type == LTE
+		 || tp->head_type == GT
+		 || tp->head_type == GTE
+		 || tp->head_type == EQL
+		 || tp->head_type == NEQL
+ 		 || tp->head_type == CC_OR
+	     || tp->head_type == CC_AND
+		 || tp->head_type == CC_NOT) {
+		td.ty = INT_DECL;
+		td.ptr = td.arr = 0;
+		return td;
+	}
+
+	/*
+	 * Increments / decrements: return
+	 * type of operand
+	 */
+	if (tp->head_type == INC
+		 || tp->head_type == DEC
+		 || tp->head_type == POST_INC
+		 || tp->head_type == POST_DEC) {
+		return tree_typeof_iter(td, tp->child[0]);
+	}
+
+	/* 
+	 * If all else fails, just give the original thing
+	 */
+	return td;
+}

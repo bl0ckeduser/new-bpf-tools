@@ -50,10 +50,14 @@ enum {		/* head_type */
 	BASE_TYPE,
 	CAST_TYPE,
 	CHAR_DECL,
+	TO_DECL_STMT,
+	TO_UNK,
+	TO_BLOCK,
 	/* special */
 	NULL_TREE
 };
 
+/* sed 's/ = 0//g' | grep -v '/\*' | sed 's/\t/\t"/g' | sed 's/,$/",/g' */
 static char* tree_nam[] = {
 	"BLOCK",
 	"ADD",
@@ -100,6 +104,9 @@ static char* tree_nam[] = {
 	"BASE_TYPE",
 	"CAST_TYPE",
 	"CHAR_DECL",
+	"TO_DECL_STMT",
+	"TO_UNK",
+	"TO_BLOCK",
 	"NULL_TREE"
 };
 
