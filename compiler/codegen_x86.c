@@ -1037,11 +1037,21 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
-	/* &(a[v]) = a + 4 * v */
+	/* &(a[v]) = a + membsiz * v 
+	 * -- this works for `a' of type int or char,
+	 * at least assuming the index expression cleanly
+	 * compiles to an int. note that it is legal for
+	 * all the instructions to have `l' suffix because
+	 * we're dealing with pointers.
+	 * 
+	 * XXX: fix compilation with char-typed indices
+	 */
 	if (tree->head_type == ADDR
 		&& tree->child_count == 1
 		&& tree->child[0]->head_type == ARRAY) {
-		
+
+		membsiz = decl2siz(sym_lookup_type(tree->child[0]->child[0]->tok).ty);
+
 		sto = get_temp_reg();
 
 		printf("movl %s, %s\n",
@@ -1050,11 +1060,7 @@ char* codegen(exp_tree_t* tree)
 
 		sto2 = registerize(codegen(tree->child[0]->child[1]));
 
-		/* 
-		 * XXX: $4 assumes int (the rest is okay 
-		 * because pointers are always `l')
-		 */
-		printf("imull $4, %s\n", sto2);
+		printf("imull $%d, %s\n", membsiz, sto2);
 		printf("addl %s, %s\n", sto2, sto);
 
 		return sto;
