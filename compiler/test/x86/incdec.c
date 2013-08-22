@@ -24,6 +24,10 @@ main()
 	for (i = 0; i < strlen(chars); ++i)
 		puts(++char_ptr);
 
+	char_ptr = &chars[5];
+	for (i = 0; i < strlen(chars); ++i)
+		puts(--char_ptr);
+
 
 	/*
 	 * int_ptr is a pointer to int.
@@ -37,5 +41,9 @@ main()
 	int_ptr = &ints[0];
 	for (i = 0; i < 5; ++i)
 		printf("%d\n", *++int_ptr);
+
+	int_ptr = &ints[5];
+	for (i = 0; i < 5; ++i)
+		printf("%d\n", *--int_ptr);
 
 }
