@@ -53,6 +53,21 @@ void dump_td(typedesc_t td)
 }
 
 /*
+ * Dereference type description
+ * e.g. int * => int
+ */
+typedesc_t deref_typeof(typedesc_t td)
+{
+	if (td.arr) {
+			td.ptr = td.ptr + td.arr - 1;
+			td.arr = 0;
+	}
+	else
+		--td.ptr;
+	return td;
+}
+
+/*
  * Try to figure out the type of an expression tree
  */
 typedesc_t tree_typeof(exp_tree_t *tp)
@@ -160,12 +175,7 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	 */
 	if (tp->head_type == DEREF) {
 		td = tree_typeof_iter(td, tp->child[0]);
-		if (td.arr) {
-			td.ptr = td.ptr + td.arr - 1;
-			td.arr = 0;
-		}
-		else
-			--td.ptr;
+		td = deref_typeof(td);
 		return td;
 	}
 

@@ -22,6 +22,10 @@
 extern void fail(char*);
 extern void compiler_fail(char *message, token_t *token,
 	int in_line, int in_chr);
+extern void compiler_warn(char *message, token_t *token,
+	int in_line, int in_chr);
+extern token_t *findtok(exp_tree_t *et);
+
 void setup_symbols(exp_tree_t* tree, int glob);
 
 /* ====================================================== */
@@ -107,6 +111,12 @@ int decl2siz(int bt)
 /* type data => size in bytes */
 int type2siz(typedesc_t ty)
 {
+	/* 
+	 * "Negative-depth" pointers in nincompoop cases like *3 
+	 */
+	if (ty.ptr < 0 || ty.arr < 0)
+		return 0;
+
 	/* 
 	 * If it's any kind of pointer, it's 4 bytes
 	 * (32-bit word), otherwise it's the base type
@@ -1136,13 +1146,26 @@ char* codegen(exp_tree_t* tree)
 		
 		sto = registerize(codegen(tree->child[0]));
 		sto2 = get_temp_reg();
+
 		/* 
-		 * XXX: `l' suffix assumes int.
-		 * conversions may be necessary.
-		 * Will need a routine that figures out
-	 	 * the type of a given expression...
-		 */
-		printf("movl (%s), %s\n", sto, sto2);		
+		 * Find byte size of *exp
+	     */
+		membsiz = type2siz(
+			deref_typeof(tree_typeof(tree->child[0])));
+
+		/* Check for crazy wack situations like *3 */
+		if (membsiz <= 0) {
+			membsiz = 1;
+			compiler_warn("you're dereferencing what doesn't"
+						  " seem to be a pointer.\nsegfaults might"
+						  " be coming your way soon.",
+						  findtok(tree), 0, 0);
+		}
+
+		/* use appropriate size suffix in the MOV */
+		printf("mov%s (%s), %s\n", 
+			siz2suffix(membsiz),
+			sto, fixreg(sto2, membsiz));
 		free_temp_reg(sto);
 
 		return sto2;

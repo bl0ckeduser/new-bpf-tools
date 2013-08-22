@@ -6,6 +6,7 @@ main()
 	int i;
 	char c_index;
 	int i_index;
+	char *foo = malloc(0xF);
 
 	for (i = 0; i < 7 * 10; ++i)
 		if (i % 7 == 6) {
@@ -43,6 +44,17 @@ main()
 	printf("int-indexed: %d\n", buf[i_index]);
 	printf("char-indexed: %c\n", derp[c_index]);
 	printf("int-indexed: %c\n", derp[i_index]);
+
+	/* test char dereferencing */
+	ptr1 = &buf[12];
+	printf("*ptr1 = '");
+	putchar(*ptr1);
+	printf("' \n");
+
+	/* test casted dereference */
+	*(int *)foo = 'A' + 0xFF00;
+	printf("%c\n", *(char *)foo);
+	printf("%d\n", *(int *)foo);
 
 	/* check the sizes of int and char */
 
