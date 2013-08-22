@@ -1348,7 +1348,11 @@ char* codegen(exp_tree_t* tree)
 		my_ccid = ccid++;
 		sto = codegen(tree->child[0]);
 		sto2 = get_temp_reg();
-		/* XXX: convert to int first */
+		/* 
+		 * XXX: assumes codegen() always
+		 * returns int, which atm it does,
+		 * but perhaps shouldn't
+		 */
 		printf("movl $0, %s\n", sto2);
 		printf("cmp %s, %s\n", sto, sto2);
 		printf("movl $1, %s\n", sto2);
@@ -1363,7 +1367,11 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == CC_AND) {
 		my_ccid = ccid++;
 		sto2 = get_temp_reg();
-		/* XXX: must convert other types to int */
+		/* 
+		 * XXX: assumes codegen() always
+		 * returns int, which atm it does,
+		 * but perhaps shouldn't
+		 */
 		printf("movl $0, %s\n", sto2);
 		for (i = 0; i < tree->child_count; ++i) {
 			sto = codegen(tree->child[i]);
@@ -1380,7 +1388,11 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == CC_OR) {
 		my_ccid = ccid++;
 		sto2 = get_temp_reg();
-		/* XXX: must convert other types to int */
+		/* 
+		 * XXX: assumes codegen() always
+		 * returns int, which atm it does,
+		 * but perhaps shouldn't
+		 */
 		printf("movl $0, %s\n", sto2);
 		for (i = 0; i < tree->child_count; ++i) {
 			sto = codegen(tree->child[i]);
@@ -1693,6 +1705,11 @@ char* codegen(exp_tree_t* tree)
 	 * This also implements % because they are
 	 * done using the same instruction on x86.
 	 */
+	/* 
+	 * XXX: assumes codegen() always
+	 * returns int, which atm it does,
+	 * but perhaps shouldn't
+	 */
 	if ((tree->head_type == DIV || tree->head_type == MOD)
 		&& tree->child_count) {
 		sto = get_temp_mem();
@@ -1778,6 +1795,11 @@ char* codegen(exp_tree_t* tree)
 		return optimized_if(tree, "jne");
 
 	/* general-case if */
+	/* 
+	 * XXX: assumes codegen() always
+	 * returns int, which atm it does,
+	 * but perhaps shouldn't
+	 */
 	if (tree->head_type == IF) {
 		lab1 = intl_label++;
 		lab2 = intl_label++;
@@ -1838,6 +1860,11 @@ char* codegen(exp_tree_t* tree)
 		return optimized_while(tree, "jne");
 
 	/* general-case while */
+	/* 
+	 * XXX: assumes codegen() always
+	 * returns int, which atm it does,
+	 * but perhaps shouldn't
+	 */
 	if (tree->head_type == WHILE) {
 		lab1 = intl_label++;
 		lab2 = intl_label++;
@@ -1862,6 +1889,11 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* negative sign */
+	/* 
+	 * XXX: assumes codegen() always
+	 * returns int, which atm it does,
+	 * but perhaps shouldn't
+	 */
 	if (tree->head_type == NEGATIVE) {
 		sto = get_temp_mem();
 		sto2 = get_temp_reg();
@@ -1933,6 +1965,11 @@ char* cheap_relational(exp_tree_t* tree, char *oppcheck)
  *	if ( A < B ), if (A == B), etc.
  * Again, the tree and the jump mnemonic
  * for the opposite check is needed.
+ */
+/* 
+ * XXX: assumes codegen() always
+ * returns int, which atm it does,
+ * but perhaps shouldn't
  */
 char* optimized_if(exp_tree_t* tree, char *oppcheck)
 {
