@@ -1492,11 +1492,15 @@ char* codegen(exp_tree_t* tree)
 		}
 	}
 
-	/* array assignment */
+	/* 
+	 * array assignment
+	 * -- seems to work for char, int
+	 */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == ARRAY) {
 		/* head address */
 		sym_s = sym_lookup(tree->child[0]->child[0]->tok);
+		typedat = sym_lookup_type(tree->child[0]->child[0]->tok);
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
 		sto2 = registerize(str);
@@ -1504,11 +1508,12 @@ char* codegen(exp_tree_t* tree)
 		str2 = codegen(tree->child[1]);
 		sto3 = registerize(str2);
 
-		/* XXX: FIXME: $4 assumes int members */
-		printf("imull $4, %s\n", sto2);
+		printf("imull $%d, %s\n", 
+			decl2siz(typedat.ty), sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
-		/* XXX: movl assumes int members */
-		printf("movl %s, (%s)\n", sto3, sto2);
+		printf("mov%s %s, (%s)\n", 
+			decl2suffix(typedat.ty),
+			sto3, sto2);
 
 		free_temp_reg(sto2);
 		free_temp_reg(sto3);
