@@ -1672,22 +1672,15 @@ char* codegen(exp_tree_t* tree)
 		 * Check if "pointer arithmetic" is necessary --
 		 * this happens in the case of additions containing
 		 * at least one pointer-typed object.
-		 *
-		 * XXX: doesn't work for pointers that aren't directly
-		 * pointer variables. Fix would be to run
-		 * some kind of type analysis routine on tree->child[i]
-		 * to figure out its type.
 		 */
-		ptr_arith_mode = 0;
+		ptr_arith_mode = tree->head_type == ADD
+						&& tree_typeof(tree).ptr;
+		obj_siz = type2siz(tree_typeof(tree));
 		ptr_count = 0;
-		if (tree->head_type == ADD) {
+		if (ptr_arith_mode) {
 			for (i = 0; i < tree->child_count; ++i) {
-				if (tree->child[i]->head_type == VARIABLE
-					&& (sym_lookup_type(tree->child[i]->tok).ptr
-					|| sym_lookup_type(tree->child[i]->tok).arr)) {
-					ptr_arith_mode = 1;
-					obj_siz = decl2siz(
-						sym_lookup_type(tree->child[i]->tok).ty);
+				if (tree_typeof(tree->child[i]).ptr
+					|| tree_typeof(tree->child[i]).arr) {
 					ptr_memb = i;
 					if (ptr_count++)
 						codegen_fail("please don't add pointers",
