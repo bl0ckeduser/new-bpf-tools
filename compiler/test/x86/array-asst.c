@@ -4,6 +4,8 @@ main()
 	int derp[512];
 	char *ptr1, *ptr2;
 	int i;
+	char c_index;
+	int i_index;
 
 	for (i = 0; i < 7 * 10; ++i)
 		if (i % 7 == 6) {
@@ -33,6 +35,14 @@ main()
 	for (i = 0; buf[i]; ++i)
 		putchar(buf[i]);
 	printf("\n");
+
+	/* test char-type array indices */
+	c_index = 23;
+	i_index = 23;
+	printf("char-indexed: %d\n", buf[c_index]);
+	printf("int-indexed: %d\n", buf[i_index]);
+	printf("char-indexed: %c\n", derp[c_index]);
+	printf("int-indexed: %c\n", derp[i_index]);
 
 	/* check the sizes of int and char */
 

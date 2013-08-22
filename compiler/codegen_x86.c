@@ -1097,8 +1097,6 @@ char* codegen(exp_tree_t* tree)
 	 * compiles to an int. note that it is legal for
 	 * all the instructions to have `l' suffix because
 	 * we're dealing with pointers.
-	 * 
-	 * XXX: fix compilation with char-typed indices
 	 */
 	if (tree->head_type == ADDR
 		&& tree->child_count == 1
@@ -1108,13 +1106,25 @@ char* codegen(exp_tree_t* tree)
 
 		sto = get_temp_reg();
 
+		/* load base address */
 		printf("movl %s, %s\n",
 				sym_lookup(tree->child[0]->child[0]->tok),
 				sto);
 
+		/* 
+		 * now we code the array index expression.
+		 * codegen() should convert
+		 * whatever it encounters to `int',
+		 * so no type-conversion worries
+		 * if the array index is not an `int'
+		 */
 		sto2 = registerize(codegen(tree->child[0]->child[1]));
 
+
+		/* multiply index byte-offset by size of members */
 		printf("imull $%d, %s\n", membsiz, sto2);
+
+		/* ptr = base_adr + membsiz * index_expr */
 		printf("addl %s, %s\n", sto2, sto);
 
 		return sto;

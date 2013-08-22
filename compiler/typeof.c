@@ -111,6 +111,11 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	/*
 	 * If it's a plain variable, query
 	 * the codegen's symbol-type table.
+	 *
+	 * XXX: as it is, codegen() on a
+	 * VARIABLE tree of any type converts
+	 * it to int, so this might be
+	 * inconsistent / confusing
 	 */
 	if (tp->head_type == VARIABLE) {
 		return sym_lookup_type(tp->tok);
