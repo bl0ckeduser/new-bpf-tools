@@ -54,7 +54,7 @@ expr := lvalue asg-op expr
 /*
  * Notice [] binds tighter than *
  */
-lvalue := ident { '[' expr ']' }  | '*' lvalue
+lvalue := ident { '[' expr ']' }  | '*' unary-expr
 	  | '(' cast-type ') lvalue
 
 ccor_expr := ccand_expr ['||' ccand_expr]

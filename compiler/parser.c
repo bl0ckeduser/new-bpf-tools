@@ -259,7 +259,7 @@ multi_array_decl:
 }
 
 /*
- * lvalue := ident { '[' expr ']' }  | '*' lvalue
+ * lvalue := ident { '[' expr ']' }  | '*' unary-expr
  *          | '(' cast-type ') lvalue
  */
 /* XXX: TODO: cast part */
