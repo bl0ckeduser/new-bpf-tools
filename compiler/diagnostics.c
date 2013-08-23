@@ -6,7 +6,8 @@
 
 enum {
 	CF_ERROR,
-	CF_WARN
+	CF_WARN,
+	CF_DEBUG
 };
 
 /* internal prototype */
@@ -23,6 +24,14 @@ void compiler_warn(char *message, token_t *token,
 	int in_line, int in_chr)
 {
 	compiler_fail_int(message, token, in_line, in_chr, CF_WARN);
+}
+
+void compiler_debug(char *message, token_t *token,
+	int in_line, int in_chr)
+{
+#ifdef DEBUG
+	compiler_fail_int(message, token, in_line, in_chr, CF_DEBUG);
+#endif
 }
 
 void compiler_fail_int(char *message, token_t *token,
@@ -64,7 +73,9 @@ void compiler_fail_int(char *message, token_t *token,
 
 	/* finally display line number and error
 	 * description */
-	if (mode == CF_ERROR)
+	if (mode == CF_DEBUG)
+		fprintf(stderr, "debug: ");
+	else if (mode == CF_ERROR)
 		fprintf(stderr, "error: ");
 	else
 		fprintf(stderr, "warning: ");

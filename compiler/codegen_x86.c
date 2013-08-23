@@ -26,6 +26,8 @@ extern void compiler_fail(char *message, token_t *token,
 	int in_line, int in_chr);
 extern void compiler_warn(char *message, token_t *token,
 	int in_line, int in_chr);
+extern void compiler_debug(char *message, token_t *token,
+	int in_line, int in_chr);
 extern token_t *findtok(exp_tree_t *et);
 extern int type2siz(typedesc_t);
 extern typedesc_t mk_typedesc(int bt, int ptr, int arr);
@@ -1527,6 +1529,8 @@ char* codegen(exp_tree_t* tree)
 			sto);
 
 		/* convert final result to int */
+		compiler_debug("array lval preinc -- trying conversion",
+			findtok(tree), 0, 0);
 		printf("%s (%s), %s\n", 
 			move_conv_to_long(membsiz),
 			sto, sto3);
@@ -1627,6 +1631,9 @@ char* codegen(exp_tree_t* tree)
 		} else if (type2siz(tree_typeof(tree->child[0])) == 4) {
 			/* general case for 4-byte destination */
 			sto = codegen(tree->child[1]);	/* converts stuff to int */
+			compiler_debug("simple variable assignment -- "
+						  " looking for conversion suffix",
+						  findtok(tree), 0, 0);
 			sto2 = registerize_from(sto, 
 				membsiz = type2siz(tree_typeof(tree->child[1])));
 			printf("movl %s, %s\n", sto2, sym_s);
@@ -1694,6 +1701,8 @@ char* codegen(exp_tree_t* tree)
 		if (membsiz != 1)
 			printf("imull $%d, %s\n", membsiz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
+		compiler_debug("array retrival -- trying conversion",
+			findtok(tree), 0, 0);
 		printf("%s (%s), %s\n", 
 			move_conv_to_long(membsiz), sto2, sto);
 
@@ -1718,6 +1727,8 @@ char* codegen(exp_tree_t* tree)
 		sto = get_temp_reg();
 		sym_s = sym_lookup(tree->tok);
 		membsiz = type2siz(sym_lookup_type(tree->tok));
+		compiler_debug("variable retrieval -- trying conversion",
+			findtok(tree), 0, 0);
 		printf("%s %s, %s\n",
 			move_conv_to_long(membsiz),
 			sym_s, sto);
