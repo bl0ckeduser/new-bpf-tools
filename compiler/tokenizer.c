@@ -119,7 +119,7 @@ void add_token(nfa* t, char* tok, int key)
 		hist[n] = t;
 
 		switch (c) {
-			case 'A':	/* special: set of all letters */
+			case 'A':	/* set of all letters */
 				next = new_nfa();
 				for(j = 'a'; j <= 'z'; j++)
 					t->map[j] = next;
@@ -129,7 +129,7 @@ void add_token(nfa* t, char* tok, int key)
 				t = next;
 				++n;
 				break;
-			case 'B':	/* special: set of all letters 
+			case 'B':	/* set of all letters 
 					   + all digits */
 				next = new_nfa();
 				for(j = 'a'; j <= 'z'; j++)
@@ -142,14 +142,14 @@ void add_token(nfa* t, char* tok, int key)
 				t = next;
 				++n;
 				break;
-			case 'D':	/* special: set of all digits */
+			case 'D':	/* set of all digits */
 				next = new_nfa();
 				for(j = '0'; j <= '9'; j++)
 					t->map[j] = next;
 				t = next;
 				++n;
 				break;
-			case 'W':	/* special: whitespace */
+			case 'W':	/* whitespace */
 				next = new_nfa();
 				t->map[' '] = next;
 				t->map['\t'] = next;
