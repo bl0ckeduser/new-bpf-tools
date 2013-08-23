@@ -349,7 +349,7 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 		 || tp->head_type == EQL
 		 || tp->head_type == NEQL
  		 || tp->head_type == CC_OR
-	     || tp->head_type == CC_AND
+	     	 || tp->head_type == CC_AND
 		 || tp->head_type == CC_NOT) {
 		td.ty = INT_DECL;
 		td.ptr = td.arr = 0;
