@@ -33,8 +33,10 @@ structure closely.
 1. Code blocks
 	i. empty block
 		;
+
 	ii. single-instruction block
 		e.g. x += 1;
+
 	iii. multi-instruction blocks
 		e.g.
 		{
@@ -45,19 +47,35 @@ structure closely.
 		}
 
 2. Variable declarations
-	i. integers
-		int variable_name < = expression >;
-	ii. arrays
-		int array_name[integer];
-	iii. pointers
-		int *ptr;
-	iv. characters
-		char c;
 
-	You can also do combinations like char ****ptr,
-	int *ptr[32], etc., but that hasn't been very well tested
-	yet. In any event, test/x86/*.c gives an idea of the C subset
-	supported at any given point in the "development" of this project.
+	The supported base types are:	
+
+		int
+		char
+
+	Here are some quick examples of declarations:
+
+		int variable_name;
+		int variable_name_2 = 29239;
+		int a, *pa = &a, cd = 456;
+		int array_name[1000];
+		int *ptr;
+		int **ptr_ptr;
+		char c;
+		char *buf;
+		char *strings[32];
+
+	And now a formal description of what is parsed:
+
+		Declarations start with either "int" or "char".
+		Then there is a sequence of sub-declarations separated by 
+		commas. Each sub-declaration first contains 0 or more pointer 
+		stars, then it contains the name of the variable, then it 
+		may optionally contain either an initialization assignment 
+		or any number of array-dimension integers-in-brackets 
+		(e.g. [123]). Note however that the compiler can only 
+		generate code for 1-dimensional arrays or N-degree pointers
+		to 1-dimensional arrays at this point.
 
 3. Control flow
 	i. if statement
@@ -65,6 +83,7 @@ structure closely.
 			block1
 		< else
 			block2 >
+
 	ii. while statement
 		while (expr)
 			block
@@ -73,9 +92,9 @@ structure closely.
 		for (<init>; <condition>; <increment>)
 			block
 	
-	     init, condition, increment are expressions.
-	     if condition is ommitted, the compiler writes in
-	     "1 == 1" (always true) instead.
+	     "init", "condition", and "increment" are expressions.
+	     if "condition" is ommitted, the compiler writes in
+	     "1 == 1" (an always-true expression) instead.
 
 	     In general, the statement will be rewritten as:
 
@@ -87,29 +106,40 @@ structure closely.
 
 4. Arithmetic
 	Operands are any kind of expression: number, variable, array
-	index, etc.
-	e.g. 
+	index, etc. Standard precedence and associativity (left) 
+	are enforced. Parentheses can force altered precedence.
+
+	Some examples:	
 		1 + 2 * 3 		(evaluates to 7)
 		(1 + 2) * 3		(evaluates to 9)
 		456 % 123		(evaluates to 87)
 		z - x * x + 123		(evaluates to something)	
-		-x + 5
+		-x + 5			(evaluates to something)
 
-	The type of the result depends... If you add one or more
-	integers to a pointer, the result is a pointer. If you
-	subtract two pointers, the result is an integer. If you
-	try to multiply, subtract more than two, divide, or remainder 
-	pointers, the result is an unhappy compiler that tells you
-	it won't compile nonsense.
+	The type of the result depends on several factors: 
+	if you add one or more integers to a pointer, the result 
+	is a pointer. If you subtract two pointers, the result 
+	is an integer. If you try to multiply, subtract more 
+	than two, divide, or remainder pointers, the result 
+	is an unhappy compiler that tells you it won't compile nonsense.
+	If you just add a bunch of numbers, the result is the biggest
+	type of any of the operands' types, so e.g. if you add an
+	int and a char, it is int.
 		
-5. Assignment operators
-	Left operand is an lvalue, right operand is an expression.
-	e.g.
+5. Assignment / compound-assignment operators
+	The left operand must be an lvalue; the right operand 
+	can be any expression.
+
+	Examples:
 		x += 3;
 		foo += foo * bar;
 		variable = 123;
 		array[12] = 34;
-		z -= 56;
+		var -= 123;
+		var += 123;
+		var %= 123;
+		var /= 123;
+		var *= 123;
 
 	The type is the type of the left operand, i.e. the "lvalue".
 
@@ -117,12 +147,22 @@ structure closely.
 	e.g.
 		table[index]
 		variable
+		*pointer
+		**pointer_to_pointer
 
 7. C-style increments and decrements
 	The operand is any lvalue. The type is the type of the operand.
 	e.g.
 		++foo;		tab[bobobo]--;
 		--bar;		mystery++;
+		++*ptr;	
+
+	"Pointer arithmetic" weirdness applies -- i.e. incrementing
+	a pointer to data of a given size actually increases it by
+	this given size, and similarly decrementing subtracts this
+	given size. For example, if ptr is a pointer to int,
+	++ptr actually increases ptr by 4, because on 32-bit x86
+	an int is 4 bytes.
 
 8. "Special" instructions
 	echo(n); writes out an integer and a newline to stdout.
@@ -142,7 +182,7 @@ structure closely.
    zero false". The type of a comparison is always "int", regardless
    of the type of its operands (the compiler will do its best to
    convert the operands to int before comparing them, and then it'll
-   give you an int result).
+   give you an int result). Relational operators are not associative.
 
 10. Comments
 	/* this is a C-style comment */
@@ -152,7 +192,10 @@ structure closely.
 11. Calling libc routines
 
 	It is possible to call libc routines like printf(),
-	getchar(), etc, just as you would in C.
+	getchar(), puts(), etc, just as you would in C.
+
+	(Well, at the moment, strictly speaking, only
+	those routines which take "int" arguments and return "int")
 	
 	For example:
 		printf("herp derp hello world\n");
@@ -163,21 +206,24 @@ structure closely.
 
 12. Custom procedures
 
-	See examples: test/x86/lexical.c, test/x86/procedure.c,
-	test/x86/square.c, test/x86/tco.c.
+	See example code files: test/x86/lexical.c, test/x86/procedure.c,
+	test/x86/square.c, test/x86/tco.c, test/x86/recursive-fib.c.
 
 	Recursion is allowed. Tail-call optimization is done when it
-	can be done. You are allowed to return nothing from a 
-	function; if anything tries to use the result it will get
-	random garbage.
+	can be done within one same function. You are allowed to 
+	never "return" anything from a function; if anything tries to use 
+	the return value it will get random garbage.
 
 13. Pointers
 
 	The & (address-of) and * (dereference) operators from C
 	have been implemented.
 
-	* can be applied to any expression
-	& can be applied to lvalues only
+	* can be applied to any expression, but funny things
+	will happen when you run the compiled code if the expression
+	isn't actually a pointer.
+
+	& can be applied to lvalues only.
 
 	Arrays symbols are implicitly converted to pointers to 
 	the first element of the array.
@@ -190,19 +236,21 @@ structure closely.
 
 14. String constants
 
-	Examples:
+	Example: "bob 123"
 
-	"bob 123"
-	printf("hello\n");
+	Example use: printf("hello\n");
 
 15. Logical operations
 
-		&&, ||, and ! have been copied from C.
+	&&, ||, and ! have been copied from C. They "short-circuit"
+	like in C, so for example
+
+			0 && ++x;
+
+	does not increase x.
 	
 	Like for the relational operators (==, !=, et al.), the
-	result is of type "int", and the compiler will do its
-	best to convert the arguments to "int" before applying
-	the operation.
+	result is of type "int".
 
 16. Pointer arithmetic
 
@@ -226,7 +274,7 @@ structure closely.
 
 17. Casts
 
-	Casts are a work-in-progress.
+	Examples:  *(char*)ptr;	 *(int*)ptr;	(int)var;
 
 	The type analyzer (coded in "typeof.c") takes notice of them.
 
@@ -246,17 +294,18 @@ structure closely.
 	As soon as something is a pointer, whatever it happens to
 	point to, it has word- (i.e. 32-bit)- size.
 
-.............................................................................
+	casts are an important part of the type system.
 
 			-------------------------
-			Operator precedence table
+			   Operator precedence
+			    and associativity
 			-------------------------
 
 From greatest to lowest precedence:
 
 	[] (array subscript)
 	* (dereference)
-	- (unary), ( ), ++, --, procedure calls, & (address-of), !
+	- (sign), ( ), ++, --, procedure calls, & (address-of), !
 	(...)  (cast)
 	* (multiplication) / %
 	+ -
@@ -265,9 +314,12 @@ From greatest to lowest precedence:
 	||
 	= += -= *= /=
 
-All arithmetic operators are left-associative.
+All arithmetic operators (+ et al.) are left-associative.
 
-Assignment is right-associative.
+The logical connectives (&& and ||) are left-associative.
+
+Assignment (=) and compound-assignment operators (+= et al.) 
+are right-associative.
 
 Comparison operators are not associative: expressions like 1 < 2 < 3
 will raise syntax errors.
