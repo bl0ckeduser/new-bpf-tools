@@ -2025,10 +2025,19 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == NULL_TREE)
 		return NULL;
 
-	fprintf(stderr, "Sorry, I can't yet codegen this tree: \n");
+
+	/*
+	 * Failed to codegen
+	 */
+	if (findtok(tree)) {
+		compiler_warn("I don't yet know how to code this", findtok(tree), 0, 0);
+		fprintf(stderr, "\n\n");
+	}
+	fprintf(stderr, "codegen_x86: incapable of coding tree:\n");
 	fflush(stderr);
 	printout_tree(*tree);
 	fputc('\n', stderr);
+
 	exit(1);
 }
 
