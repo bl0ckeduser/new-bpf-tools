@@ -81,6 +81,7 @@ typedesc_t argtyp[256];
 struct {
 	typedesc_t argtyp[256];
 	char name[SYMLEN];
+	int argc;
 } func_args[256];
 int funcdefs = 0;
 
@@ -1252,7 +1253,6 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* procedure call */
-	/* XXX: check for arg count mismatch */
 	if (tree->head_type == PROC_CALL) {
 		/* 
 		 * Push all the temporary registers
@@ -1274,6 +1274,19 @@ char* codegen(exp_tree_t* tree)
 			if (!strcmp(func_args[i].name,
 				get_tok_str(*(tree->tok)))) {
 					callee_argtyp = func_args[i].argtyp;
+					/*
+					 * Check for arg count mismatch
+					 */
+					if (tree->child_count != func_args[i].argc) {
+						sprintf(sbuf, "Argument count mismatch -- "
+									  "`%s' expects %d arguments but "
+									  "you have given it %d",
+										func_args[i].name,
+										func_args[i].argc,
+										tree->child_count);
+						compiler_fail(sbuf,
+							findtok(tree), 0, 0);
+					}
 					break;
 				}
 		}
@@ -1427,6 +1440,7 @@ char* codegen(exp_tree_t* tree)
 				func_args[funcdefs].argtyp[i] = argtyp[i];
 			}
 			strcpy(func_args[funcdefs].name, get_tok_str(*(tree->tok)));
+			func_args[funcdefs].argc = tree->child[0]->child_count;
 			funcdefs++;
 
 		} else
