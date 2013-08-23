@@ -1117,7 +1117,8 @@ char* codegen(exp_tree_t* tree)
 
 
 		/* multiply index byte-offset by size of members */
-		printf("imull $%d, %s\n", membsiz, sto2);
+		if (membsiz != 1)
+			printf("imull $%d, %s\n", membsiz, sto2);
 
 		/* ptr = base_adr + membsiz * index_expr */
 		printf("addl %s, %s\n", sto2, sto);
@@ -1493,7 +1494,8 @@ char* codegen(exp_tree_t* tree)
 
 		/* build pointer */
 		sto = get_temp_reg();
-		printf("imull $%d, %s\n", membsiz, sto2);
+		if (membsiz != 1)
+			printf("imull $%d, %s\n", membsiz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
 		printf("movl %s, %s\n", sto2, sto);
 		free_temp_reg(sto2);
@@ -1638,8 +1640,8 @@ char* codegen(exp_tree_t* tree)
 		str2 = codegen(tree->child[1]);
 		sto3 = registerize(str2);
 
-		printf("imull $%d, %s\n", 
-			membsiz, sto2);
+		if (membsiz != 1)
+			printf("imull $%d, %s\n", membsiz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
 		printf("mov%s %s, (%s)\n", 
 			siz2suffix(membsiz),
@@ -1670,7 +1672,8 @@ char* codegen(exp_tree_t* tree)
 		sto = get_temp_reg();
 		printf("# build ptr\n");
 		/* multiply offset by member size */
-		printf("imull $%d, %s\n", membsiz, sto2);
+		if (membsiz != 1)
+			printf("imull $%d, %s\n", membsiz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
 		printf("%s (%s), %s\n", 
 			move_conv_to_long(membsiz), sto2, sto);
@@ -1738,7 +1741,8 @@ char* codegen(exp_tree_t* tree)
 			 */
 			if (ptr_arith_mode && i != ptr_memb) {
 				str = codegen(tree->child[i]);
-				printf("imull $%d, %s\n", obj_siz, str);
+				if (obj_siz != 1)
+					printf("imull $%d, %s\n", obj_siz, str);
 				printf("%s %s, %s\n", oper, str, sto);
 				free_temp_reg(str);
 			} else if (tree->child[i]->head_type == NUMBER) {
