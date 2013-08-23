@@ -1295,8 +1295,8 @@ char* codegen(exp_tree_t* tree)
 		 * Compute stack size of all the arguments together
 		 */
 		if (!callee_argtyp) {
-			compiler_warn("no declaration provided -- "
-						  "assuming arguments all of type int",
+			compiler_warn("no declaration found -- "
+						  "assuming args have size 32 bits and type int",
 				findtok(tree), 0, 0);
 			/* sizeof(int) = 4 on 32-bit x86 */
 			callee_argbytes = tree->child_count * 4;
