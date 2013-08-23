@@ -66,12 +66,23 @@ char globtab[256][SYMLEN] = {""};
 int globs = 0;	/* count */
 typedesc_t globtyp[256];
 
-/* Table of function-argument symbols */
+/* Table of (current) function-argument symbols */
 char arg_symtab[256][SYMLEN] = {""};
 int arg_syms = 0;		/* count */
 int argbytes = 0;		/* total size in bytes */
 int argsiz[256] = {0};		/* size of each object */
 typedesc_t argtyp[256];
+
+/* 
+ * Table of argument type tables associated
+ * to function names -- used for locally-declared
+ * functions
+ */
+struct {
+	typedesc_t argtyp[256];
+	char name[SYMLEN];
+} func_args[256];
+int funcdefs = 0;
 
 /* Table of string-constant symbols */
 char str_const_tab[256][SYMLEN] = {""};
@@ -1118,6 +1129,9 @@ char* codegen(exp_tree_t* tree)
 	int ptr_arith_mode, obj_siz, ptr_memb, ptr_count;
 	int membsiz;
 	typedesc_t typedat;
+	typedesc_t *callee_argtyp = NULL;
+	int callee_argbytes;	
+	int offset;
 
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
@@ -1238,6 +1252,7 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* procedure call */
+	/* XXX: check for arg count mismatch */
 	if (tree->head_type == PROC_CALL) {
 		/* 
 		 * Push all the temporary registers
@@ -1250,21 +1265,75 @@ char* codegen(exp_tree_t* tree)
 		memcpy(my_ts_used, ts_used, TEMP_REGISTERS);
 
 		/* 
-		 * Push the arguments in reverse order
+		 * Get argument size data, if the procedure
+		 * has been declared.
 		 */
-		for (i = tree->child_count - 1; i >= 0; --i) {
-			sto = codegen(tree->child[i]);
-			/* 
-			 * XXX: need to convert args to function type,
-			 * e.g. char argument becomes int because prototype
-			 * of function needs int. note that int is the
-			 * default type in C.
-			 */
-  
-			/* XXX: pushl is only for int args */
-			printf("pushl %s\t# argument %d to %s\n", sto, i,
-				 get_tok_str(*(tree->tok)));
+		/* XXX: extern declarations would go in another table */
+		callee_argtyp = NULL;
+		for (i = 0; i < funcdefs; ++i) {
+			if (!strcmp(func_args[i].name,
+				get_tok_str(*(tree->tok)))) {
+					callee_argtyp = func_args[i].argtyp;
+					break;
+				}
+		}
+
+		/* 
+		 * Compute stack size of all the arguments together
+		 */
+		if (!callee_argtyp) {
+			compiler_warn("no declaration provided -- "
+						  "assuming arguments all of type int",
+				findtok(tree), 0, 0);
+			/* sizeof(int) = 4 on 32-bit x86 */
+			callee_argbytes = tree->child_count * 4;
+		}
+		else {
+			/* sum individual offsets */
+			callee_argbytes = 0;
+			for (i = 0; i < tree->child_count; ++i)
+				callee_argbytes += type2siz(callee_argtyp[i]);
+		}
+
+		/* 
+		 * Move down the stack pointer
+		 */
+		printf("subl $%d, %%esp\n", callee_argbytes);
+
+		/* 
+		 * Move the arguments into the new stack offsets
+		 */
+		offset = 0;
+		for (i = 0; i < tree->child_count; ++i) {
+			/* Find out the type of the current argument */
+			if (!callee_argtyp) {
+				/* Default to int if no declaration 
+				 * provided */
+				typedat.ty = INT_DECL;
+				typedat.ptr = typedat.arr = 0;
+
+				/* offset = sizeof(int) * i */
+				offset = 4 * i;
+			} else {
+				/* load registered declaration */
+				typedat = callee_argtyp[i];
+			}
+
+			/* Get byte size of current argument */
+			membsiz = type2siz(typedat);
+
+			/* XXX: might have to convert args to 
+			 * function's arg type */
+			sto = registerize(codegen(tree->child[i]));
+			/* XXX: use movb et al ? */
+			printf("movl %s, %d(%%esp)\t",
+				sto, offset);
+			printf("# argument %d to %s\n",
+				i, get_tok_str(*(tree->tok)));
 			free_temp_reg(sto);
+
+			if (callee_argtyp)
+				offset += type2siz(callee_argtyp[i]);
 		}
 
 		/* 
@@ -1275,13 +1344,8 @@ char* codegen(exp_tree_t* tree)
 		/* 
 		 * Throw off the arguments from the stack
 		 */
-		/* 
-		 * XXX: FIXME: 4 * tree... assumes int args.
-		 * must instead know the size in bytes of the
-		 * whole argument stack
-		 */
-		printf("addl $%d, %%esp\t# throw off %d arg%s\n",
-			4 * tree->child_count, tree->child_count,
+		printf("addl $%d, %%esp\t# throw off arg%s\n",
+			callee_argbytes,
 			tree->child_count > 1 ? "s" : "");
 
 		/* 
@@ -1357,6 +1421,14 @@ char* codegen(exp_tree_t* tree)
 
 			}
 			proc_args[i] = NULL;
+
+			/* Register argument info */
+			for (i = 0; i < tree->child[0]->child_count; ++i) {
+				func_args[funcdefs].argtyp[i] = argtyp[i];
+			}
+			strcpy(func_args[funcdefs].name, get_tok_str(*(tree->tok)));
+			funcdefs++;
+
 		} else
 			*proc_args = NULL;
 
