@@ -20,7 +20,6 @@ typedesc_t tree_typeof_iter(typedesc_t, exp_tree_t*);
  */
 extern typedesc_t sym_lookup_type(token_t* tok);
 extern int int_type_decl(char ty);
-extern char *arith_op(char ty);
 extern int decl2siz(int);
 
 /* hook to error printout code */
@@ -117,6 +116,19 @@ typedesc_t deref_typeof(typedesc_t td)
 	else
 		--td.ptr;
 	return td;
+}
+
+/*
+ * Check if a tree type is
+ * an arithmetic operation
+ */
+int is_arith_op(char ty)
+{
+	return ty == ADD
+		|| ty == MULT
+		|| ty == SUB
+		|| ty == DIV
+		|| ty == MOD;
 }
 
 /*
@@ -290,7 +302,7 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	 * an int-typed result the way the code
 	 * generator is currently designed.
 	 */
-	if (arith_op(tp->head_type) != NULL) {
+	if (is_arith_op(tp->head_type)) {
 		/* initialize type with data from first member */
 		max_siz = decl2siz((ctd = tree_typeof(tp->child[0])).ty);
 		max_decl = ctd.ty;
