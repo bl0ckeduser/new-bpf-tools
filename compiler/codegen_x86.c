@@ -12,6 +12,8 @@
 
 /* ====================================================== */
 
+#define SYMLEN 32
+
 #include "tree.h"
 #include "tokens.h"
 #include "typedesc.h"
@@ -48,29 +50,29 @@ enum {
 };
 
 /* Name of function currently being coded */
-char current_proc[64];
+char current_proc[SYMLEN];
 
 /* Table of local symbols */
-char symtab[256][32] = {""};
+char symtab[256][SYMLEN] = {""};
 int syms = 0;			/* count */
 int symbytes = 0;		/* stack size in bytes */
 int symsiz[256] = {0};	/* size of each object */
 typedesc_t symtyp[256];
 
 /* Table of global symbols */
-char globtab[256][32] = {""};
+char globtab[256][SYMLEN] = {""};
 int globs = 0;	/* count */
 typedesc_t globtyp[256];
 
 /* Table of function-argument symbols */
-char arg_symtab[256][32] = {""};
+char arg_symtab[256][SYMLEN] = {""};
 int arg_syms = 0;		/* count */
 int argbytes = 0;		/* total size in bytes */
 int argsiz[256] = {0};	/* size of each object */
 typedesc_t argtyp[256];
 
 /* Table of string-constant symbols */
-char str_const_tab[256][32] = {""};
+char str_const_tab[256][SYMLEN] = {""};
 int str_consts = 0;
 
 /* Temporary-use registers currently in use */
@@ -324,6 +326,8 @@ char* nameless_perm_storage(int siz)
 int sym_add(token_t *tok, int size)
 {
 	char *s = get_tok_str(*tok);
+	if (strlen(s) >= SYMLEN)
+		compiler_fail("symbol name too long", tok, 0, 0);
 	strcpy(symtab[syms], s);
 	symsiz[syms] = size;
 	symbytes += size;
@@ -336,6 +340,8 @@ int sym_add(token_t *tok, int size)
 int glob_add(token_t *tok)
 {
 	char *s = get_tok_str(*tok);
+	if (strlen(s) >= SYMLEN)
+		compiler_fail("symbol name too long", tok, 0, 0);
 	strcpy(globtab[globs], s);
 	return globs++; 
 }
@@ -455,6 +461,8 @@ int str_const_lookup(token_t* tok)
 int str_const_add(token_t *tok)
 {
 	char *s = get_tok_str(*tok);
+	if (strlen(s) >= SYMLEN)
+		compiler_fail("string constant too long", tok, 0, 0);
 	strcpy(str_const_tab[str_consts], s);
 	return str_consts++; 
 }
@@ -501,6 +509,8 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 
 	/* Copy the argument symbols to the symbol table */
 	for (i = 0; args[i]; ++i) {
+		if (strlen(args[i]) >= SYMLEN)
+			compiler_fail("argument name too long", findtok(tree), 0, 0);
 		strcpy(arg_symtab[arg_syms], args[i]);
 		/* XXX: assumes int args */
 		argtyp[arg_syms].ty = INT_DECL;
