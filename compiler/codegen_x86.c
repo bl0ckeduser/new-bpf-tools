@@ -1633,13 +1633,14 @@ char* codegen(exp_tree_t* tree)
 
 	/* 
 	 * array assignment
-	 * -- seems to work for char, int
+	 * -- seems to work for char, char *, int
 	 */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == ARRAY) {
 		/* head address */
 		sym_s = sym_lookup(tree->child[0]->child[0]->tok);
-		membsiz = decl2siz(sym_lookup_type(tree->child[0]->child[0]->tok).ty);
+		membsiz = type2siz(
+			deref_typeof(sym_lookup_type(tree->child[0]->child[0]->tok)));
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
 		sto2 = registerize(str);
@@ -1662,7 +1663,7 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* 
-	 * array retrieval -- works for int and char
+	 * array retrieval -- works for int, char, char *
 	 * char data gets converted to an int register
 	 */
 	if (tree->head_type == ARRAY && tree->child_count == 2) {
@@ -1673,7 +1674,8 @@ char* codegen(exp_tree_t* tree)
 		str = codegen(tree->child[1]);
 		sto2 = registerize(str);
 		/* member size */
-		membsiz = decl2siz(sym_lookup_type(tree->child[0]->tok).ty);
+		membsiz = type2siz(
+			deref_typeof(sym_lookup_type(tree->child[0]->tok)));
 
 		sto = get_temp_reg();
 		printf("# build ptr\n");
