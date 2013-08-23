@@ -1491,7 +1491,7 @@ char* codegen(exp_tree_t* tree)
 		sym_s = sym_lookup(tree->child[0]->tok);
 		typedat = sym_lookup_type(tree->child[0]->tok);
 		if (typedat.ptr || typedat.arr) {
-			/* 
+			/*
 			 * It's a pointer, so use `l' suffix
 			 * for the datum itself, but change
 			 * by the size of the pointed-to
@@ -1500,7 +1500,7 @@ char* codegen(exp_tree_t* tree)
 			sprintf(sbuf, "%sl",
 				tree->head_type == INC ? "add" : "sub");
 			printf("%s $%d, %s\n",
-				sbuf, decl2siz(typedat.ty), sym_s);
+				sbuf, type2siz(deref_typeof(typedat)), sym_s);
 		} else {
 			/*
 			 * It's not a pointer, so use the
@@ -1508,7 +1508,7 @@ char* codegen(exp_tree_t* tree)
 			 */
 			sprintf(sbuf, "%s%s",
 				tree->head_type == INC ? "inc" : "dec",
-				decl2suffix(typedat.ty));
+				siz2suffix(type2siz(typedat)));
 			printf("%s %s\n", sbuf, sym_s);
 		}
 		return sym_s;

@@ -2,6 +2,8 @@ main() {
 	int i[32];
 	int foo = 4;
 	int *ptr = i + foo;
+	char **bob;
+	char **bob2;
 
 	i[4] = 123;
 	printf("%d\n", *(i + foo));
@@ -11,4 +13,14 @@ main() {
 	printf("%d\n", *(2 + 2 + i));
 	printf("%d\n", *(2 + i + 2));
 	printf("%d\n", *(0 + 0 + i + 1 + 1 + 2));
+
+	/*
+	 * this should print "DERP" because
+	 * the increment should move bob to
+	 * its next index
+	 */
+	bob = malloc(1024);
+	bob[0] = "HERP";
+	bob[1] = "DERP";
+	puts(*++bob);
 }
