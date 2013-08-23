@@ -30,6 +30,58 @@ void compiler_fail(char *message, token_t *token,
 /* hook to token finder */
 extern token_t *findtok(exp_tree_t *et);
 
+/* 
+ * Build a type-description structure
+ */
+typedesc_t mk_typedesc(int bt, int ptr, int arr)
+{
+	typedesc_t td;
+	td.ty = bt;
+	td.ptr = ptr;
+	td.arr = arr;
+	td.arr_dim = NULL;
+	return td;
+}
+
+/* 
+ * INT_DECL => 4 because "int" is 4 bytes, etc.
+ * (this program compiles code specifically 
+ * for 32-bit x86, so I can say that 
+ * "int" is 4 bytes with no fear of being 
+ * crucified by pedants).
+ */
+int decl2siz(int bt)
+{
+	switch (bt) {
+		case INT_DECL:
+			return 4;
+		case CHAR_DECL:
+			return 1;
+		default:
+			return 0;
+	}
+}
+
+/* 
+ * Type description => size of datum in bytes
+ */
+int type2siz(typedesc_t ty)
+{
+	/* 
+	 * Special case for "Negative-depth" pointers in 
+	 * nincompoop situations like *3 
+	 */
+	if (ty.ptr < 0 || ty.arr < 0)
+		return 0;
+
+	/* 
+	 * If it's any kind of pointer, the size is 
+	 * 4 bytes (32-bit word), otherwise it's the size 
+ 	 * of the base type
+	 */
+	return ty.ptr || ty.arr ? 4 : decl2siz(ty.ty);
+}
+
 /*
  * Write out typdesc_t data
  */
