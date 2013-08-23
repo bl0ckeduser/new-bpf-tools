@@ -45,28 +45,28 @@ typedef struct match_struct {
 /*
  * NFA (compiled pattern) structure
  */
-typedef struct trie_struct {
+typedef struct nfa_struct {
 	/* character edges */
-	struct trie_struct* map[256];
+	struct nfa_struct* map[256];
 
 	/* epsilon edges */
-	struct trie_struct** link;
+	struct nfa_struct** link;
 	int links;
 	int link_alloc;
 
 	/* accept state, if any */
 	int valid_token;
-} trie;
+} nfa;
 
 /* ============================================ */
 
-/* "Trie" (i.e. actually NFA used for regex) routines */
+/* "nfa" structure routines */
 
-void add_link(trie* from, trie* to)
+void nfa_add_link(nfa* from, nfa* to)
 {
 	if (++from->links > from->link_alloc)
 		from->link = realloc(from->link, 
-			(from->link_alloc += 5) * sizeof(trie *));
+			(from->link_alloc += 5) * sizeof(nfa *));
 
 	if (!from->link)
 		fail("link array allocation");
@@ -74,15 +74,15 @@ void add_link(trie* from, trie* to)
 	from->link[from->links - 1] = to;
 }
 
-trie* new_trie()
+nfa* new_nfa()
 {
-	trie* t = malloc(sizeof(trie));
+	nfa* t = malloc(sizeof(nfa));
 	int i;
 	if (!t)
-		fail("trie allocation");
-	t->link = malloc(10 * sizeof(trie*));
+		fail("nfa allocation");
+	t->link = malloc(10 * sizeof(nfa*));
 	if (!t->link)
-		fail("trie links");
+		fail("nfa links");
 	t->links = 0;
 	t->link_alloc = 10;
 	for (i = 0; i < 10; i++)
@@ -99,12 +99,12 @@ trie* new_trie()
  * The wannabe-regex string => NFA compiler
  */
 
-void add_token(trie* t, char* tok, int key)
+void add_token(nfa* t, char* tok, int key)
 {
 	int i, j;
 	int c;
-	trie *hist[1024];
-	trie *next;
+	nfa *hist[1024];
+	nfa *next;
 	int len = strlen(tok);
 	char* new_tok;
 	int n;
@@ -120,7 +120,7 @@ void add_token(trie* t, char* tok, int key)
 
 		switch (c) {
 			case 'A':	/* special: set of all letters */
-				next = new_trie();
+				next = new_nfa();
 				for(j = 'a'; j <= 'z'; j++)
 					t->map[j] = next;
 				for(j = 'A'; j <= 'Z'; j++)
@@ -131,7 +131,7 @@ void add_token(trie* t, char* tok, int key)
 				break;
 			case 'B':	/* special: set of all letters 
 					   + all digits */
-				next = new_trie();
+				next = new_nfa();
 				for(j = 'a'; j <= 'z'; j++)
 					t->map[j] = next;
 				for(j = 'A'; j <= 'Z'; j++)
@@ -143,14 +143,14 @@ void add_token(trie* t, char* tok, int key)
 				++n;
 				break;
 			case 'D':	/* special: set of all digits */
-				next = new_trie();
+				next = new_nfa();
 				for(j = '0'; j <= '9'; j++)
 					t->map[j] = next;
 				t = next;
 				++n;
 				break;
 			case 'W':	/* special: whitespace */
-				next = new_trie();
+				next = new_nfa();
 				t->map[' '] = next;
 				t->map['\t'] = next;
 				t = next;
@@ -164,7 +164,7 @@ void add_token(trie* t, char* tok, int key)
 				 * go straight to this node, via
 				 * an epsilon link.
 				 */
-				add_link(hist[n - 1], t);
+				nfa_add_link(hist[n - 1], t);
 				break;
 			case '+':	/* character can repeat
 					   any number of times */
@@ -176,7 +176,7 @@ void add_token(trie* t, char* tok, int key)
 				 * surprises when matching e.g.
 				 * 'a+b+'. Epsilon-link to it.
 				 */
-				add_link(t, hist[++n] = new_trie());
+				nfa_add_link(t, hist[++n] = new_nfa());
 				t = hist[n];
 
 				/* 
@@ -184,14 +184,14 @@ void add_token(trie* t, char* tok, int key)
 				 * all the way back to the node '+' compilation
 				 * started with, to allow repetition.
 				 */
-				add_link(t, hist[n - 2]);
+				nfa_add_link(t, hist[n - 2]);
 
 				/* 
 				 * And finally we make a clean
 				 * new node for further work,
 				 * and epsilon-link to it.
 				 */
-				add_link(t, hist[++n] = new_trie());
+				nfa_add_link(t, hist[++n] = new_nfa());
 				t = hist[n];
 				break;
 			case '*':	/* optional character
@@ -201,18 +201,18 @@ void add_token(trie* t, char* tok, int key)
 				/* same as +, except that the
  				 * second part makes a mutual link */
 
-				add_link(t, hist[++n] = new_trie());
+				nfa_add_link(t, hist[++n] = new_nfa());
 				t = hist[n];
 				
 				/* mutual link */
-				add_link(t, hist[n - 2]);
-				add_link(hist[n - 2], t);
+				nfa_add_link(t, hist[n - 2]);
+				nfa_add_link(hist[n - 2], t);
 
-				add_link(t, hist[++n] = new_trie());
+				nfa_add_link(t, hist[++n] = new_nfa());
 				t = hist[n];
 				break;
 			case 'Q':		/* quotable chars */
-				next = new_trie();
+				next = new_nfa();
 				for(j = 0; j < 256; j++)
 					if (j != '"')
 						t->map[j] = next;
@@ -220,7 +220,7 @@ void add_token(trie* t, char* tok, int key)
 				++n;
 				break;
 			case '.':		/* all chars */
-				next = new_trie();
+				next = new_nfa();
 				for(j = 0; j < 256; j++)
 					t->map[j] = next;
 				t = next;
@@ -232,7 +232,7 @@ void add_token(trie* t, char* tok, int key)
 				c = new_tok[i];
 			default:	/* normal text */
 				if (!t->map[c])
-					t->map[c] = new_trie();
+					t->map[c] = new_nfa();
 				t = t->map[c];
 				++n;
 		}
@@ -252,24 +252,24 @@ void add_token(trie* t, char* tok, int key)
  * wannabe-regex NFA matcher
  */
 
-match_t match(trie* automaton, char* full_text, char* where)
+match_t match(nfa* automaton, char* full_text, char* where)
 {
-	extern match_t match_algo(trie* t, char* full_tok, char* tok,
-		int frk, trie* led, int ledi);
+	extern match_t match_algo(nfa* t, char* full_tok, char* tok,
+		int frk, nfa* led, int ledi);
 
 	return match_algo(automaton, full_text, where, 0, NULL, 0);
 }
 
 /* 
- * trie* t		:	matching automaton / current node
+ * nfa* t		:	matching automaton / current node
  * char* full_tok	:	full text
  * char* tok		: 	where we are now
  * int frk		: 	internal. initially, give 0
- * trie* led		:	internal. start with NULL
+ * nfa* led		:	internal. start with NULL
  * int ledi		:	internal. start with 0
  */	
-match_t match_algo(trie* t, char* full_tok, char* tok, int frk, 
-	trie* led, int ledi)
+match_t match_algo(nfa* t, char* full_tok, char* tok, int frk, 
+	nfa* led, int ledi)
 {
 	int i = 0;
 	int j;
@@ -420,7 +420,7 @@ valid:
 	return m;
 }
 
-trie *t[100];
+nfa *t[100];
 int tc = 0;
 
 #define TOK_FAIL(msg)	\
@@ -614,7 +614,7 @@ void setup_tokenizer()
 	int i = 0;
 
 	for (i = 0; i < 100; i++)
-		t[i] = new_trie();
+		t[i] = new_nfa();
 
 	/* D: any digit; B: letter or digit */
 	add_token(t[tc++], "0D+", TOK_OCTAL_INTEGER);
