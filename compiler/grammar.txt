@@ -1,3 +1,5 @@
+/* XXX: (*p)++ doesn't parse, maybe it should */
+
 /* types */
 /* TODO: structs and whatever else */
 
