@@ -1997,24 +1997,16 @@ char* cheap_relational(exp_tree_t* tree, char *oppcheck)
 {
 	char *sto, *sto2, *sto3;
 	char *str, *str2;
-	sto3 = get_temp_reg();
+	sto3 = get_temp_reg();	/* result */
 	printf("movl $0, %s\n", sto3);
-	sto = codegen(tree->child[0]);
-	str = get_temp_reg();
-	printf("movl %s, %s\n", sto, str);
-	free_temp_reg(sto);
-	sto2 = codegen(tree->child[1]);
-	str2 = get_temp_reg();
-	printf("movl %s, %s\n", sto2, str2);
-	free_temp_reg(sto2);
+	str = registerize(codegen(tree->child[0]));
+	str2 = registerize(codegen(tree->child[1]));
 	printf("cmpl %s, %s\n", str2, str);
 	free_temp_reg(str);
 	free_temp_reg(str2);
 	printf("%s IL%d\n", oppcheck, intl_label);
 	printf("movl $1, %s\n", sto3);
 	printf("IL%d: \n", intl_label++);
-	free_temp_reg(sto);
-	free_temp_reg(sto2);
 	return sto3;
 }
 
