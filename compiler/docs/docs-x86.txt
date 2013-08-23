@@ -123,9 +123,7 @@ structure closely.
 	is an integer. If you try to multiply, subtract more 
 	than two, divide, or remainder pointers, the result 
 	is an unhappy compiler that tells you it won't compile nonsense.
-	If you just add a bunch of numbers, the result is the biggest
-	type of any of the operands' types, so e.g. if you add an
-	int and a char, it is int.
+	If you just add a bunch of numbers, the result is int.
 		
 5. Assignment / compound-assignment operators
 	The left operand must be an lvalue; the right operand 

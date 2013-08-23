@@ -283,6 +283,12 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	 * If pointers are being multiplied or
 	 * divided or remainder'ed, put up
 	 * a warning message.
+	 *
+	 * Operations involving char see their
+	 * result converted to int, because
+	 * codegen() is always supposed to give
+	 * an int-typed result the way the code
+	 * generator is currently designed.
 	 */
 	if (arith_op(tp->head_type) != NULL) {
 		/* initialize type with data from first member */
@@ -311,6 +317,10 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 			td.ty = INT_DECL;
 			td.arr = td.ptr = 0;
 		}
+
+		/* promote char to int */
+		if (td.ty == CHAR_DECL && td.arr == 0 && td.ptr == 0)
+			td.ty = INT_DECL;
 
 		/* warning on strange arithmetic */
 		if (tp->head_type != ADD && td.ptr)
