@@ -1539,6 +1539,40 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* 
+	 * pre-increment, pre-decrement of arbitrary lvalue,
+	 * as in e.g. ++*ptr
+	 * XXX: not tested yet !!!
+	 */
+	if ((tree->head_type == INC
+		|| tree->head_type == DEC)) {
+		sto = registerize(codegen(tree->child[0]));
+		typedat = tree_typeof(tree->child[0]);
+		if (typedat.ptr || typedat.arr) {
+			/*
+			 * It's a pointer, so use `l' suffix
+			 * for the datum itself, but change
+			 * by the size of the pointed-to
+			 * elements.
+			 */
+			sprintf(sbuf, "%sl",
+				tree->head_type == INC ? "add" : "sub");
+			printf("%s $%d, (%s)\n",
+				sbuf, type2siz(deref_typeof(typedat)), sto);
+		} else {
+			/*
+			 * It's not a pointer, so use the
+			 * type's own suffix and change by 1
+			 */
+			sprintf(sbuf, "%s%s",
+				tree->head_type == INC ? "inc" : "dec",
+				siz2suffix(type2siz(typedat)));
+			printf("%s (%s)\n", 
+				sbuf, sto);
+		}
+		return sto;
+	}
+
+	/* 
 	 * post-increment, post-decrement of variable lvalue
 	 * -- this works for int, int *, char, char *
 	 */
