@@ -14,8 +14,9 @@ The (unix shell) scripts to use the x86-targeting compiler are:
 
 Quick example:
 	$ ./build-x86.sh 
-	$ ./compile-run-x86.sh test/procedure 
-	120
+	$ ./compile-run-x86.sh test/x86/square.c 
+	625
+	$ 
 
 The 32-bit x86 code generator outputs GAS assembly and the test scripts
 assemble this using gcc. clang also works; you can modify the scripts to
