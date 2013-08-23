@@ -843,7 +843,6 @@ void setup_symbols(exp_tree_t *tree, int symty)
 	int membsiz;
 	int start_bytes;
 	int decl = tree->head_type;
-	char *suffx = decl2suffix(decl);
 
 	/* Only integer (i.e. char, int) types are supported */
 	if (int_type_decl(decl)) {
