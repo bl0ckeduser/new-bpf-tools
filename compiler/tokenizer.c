@@ -1,16 +1,15 @@
 /*
  * Tokenization code based on wannabe-regex.c,
- * which I wrote last September-August. The old file
- * has more comments, some different features, 
- * and additional bugs. The tokenization is
- * "greedy".
+ * which I wrote September-August 2012.
+ * The tokenization is always "greedy".
+ * It works using my "wannabe-regex" 
+ * NFA pseudo-regex compiler/matcher.
  *
- * Bl0ckeduser, December 2012 - August 2013
+ * Bl0ckeduser, December 2012 - updated August 2013
  */
 
-/* TODO: cleanup some of the more mysterious
- *       parts of the code...
- * FIXME: the automatons never get free()'d !
+/* 
+ * XXX: the automatons never get free()d
  */
 
 #include "tokenizer.h"
@@ -25,14 +24,27 @@ extern void sanity_requires(int exp);
 extern void compiler_fail(char *message, token_t *token,
 	int in_line, int in_chr);
 
+enum {
+	NOT_INSIDE_A_COMMENT,
+	INSIDE_A_C_COMMENT,
+	INSIDE_A_CPP_COMMENT
+};
+
+/* ============================================ */
+
+/* 
+ * Result reporting structure for the NFA matcher
+ */
 typedef struct match_struct {
-	/* accept number, if any */
-	int token;
+	int success;
 	
 	/* pointer to last character matched */
 	char* pos;
 } match_t;
 
+/*
+ * NFA (compiled pattern) structure
+ */
 typedef struct trie_struct {
 	/* character edges */
 	struct trie_struct* map[256];
@@ -48,7 +60,7 @@ typedef struct trie_struct {
 
 /* ============================================ */
 
-/* Trie routines */
+/* "Trie" (i.e. actually NFA used for regex) routines */
 
 void add_link(trie* from, trie* to)
 {
@@ -83,7 +95,9 @@ trie* new_trie()
 
 /* ============================================ */
 
-/* Pattern compiler routine */
+/*
+ * The wannabe-regex string => NFA compiler
+ */
 
 void add_token(trie* t, char* tok, int key)
 {
@@ -235,9 +249,7 @@ void add_token(trie* t, char* tok, int key)
 
 
 /*
- * NFA trie evaluator (uses backtracking) 
- * Has implementation-time hacks, parameters and all
- * (aka bloat)
+ * wannabe-regex NFA matcher
  */
 
 match_t match(trie* automaton, char* full_text, char* where)
@@ -248,7 +260,8 @@ match_t match(trie* automaton, char* full_text, char* where)
 	return match_algo(automaton, full_text, where, 0, NULL, 0);
 }
 
-/* trie* t		:	matching automaton / current node
+/* 
+ * trie* t		:	matching automaton / current node
  * char* full_tok	:	full text
  * char* tok		: 	where we are now
  * int frk		: 	internal. initially, give 0
@@ -278,27 +291,33 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int frk,
 		last_inc = 0;
 		c = tok[i];
 
-		/* check if multiple epsilon edges exist
-		 * and if we are not already in a fork */ 
+		/* 
+		 * Check if multiple epsilon edges exist
+		 * and if we are not already in a fork
+		 */ 
 		if (t->links && !frk)
 		{
-			/* fork for each possibility
-			 * and collect results in an array */
+			/* 
+			 * Fork for each possibility
+			 * and collect results in an array
+			 */
 
 			/* character edge: frk = 1 */
 			if (t->map[c])
 				if ((m = match_algo(t, full_tok, tok + i, 1,
-					led, ledi)).token)
+					led, ledi)).success)
 					ml[mc++] = m;
 
 			/* epsilon edge(s): frk = 2 + link number */
 			for (j = 0; j < t->links; j++)
 				if ((m = match_algo(t, full_tok, tok + i, 
-					j + 2, led, ledi)).token)
+					j + 2, led, ledi)).success)
 					ml[mc++] = m;
 
-			/* if there are multiple epsilon matches,
-			 * be "greedy", i.e. choose longest match. */
+			/* 
+			 * If there are multiple matches, be "greedy",
+			 * i.e. choose the longest match.
+			 */
 			if (mc > 1) {
 				record = 0;
 				choice = NULL;
@@ -316,15 +335,18 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int frk,
 				return m;
 		}
 
-		/* if we are not in an epsilon fork
+		/* 
+		 * If we are not in an explicit 
+		 * epsilon-edge-following fork
 		 * and the character edge exists,
-		 * follow it. */
+		 * follow it. 
+		 */
 		if (frk <= 1 && t->map[c]) {
 			t = t->map[c];
 
 			last_inc = 1;
 
-			/* break loop if in matching state */
+			/* Break loop if in matching state */
 			if (t->valid_token)
 				break;
 			
@@ -332,21 +354,36 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int frk,
 			goto valid;
 		}
 		else if (frk > 1) {
-			/* prevents infinite loops: if the
-			 * link chosen in this fork brings us back
-			 * to the last link followed and the character
-			 * index has not increased since we followed 
-			 * this last link, do not follow it */
+			/* 
+			 * This prevents infinite loops: if the
+			 * epsilon chosen in this fork brings us back
+			 * to the last epsilon followed prior to a fork
+			 * and the character index has not increased
+			 * since we followed this last epsilon, do not
+			 * follow it. 
+			 */
 			if (!(led && t->link[frk - 2] == led
 			    && (int)(&tok[i] - full_tok) == ledi)) {
 
-				/* t->links == 1 is special (???) */
+				/*
+				 * If t->links == 1, then there is
+				 * no epsilon-choice ambiguity, and
+			 	 * therefore no forking is going
+				 * to happen, so the whole infinite
+				 * loops hack doesn't apply.
+				 */
 				if (t->links > 1) {
-					led = t; /* Last Epsilon departure
-						    node */
+					/* last epsilon departure node */
+					led = t;
+					/* last epsilon departure index */
 					ledi = (int)(&tok[i] - full_tok);
 				}
 
+				/* 
+				 * Okay the crazy part is done,
+				 * now just follow the epsilon
+				 * specified by the fork number
+				 */
 				t = t->link[frk - 2];
 					
 				goto valid;
@@ -355,22 +392,29 @@ match_t match_algo(trie* t, char* full_tok, char* tok, int frk,
 
 		break;
 
-		/* clear fork path number after the first
-		 * iteration of the loop, it is not relevant
-		 * afterwards */
-valid:		if (frk)
+valid:	
+		/* 
+		 * Clear the fork path number (if any) after
+		 * the first iteration of the loop --
+	 	 * all it determines is the choice in the
+		 * first iteration of the loop, not anything
+		 * else.
+		 */
+		if (frk)
 			frk = 0;
 
 	} while (i < len && t);
 
-	/* set up the returned structure */
+	/* 
+	 * Set up the result-report structure
+	 */
 	if (t && t->valid_token) {
-		/* match */
-		m.token = t->valid_token;
+		/* Match succeeded */
+		m.success = t->valid_token;
 		m.pos = tok + i + last_inc;
 	} else {
-		/* no match */
-		m.token = 0;
+		/* No match */
+		m.success = 0;
 	}
 
 	return m;
@@ -397,75 +441,110 @@ token_t* tokenize(char *buf)
 	token_t *toks = malloc(4096 * sizeof(token_t));
 	int tok_alloc = 64;
 	int tok_count = 0;
-	int in_comment = 0;
+	int comstat = NOT_INSIDE_A_COMMENT;
 
 	*code_lines = buf;
 
+	/* While there are characters left ... */
 	for (p = buf; *p;) {
-		max = -1;
-
 		/* 
 		 * Choose the matching pattern
+		 * on the code-string from this offset
 		 * that gives the longest match.
-		 * Shit is "meta-greedy".
+		 * One might observe that 
+		 * "shit is meta-greedy",
+		 * because the the pattern-matcher is 
+		 * greedy for ambiguities within a 
+		 * single given pattern, and now
+		 * this loop is being greedy about
+		 * which pattern to choose.
 		 */
+		max = -1;	/* clear record length */
 		for (i = 0; i < tc; i++) {
+			/* try matching pattern number i */
 			m = match(t[i], buf, p);
-			if (m.token) {	/* match has succeeded */
+			/* check if match has succeeded */
+			if (m.success) {
+				/* if match length > record length */
 				if (m.pos - p > max) {
-					c = m;
+					/* update record length to this one */
 					max = m.pos - p;
+					/* store this match as the new key */
+					c = m;
 				}
 			}
 		}
 
 		if (max == -1) {
-			/* matching from this offset failed */
-			if (in_comment) {
-				/* okay to have non-tokens in comments */
+			/* 
+			 * Matching from this offset failed
+			 */
+			if (comstat != NOT_INSIDE_A_COMMENT) {
+				/* It's okay to have non-tokens in comments,
+				 * so just go forward and suck it up */
 				++p;
 				continue;
 			}
-			/* tokenization failed */
-			TOK_FAIL("tokenization failed -- unknown pattern");
+			else
+				/* Not in a comment, so tokenization has really failed */
+				TOK_FAIL("tokenization failed -- unknown pattern");
 		} else {
-			/* spot keywords. they are initially
-			 * recognized as identifiers. */
-			if (c.token == TOK_IDENT) {
+			/*
+			 * Matching from this offset has suceeded
+			 */
+
+			/* 
+			 * Spot keywords. They are initially
+			 * recognized as identifiers. 
+			 */
+			if (c.success == TOK_IDENT) {
 				strncpy(buf2, p, max);
 				buf2[max] = 0;
 				for (i = 0; i < KW_COUNT; i++) {
 					if (!strcmp(buf2, kw_tab[i].str))
-						c.token = kw_tab[i].tok;
+						c.success = kw_tab[i].tok;
 				}
 			}
 
-			/* comments */
-			if (c.token == C_CMNT_OPEN) {
-				if (in_comment == 2)
-					TOK_FAIL("nested comments are illegal");
-				in_comment = 2;
-			} else if (c.token == C_CMNT_CLOSE) {
-				if (in_comment == 2) {
-					in_comment = 0;
+			/*
+			 * Deal with comment stuff
+			 */
+			/* Open a C comment if not already in one */
+			if (c.success == C_CMNT_OPEN) {
+				if (comstat == INSIDE_A_C_COMMENT)
+					TOK_FAIL("Please do not nest C comments");
+				comstat = INSIDE_A_C_COMMENT;
+			/* C comment closes are allowed if a C comment
+			 * has already been opened */
+			} else if (c.success == C_CMNT_CLOSE) {
+				if (comstat == INSIDE_A_C_COMMENT) {
+					comstat = NOT_INSIDE_A_COMMENT;
 					goto advance;
 				} else {
-					TOK_FAIL("dafuq is a */ doing there ?");
+					TOK_FAIL("Dafuq is a */ doing there ?");
 				}
-			} else if (c.token == CPP_CMNT) {
-				if (in_comment == 2)
-					TOK_FAIL("don't mix and nest comments, please");
-				in_comment = 1;		
+			/* Start a C++ comment, unless already in a C comment */
+			} else if (c.success == CPP_CMNT) {
+				if (comstat == INSIDE_A_C_COMMENT)
+					TOK_FAIL("Don't mix and nest comments, please");
+				comstat = INSIDE_A_CPP_COMMENT;	
 			}
-			if (in_comment == 1 && c.token == TOK_NEWLINE) {
-				in_comment = 0;
+			/* C++ comments end at the end of their line */
+			if (comstat == INSIDE_A_CPP_COMMENT
+				&& c.success == TOK_NEWLINE) {
+				comstat = NOT_INSIDE_A_COMMENT;
 				goto advance;
 			}
 
-			/* add token to the tokens array */
-			if (c.token != TOK_WHITESPACE
-			 && c.token != TOK_NEWLINE
-			 && !in_comment) {
+			/* 
+			 * Add token to the tokens array
+			 * if it's not inside a comment
+			 * and it's not useless whitespace
+			 */
+			if (c.success != TOK_WHITESPACE
+			 && c.success != TOK_NEWLINE
+			 && comstat == NOT_INSIDE_A_COMMENT) {
+				/* Expand token array if necessary */
 				if (++tok_count > tok_alloc) {
 					tok_alloc = tok_count + 64;
 					toks = realloc(toks,
@@ -473,7 +552,13 @@ token_t* tokenize(char *buf)
 					if (!toks)
 						fail("resize tokens array");
 				}
-				toks[tok_count - 1].type = c.token;
+			
+				/* 
+				 * Build the token pointer stuff,
+				 * and also add a bunch of debug tracing
+				 * crap
+				 */
+				toks[tok_count - 1].type = c.success;
 				toks[tok_count - 1].start = p;
 				toks[tok_count - 1].len = max;
 				toks[tok_count - 1].from_line = line;
@@ -482,14 +567,19 @@ token_t* tokenize(char *buf)
 			}
 
 advance:
-			/* move forward in the string */
+			/* 
+			 * Move forward in the string by the length
+			 * of the match, or otherwise by 1 character
+			 */
 			p += max;
 			if (max == 0)
 				++p;
 
-			/* line accounting (useful for
-		 	 * pretty parse-fail diagnostics) */
-			if (c.token == TOK_NEWLINE) {
+			/* 
+			 * Line accounting (useful for
+		 	 * pretty parse-fail diagnostics)
+			 */
+			if (c.success == TOK_NEWLINE) {
 				code_lines[line] = line_start;
 				++line;
 				line_start = p;
@@ -513,12 +603,15 @@ tok_fail:
 		line, p - line_start + 1);
 }
 
+/* 
+ * Set up the wannabe-regex automatons
+ * that match the various tokens. Maybe
+ * this could be rewritten as an array
+ * initializer...
+ */
 void setup_tokenizer()
 {
 	int i = 0;
-
-	/* set up the automatons that
-	 * match the various token types */
 
 	for (i = 0; i < 100; i++)
 		t[i] = new_trie();
