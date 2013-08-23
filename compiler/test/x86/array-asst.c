@@ -57,6 +57,17 @@ main()
 	printf("%c\n", *(char *)foo);
 	printf("%d\n", *(int *)foo);
 
+	/* test arbitrary-pointee-size pointer dereferenced assignments */
+	buf[55] = 'A';
+	buf[56] = 'B';
+	buf[57] = 'C';
+	ptr1 = &buf[56];
+	*ptr1 = 'E';
+	putchar(buf[55]);
+	putchar(buf[56]);
+	putchar(buf[57]);
+	printf("\n");
+
 	/* array pre-increments, pre-decrements */
 	buf[100] = 30;
 	++buf[100];

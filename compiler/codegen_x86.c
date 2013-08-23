@@ -1552,11 +1552,17 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == DEREF) {
 
-		/* XXX: assumes int */
-
 		sto = registerize(codegen(tree->child[0]->child[0]));
 		sto2 = registerize(codegen(tree->child[1]));
-		printf("movl %s, (%s)\n", sto2, sto);
+
+		/* byte size of pointee (sic) */
+		membsiz = type2siz(deref_typeof(
+			tree_typeof(tree->child[0]->child[0])));
+
+		printf("mov%s %s, (%s)\n", 
+			siz2suffix(membsiz),
+			fixreg(sto2, membsiz),
+			sto);
 
 		return sto2;
 	}
