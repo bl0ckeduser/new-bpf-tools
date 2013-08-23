@@ -12,7 +12,7 @@
 
 /* ====================================================== */
 
-#define SYMLEN 64
+#define SYMLEN 256
 
 #include "tree.h"
 #include "tokens.h"
