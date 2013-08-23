@@ -58,7 +58,7 @@ char current_proc[SYMLEN];
 char symtab[256][SYMLEN] = {""};
 int syms = 0;			/* count */
 int symbytes = 0;		/* stack size in bytes */
-int symsiz[256] = {0};	/* size of each object */
+int symsiz[256] = {0};		/* size of each object */
 typedesc_t symtyp[256];
 
 /* Table of global symbols */
@@ -70,7 +70,7 @@ typedesc_t globtyp[256];
 char arg_symtab[256][SYMLEN] = {""};
 int arg_syms = 0;		/* count */
 int argbytes = 0;		/* total size in bytes */
-int argsiz[256] = {0};	/* size of each object */
+int argsiz[256] = {0};		/* size of each object */
 typedesc_t argtyp[256];
 
 /* Table of string-constant symbols */
@@ -85,11 +85,11 @@ char tm_used[TEMP_MEM];
 
 int proc_ok = 1;
 int else_ret;			/* used for "else return" optimization */
-int main_defined = 0;	/* set if user-defined main() exists */
+int main_defined = 0;		/* set if user-defined main() exists */
 int ccid = 0;
 
 int stack_size;
-int intl_label = 0; /* internal label numbering */
+int intl_label = 0; 		/* internal label numbering */
 
 char entry_buf[1024], buf[1024];
 
@@ -814,7 +814,7 @@ char *decl2suffix(char ty)
 }
 
 /*
- * 		Byte size of an integer object
+ * Byte size of an integer object
  * =>	GAS instruction suffix
  */
 char *siz2suffix(char siz)
