@@ -53,6 +53,7 @@ enum {		/* head_type */
 	TO_DECL_STMT,
 	TO_UNK,
 	TO_BLOCK,
+	BREAK,
 	/* special */
 	NULL_TREE
 };
@@ -107,6 +108,7 @@ static char* tree_nam[] = {
 	"TO_DECL_STMT",
 	"TO_UNK",
 	"TO_BLOCK",
+	"BREAK",
 	"NULL_TREE"
 };
 

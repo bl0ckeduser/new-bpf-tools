@@ -45,6 +45,7 @@ block := expr ';'
 	| goto ident ';'
 	| ['proc'] ident '(' ident { ',' ident } ')' block
 	| 'return' expr ';'
+	| 'break' ';'
 
 expr := lvalue asg-op expr 
 	| ccor_expr

@@ -316,6 +316,7 @@ multi_array_access:
 		| goto ident ';'
 		| ['proc'] ident '(' ident { ',' ident } ')' block
 		| 'return' expr ';'
+		| 'break' ';'
 */
 exp_tree_t block()
 {
@@ -411,6 +412,12 @@ not_proc:
 	if (valid_tree(tree = decl())) {
 		need(TOK_SEMICOLON);
 		return tree;
+	}
+	/* 'break' ';' */
+	if ((tok = peek()).type == TOK_BREAK) {
+		++indx;
+		need(TOK_SEMICOLON);
+		return new_exp_tree(BREAK, &tok);
 	}
 	/* if (expr) block1 [ else block2 ] */
 	if(peek().type == TOK_IF) {

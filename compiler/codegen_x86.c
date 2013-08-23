@@ -91,6 +91,15 @@ int intl_label = 0; /* internal label numbering */
 
 char entry_buf[1024], buf[1024];
 
+/* 
+ * Stuff for `break' labels in WHILEs.
+ * note that the parser turns FORs into
+ * equivalent WHILEs so effectively this only
+ * applies to WHILEs
+ */
+int break_count = 0;
+int break_labels[256];
+
 /* ====================================================== */
 
 void codegen_fail(char *msg, token_t *tok)
@@ -1952,11 +1961,23 @@ char* codegen(exp_tree_t* tree)
 		free_temp_reg(str);
 		free_temp_reg(str2);
 		printf("je IL%d\n",	lab2);
+		/* open break-scope */
+		break_labels[++break_count] = lab2;
 		/* codegen the block */
 		codegen(tree->child[1]);
 		/* jump back to the conditional */
 		printf("jmp IL%d\n", lab1);
 		printf("IL%d: \n", lab2);
+		/* close break-scope */
+		--break_count;
+		return NULL;
+	}
+
+	/* break */
+	if (tree->head_type == BREAK) {
+		if (!break_count)
+			codegen_fail("break outside of a loop", tree->tok);
+		printf("jmp IL%d # break\n", break_labels[break_count]);
 		return NULL;
 	}
 
@@ -2090,11 +2111,15 @@ char* optimized_while(exp_tree_t* tree, char *oppcheck)
 	free_temp_reg(sto);
 	free_temp_reg(sto2);
 	printf("%s IL%d\n",	oppcheck, lab2);
+	/* open break-scope */
+	break_labels[++break_count] = lab2;
 	/* codegen the block */
 	codegen(tree->child[1]);
 	/* jump back to the conditional */
 	printf("jmp IL%d\n", lab1);
 	printf("IL%d: \n", lab2);
+	/* close break-scope */
+	--break_count;
 	return NULL;
 }
 
