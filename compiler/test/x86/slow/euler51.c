@@ -41,10 +41,8 @@ populate()
 	}
 }
 
-fill_sieve(a_sieve, max)
+fill_sieve(char *sieve, max)
 {
-	/* XXX: char *sieve argument */
-	char *sieve = (char *)a_sieve;
 	int n, k;
 	sieve[1] = 0;
 	k = 2;
@@ -61,10 +59,8 @@ fill_sieve(a_sieve, max)
 	}
 }
 
-biggest_match(a_patt, len)
+biggest_match(char *patt, len)
 {
-	/* XXX: char *patt argument */
-	char *patt = (char *)a_patt;
 	int i;
 	int res = 0;
 
@@ -79,10 +75,8 @@ biggest_match(a_patt, len)
 	return res / 10;
 }
 
-smallest_match(a_patt, len)
+smallest_match(char *patt, len)
 {
-	/* XXX: char *patt argument */
-	char *patt = (char *)a_patt;
 	int i;
 	int res = 0;
 
@@ -97,10 +91,8 @@ smallest_match(a_patt, len)
 	return res / 10;
 }
 
-match(a_patt, num, len)
+match(char *patt, num, len)
 {
-	/* XXX: char *patt argument */
-	char *patt = (char *)a_patt;
 	int i = 0;
 	int var = -1;
 
@@ -126,10 +118,8 @@ match(a_patt, num, len)
 	return 0;
 }
 
-print_patt(a_patt, len)
+print_patt(char *patt, len)
 {
-	/* XXX: char *patt argument */
-	char *patt = (char *)a_patt;
 	int i;
 	for (i = len - 1; i >= 0; --i) {
 		if (patt[i] < 11)
@@ -140,13 +130,9 @@ print_patt(a_patt, len)
 	}
 }
 
-print_matches(a_patt, a_sieve, len)
+print_matches(char *patt, char *sieve, len)
 {
 	int i;
-	/* XXX: char *patt argument */
-	char *patt = (char *)a_patt;
-	/* XXX: char *sieve argument */
-	char *sieve = (char *)a_sieve;
 	for (i = minnum[len]; i < 2000000; ++i) {
 		if (i > maxnum[len])
 			break;

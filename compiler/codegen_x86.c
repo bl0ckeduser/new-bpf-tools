@@ -104,6 +104,14 @@ int break_labels[256];
 
 /* ====================================================== */
 
+token_t argvartok(exp_tree_t *arg)
+{
+	if (arg->child[0]->head_type == VARIABLE)
+		return *(arg->child[0]->tok);
+	else
+		return *(arg->child[1]->tok);
+}
+
 void codegen_fail(char *msg, token_t *tok)
 {
 	compiler_fail(msg, tok, 0, 0);
@@ -557,12 +565,6 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 		if (strlen(args[i]) >= SYMLEN)
 			compiler_fail("argument name too long", findtok(tree), 0, 0);
 		strcpy(arg_symtab[arg_syms], args[i]);
-		/* XXX: assumes int args */
-		argtyp[arg_syms].ty = INT_DECL;
-		argtyp[arg_syms].arr = 0;
-		argtyp[arg_syms].ptr = 0;
-		argsiz[arg_syms] = 4;
-		argbytes += 4;
 		++arg_syms;
 	}
 
@@ -1315,28 +1317,50 @@ char* codegen(exp_tree_t* tree)
 
 	/* procedure definition */
 	if (tree->head_type == PROC) {
-		if (!proc_ok)
-			compiler_fail("proc not allowed here", tree->tok, 0, 0);
-
-		/* put the list of arguments in char *proc_args */
-		/* 
-		 * XXX: if types were taken in consideration,
-		 * a similar list for types would have to be
-		 * built and codegen_proc() amended to accept
-		 * it as an argument
+		/*
+		 * Can't nest procedure definitions
 		 */
+		if (!proc_ok)
+			compiler_fail("function definition not allowed here", 
+				findtok(tree), 0, 0);
+
+		/* 
+		 * Put the list of arguments in char *proc_args,
+		 * and also populate the argument type descriptions table
+		 */
+		argbytes = 0;
 		if (tree->child[0]->child_count) {
 			for (i = 0; tree->child[0]->child[i]; ++i) {
+				/* copy argument name string to proc_args[i] */
 				buf = malloc(64);
 				strcpy(buf, get_tok_str
-					(*(tree->child[0]->child[i]->tok)));
+					(argvartok(tree->child[0]->child[i])));
 				proc_args[i] = buf;
+
+				#ifdef DEBUG
+				/* debug-print argument type info */
+				fprintf(stderr, "%s: \n",
+					get_tok_str(argvartok(tree->child[0]->child[i])));
+				dump_td(tree_typeof(tree->child[0]->child[i]));
+				#endif
+
+				/* obtain and store argument type data */
+				argtyp[i] = tree_typeof(tree->child[0]->child[i]);
+
+				/* if not type specified, default to int */
+				if (argtyp[i].ty == TO_UNK)
+					argtyp[i].ty = INT_DECL;
+
+				/* calculate byte offsets */
+				argsiz[i] = type2siz(argtyp[i]);
+				argbytes += argsiz[i];
+
 			}
 			proc_args[i] = NULL;
 		} else
 			*proc_args = NULL;
 
-		/* can't nest procedure definitions */
+		/* prevent nested procedure defs */
 		proc_ok = 0;
 
 		/* 
@@ -1350,6 +1374,7 @@ char* codegen(exp_tree_t* tree)
 			proc_args);
 		free(buf);
 
+		/* okay you can define procedures again now */
 		proc_ok = 1;
 
 		return NULL;

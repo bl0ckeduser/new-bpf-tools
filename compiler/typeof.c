@@ -170,8 +170,11 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	/*
 	 * Explicit casts are what this module is really
 	 * meant to parse and they give their type away ;)
+	 *
+	 * note: argument declarations use the same parse as casts for now.
 	 */
-	if (tp->head_type == CAST) {
+	if (tp->head_type == CAST 
+		|| (tp->head_type == ARG && tp->child[0]->head_type == CAST_TYPE)) {
 		if (tp->child[0]->child[0]->head_type != BASE_TYPE
 			|| tp->child[0]->child[0]->child_count != 1) {
 			/* XXX: TODO: casts to non-basic-type-based stuff */

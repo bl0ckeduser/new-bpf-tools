@@ -12,15 +12,12 @@
  * August 23, 2013
  */
 
-fail(s) {
-	puts((char *)s); exit(1);
+fail(char *s) {
+	puts(s); exit(1);
 }
 
-permut(n, i_avail, i_prev)
+permut(n, char *avail, char *prev)
 {
-	/* XXX: clean up (char *) mess when compiler adds arg types */
-	char *avail = (char *)i_avail;
-	char *prev = (char *)i_prev;
 	int i, j;
 	char child_avail[100];
 	char chars[100];

@@ -24,6 +24,7 @@ exp_tree_t decl();
 exp_tree_t decl2();
 exp_tree_t cast();
 exp_tree_t cast_type();
+exp_tree_t arg();
 int decl_dispatch(char type);
 
 void printout(exp_tree_t et);
@@ -314,7 +315,7 @@ multi_array_access:
 		| instr '(' expr1, expr2, ..., exprN ')' ';'
 		| ident ':'
 		| goto ident ';'
-		| ['proc'] ident '(' ident { ',' ident } ')' block
+		| ['proc'] ident '(' arg { ',' arg } ')' block
 		| 'return' expr ';'
 		| 'break' ';'
 */
@@ -346,6 +347,8 @@ exp_tree_t block()
 			goto not_proc;		
 		++indx;
 		while (peek().type != TOK_RPAREN) {
+			if (is_basic_type(peek().type))
+				goto is_proc;
 			if (peek().type != TOK_IDENT)
 				goto not_proc;
 			++indx;
@@ -359,16 +362,17 @@ exp_tree_t block()
 		++indx;
 		if (peek().type != TOK_LBRACE)
 			goto not_proc;
-		else
-			indx = sav_indx + 1;
+is_proc:
+		indx = sav_indx + 1;
 proc_parse:
 		tree = new_exp_tree(PROC, &tok);
 		/* argument list */
 		subtree = new_exp_tree(ARG_LIST, NULL);
 		need(TOK_LPAREN);
 		while (peek().type != TOK_RPAREN) {
-			tok = need(TOK_IDENT);
-			subtree2 = new_exp_tree(VARIABLE, &tok);
+			subtree2 = arg();
+			if (!valid_tree(subtree2))
+				parse_fail("argument expected");
 			add_child(&subtree, alloc_exptree(subtree2));
 			if (peek().type != TOK_RPAREN)
 				need(TOK_COMMA);
@@ -557,6 +561,24 @@ not_proc:
 	}
 
 	return null_tree;
+}
+
+/*
+	arg := [cast-type] ident
+*/
+exp_tree_t arg()
+{
+	exp_tree_t ct;
+	exp_tree_t at = new_exp_tree(ARG, NULL);
+	token_t tok;
+
+	if (valid_tree((ct = cast_type())))
+		add_child(&at, alloc_exptree(ct));
+	tok = need(TOK_IDENT);
+	add_child(&at, alloc_exptree(
+		new_exp_tree(VARIABLE, &tok)));
+
+	return at;
 }
 
 /*
