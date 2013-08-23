@@ -295,13 +295,14 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	}
 
 	/*
-	 * Increments / decrements: return
-	 * type of operand
+	 * Increments, decrements, negative sign:
+	 * return type of operand
 	 */
 	if (tp->head_type == INC
 		 || tp->head_type == DEC
 		 || tp->head_type == POST_INC
-		 || tp->head_type == POST_DEC) {
+		 || tp->head_type == POST_DEC
+		 || tp->head_type == NEGATIVE) {
 		return tree_typeof_iter(td, tp->child[0]);
 	}
 
