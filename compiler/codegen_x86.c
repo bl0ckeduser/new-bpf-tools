@@ -863,15 +863,10 @@ void setup_symbols(exp_tree_t *tree, int symty)
 			if (stars)
 				dc->child_count = newlen;
 
-			/*
-			 * The default member size is sizeof(basetype),
-			 * but if it's an array or a pointer 32 bits
-			 *  = 4 bytes are needed.
+			/* 
+			 * Figure out size of array members, in bytes
 			 */
-			if (stars || check_array(dc))
-				membsiz = 4;
-			else
-				membsiz = decl2siz(decl);
+			membsiz = type2siz(mk_typedesc(decl, stars, check_array(dc)));
 
 			/* Add some padding; otherwise werid glitches happen */
 			if (membsiz < 4 && !check_array(dc))
