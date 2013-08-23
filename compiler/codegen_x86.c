@@ -581,11 +581,13 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	}
 
 	/* Make the symbol and label for the procedure */
-#ifndef MINGW_BUILD
+#ifdef MINGW_BUILD
+	/* printf(".type _%s, @function\n", name); */
+	printf("_%s:\n", name);
+#else
 	printf(".type %s, @function\n", name);
-#endif
 	printf("%s:\n", name);
-
+#endif
 	/* 
 	 * Populate the symbol table with the
 	 * function's local variables and set aside
@@ -661,12 +663,6 @@ void run_codegen(exp_tree_t *tree)
 	extern void deal_with_procs(exp_tree_t *tree);
 	extern void deal_with_str_consts(exp_tree_t *tree);
 
-#ifdef MINGW_BUILD
-	char main_name[] = "_main";
-#else
-	char main_name[] = "main";
-#endif
-
 	/*
 	 * Define the format used for printf()
 	 * in the echo() code, then code the
@@ -697,7 +693,11 @@ void run_codegen(exp_tree_t *tree)
 
 	/* Don't ask me why this is necessary */
 	printf(".section .text\n");
-	printf(".globl %s\n\n", main_name);
+#ifdef MINGW_BUILD
+	printf(".globl _main\n\n");
+#else
+	printf(".globl main\n\n");
+#endif
 
 	/* 
 	 * We deal with the procedures separately
@@ -716,7 +716,7 @@ void run_codegen(exp_tree_t *tree)
 	 * the main-code.
 	 */
 	if (!main_defined)
-		codegen_proc(main_name, tree, main_args);
+		codegen_proc("main", tree, main_args);
 
 	/*
 	 * Code a builtin echo(int n) utility routine
@@ -1352,8 +1352,11 @@ char* codegen(exp_tree_t* tree)
 		/* 
 		 * Call the subroutine
 		 */
+#ifdef MINGW_BUILD
+		printf("call _%s\n", get_tok_str(*(tree->tok)));
+#else
 		printf("call %s\n", get_tok_str(*(tree->tok)));
-
+#endif
 		/* 
 		 * Throw off the arguments from the stack
 		 */
