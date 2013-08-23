@@ -4,6 +4,7 @@ main() {
 	int *ptr = i + foo;
 	char **bob;
 	char **bob2;
+	char **bob3;
 
 	i[4] = 123;
 	printf("%d\n", *(i + foo));
@@ -22,5 +23,9 @@ main() {
 	bob = malloc(1024);
 	bob[0] = "HERP";
 	bob[1] = "DERP";
+	bob[2] = "HAX";
 	puts(*++bob);
+
+	bob3 = &bob[1];
+	puts(*bob3);
 }

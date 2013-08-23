@@ -1122,7 +1122,8 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* &(a[v]) = a + membsiz * v 
-	 * -- this works for `a' of type int or char,
+	 * -- this works for `a' of type int, char, char **,
+	 * (and probably anything else at this point),
 	 * at least assuming the index expression cleanly
 	 * compiles to an int. note that it is legal for
 	 * all the instructions to have `l' suffix because
@@ -1132,7 +1133,8 @@ char* codegen(exp_tree_t* tree)
 		&& tree->child_count == 1
 		&& tree->child[0]->head_type == ARRAY) {
 
-		membsiz = decl2siz(sym_lookup_type(tree->child[0]->child[0]->tok).ty);
+		membsiz = type2siz(deref_typeof(
+			sym_lookup_type(tree->child[0]->child[0]->tok)));
 
 		sto = get_temp_reg();
 
