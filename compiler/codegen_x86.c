@@ -1474,7 +1474,8 @@ char* codegen(exp_tree_t* tree)
 		return sym_s;
 	}
 
-	/* pre-increment, pre-decrement of array lvalue */
+	/* pre-increment, pre-decrement of array lvalue
+	 * -- has been tested for array of char, int, char*  */
 	if ((tree->head_type == INC
 		|| tree->head_type == DEC)
 		&& tree->child[0]->head_type == ARRAY) {
@@ -1486,20 +1487,28 @@ char* codegen(exp_tree_t* tree)
 		str = codegen(tree->child[0]->child[1]);
 		sto2 = registerize(str);
 
+		/* byte size of array members */
+		membsiz = type2siz(
+			deref_typeof(sym_lookup_type(tree->child[0]->child[0]->tok)));
+
 		/* build pointer */
 		sto = get_temp_reg();
-		/* XXX: FIXME: assumes int */
-		printf("imull $4, %s\n", sto2);
+		printf("imull $%d, %s\n", membsiz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
 		printf("movl %s, %s\n", sto2, sto);
 		free_temp_reg(sto2);
 
 		/* write the final move */
 		sto3 = get_temp_reg();
-		printf("%s (%s)\n", 
-			tree->head_type == DEC ? "decl" : "incl",
+		printf("%s%s (%s)\n", 
+			tree->head_type == DEC ? "dec" : "inc",
+			siz2suffix(membsiz),
 			sto);
-		printf("movl (%s), %s\n", sto, sto3);
+
+		/* convert final result to int */
+		printf("%s (%s), %s\n", 
+			move_conv_to_long(membsiz),
+			sto, sto3);
 		free_temp_reg(sto);
 		return sto3;
 	}

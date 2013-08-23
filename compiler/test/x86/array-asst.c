@@ -7,6 +7,7 @@ main()
 	char c_index;
 	int i_index;
 	char *foo = malloc(0xF);
+	char *strings[32];
 
 	for (i = 0; i < 7 * 10; ++i)
 		if (i % 7 == 6) {
@@ -56,8 +57,24 @@ main()
 	printf("%c\n", *(char *)foo);
 	printf("%d\n", *(int *)foo);
 
-	/* check the sizes of int and char */
+	/* array pre-increments, pre-decrements */
+	buf[100] = 30;
+	++buf[100];
+	printf("%d\n", buf[100]);
+	--buf[100];
+	printf("%d\n", buf[100]);
+	derp[100] = 456;
+	++derp[100];
+	printf("%d\n", derp[100]);
+	--derp[100];
+	printf("%d\n", derp[100]);
+	strings[14] = "abracadabra";
+	++strings[14];
+	puts(strings[14]);
+	puts(++strings[14]);
+	puts(--strings[14]);
 
+	/* check the sizes of int and char */
 	ptr1 = &buf[5];
 	ptr2 = &buf[0];
 	printf("%d = 5 ?\n", ptr1 - ptr2);
