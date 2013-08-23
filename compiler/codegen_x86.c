@@ -198,6 +198,40 @@ char* get_temp_reg() {
 	fail("out of registers");
 }
 
+/*
+ * A version of get_temp_reg() which tries
+ * to deal with some x86 annoyances.
+ */
+char* get_temp_reg_siz(int siz) {
+	int i;
+
+	/* 
+	 * For non-movb stuff, try to grab esi, edi
+	 * first, because movb can't use it (see below)
+	 */
+	if (siz == 4) {
+		for (i = 4 /* index of %esi */; i < TEMP_REGISTERS; ++i)
+			if (!ts_used[i]) {
+				ts_used[i] = 1;
+				return temp_reg[i];
+			}
+	}
+
+	for (i = 0; i < TEMP_REGISTERS; ++i)
+		if (!ts_used[i]) {
+			/* Error: `%esi' not allowed with `movb' */
+			if (siz == 1 && !strcmp(temp_reg[i], "%esi"))
+				continue;
+			/* Error: `%edi' not allowed with `movb' */
+			if (siz == 1 && !strcmp(temp_reg[i], "%edi"))
+				continue;
+			ts_used[i] = 1;
+			return temp_reg[i];
+		}
+	fail("out of registers");
+}
+
+
 /* 
  * Explicitly let go of a temporary register 
  */
@@ -878,7 +912,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 					 */
 					sym_num = array_ptr = sym_add(dc->child[0]->tok, 4);
 				}
-				str = get_temp_reg();
+				str = get_temp_reg_siz(4);
 				sprintf(buf, "leal %s, %s\n",
 					symstack(start_bytes + sto * membsiz),
 					str);
@@ -1020,10 +1054,32 @@ char *registerize_from(char *stor, int fromsiz)
 	int i;
 	char* str;
 	
-	str = get_temp_reg();
+	str = get_temp_reg_siz(fromsiz);
 	printf("%s %s, %s\n", 
 		move_conv_to_long(fromsiz), 
-		fixreg(stor, fromsiz), str);
+		fixreg(stor, fromsiz), str, fromsiz);
+	return str;
+}
+
+char* registerize_siz(char *stor, int siz)
+{
+	int is_reg = 0;
+	int i;
+	char* str;
+
+	/* Error: `%esi' not allowed with `movb' */
+	/* Error: `%edi' not allowed with `movb' */
+	if (siz == 1 
+		&& (!strcmp(stor, "%esi") || !strcmp(stor, "%edi"))) {
+		free_temp_reg(stor);
+	}
+	else
+		for (i = 0; i < TEMP_REGISTERS; ++i)
+			if (!strcmp(stor, temp_reg[i]))
+				return stor;
+	
+	str = get_temp_reg_siz(siz);
+	printf("movl %s, %s\n", stor, str);
 	return str;
 }
 
@@ -1083,7 +1139,7 @@ char* codegen(exp_tree_t* tree)
 
 	/* "bob123" */
 	if (tree->head_type == STR_CONST) {
-		sto = get_temp_reg();
+		sto = get_temp_reg_siz(4);
 		printf("movl $_str_const_%d, %s\n",
 			str_const_lookup(tree->tok),
 			sto);
@@ -1095,7 +1151,7 @@ char* codegen(exp_tree_t* tree)
 		&& tree->child_count == 1
 		&& tree->child[0]->head_type == VARIABLE) {
 		
-		sto = get_temp_reg();
+		sto = get_temp_reg_siz(4);
 
 		/* LEA: load effective address */
 		printf("leal %s, %s\n",
@@ -1120,7 +1176,7 @@ char* codegen(exp_tree_t* tree)
 		membsiz = type2siz(deref_typeof(
 			sym_lookup_type(tree->child[0]->child[0]->tok)));
 
-		sto = get_temp_reg();
+		sto = get_temp_reg_siz(4);
 
 		/* load base address */
 		printf("movl %s, %s\n",
@@ -1134,7 +1190,8 @@ char* codegen(exp_tree_t* tree)
 		 * so no type-conversion worries
 		 * if the array index is not an `int'
 		 */
-		sto2 = registerize(codegen(tree->child[0]->child[1]));
+		sto2 = registerize_siz(codegen(tree->child[0]->child[1]),
+				membsiz);
 
 
 		/* multiply index byte-offset by size of members */
@@ -1150,15 +1207,15 @@ char* codegen(exp_tree_t* tree)
 	/* *(exp) */
 	if (tree->head_type == DEREF
 		&& tree->child_count == 1) {
-		
-		sto = registerize(codegen(tree->child[0]));
-		sto2 = get_temp_reg();
-
 		/* 
 		 * Find byte size of *exp
 	     */
 		membsiz = type2siz(
 			deref_typeof(tree_typeof(tree->child[0])));
+		
+		sto = registerize_siz(codegen(tree->child[0]), membsiz);
+		sto2 = get_temp_reg_siz(membsiz);
+
 
 		/* Check for crazy wack situations like *3 */
 		if (membsiz <= 0) {
@@ -1402,7 +1459,7 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == CC_NOT) {
 		my_ccid = ccid++;
 		sto = codegen(tree->child[0]);
-		sto2 = get_temp_reg();
+		sto2 = get_temp_reg_siz(4);
 		/* 
 		 * XXX: assumes codegen() always
 		 * returns int, which atm it does,
@@ -1421,7 +1478,7 @@ char* codegen(exp_tree_t* tree)
 	/* && - and with short-circuit */
 	if (tree->head_type == CC_AND) {
 		my_ccid = ccid++;
-		sto2 = get_temp_reg();
+		sto2 = get_temp_reg_siz(4);
 		/* 
 		 * XXX: assumes codegen() always
 		 * returns int, which atm it does,
@@ -1442,7 +1499,7 @@ char* codegen(exp_tree_t* tree)
 	/* || - or with short-circuit */
 	if (tree->head_type == CC_OR) {
 		my_ccid = ccid++;
-		sto2 = get_temp_reg();
+		sto2 = get_temp_reg_siz(4);
 		/* 
 		 * XXX: assumes codegen() always
 		 * returns int, which atm it does,
@@ -1514,7 +1571,7 @@ char* codegen(exp_tree_t* tree)
 			deref_typeof(sym_lookup_type(tree->child[0]->child[0]->tok)));
 
 		/* build pointer */
-		sto = get_temp_reg();
+		sto = get_temp_reg_siz(4);
 		if (membsiz != 1)
 			printf("imull $%d, %s\n", membsiz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
@@ -1522,7 +1579,7 @@ char* codegen(exp_tree_t* tree)
 		free_temp_reg(sto2);
 
 		/* write the final move */
-		sto3 = get_temp_reg();
+		sto3 = get_temp_reg_siz(membsiz);
 		printf("%s%s (%s)\n", 
 			tree->head_type == DEC ? "dec" : "inc",
 			siz2suffix(membsiz),
@@ -1610,15 +1667,16 @@ char* codegen(exp_tree_t* tree)
 	/* pointer assignment, e.g. "*ptr = 123" */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == DEREF) {
-
-		sto = registerize(codegen(tree->child[0]->child[0]));
-		sto2 = registerize(codegen(tree->child[1]));
-
 		/* byte size of pointee (sic) */
 		membsiz = type2siz(deref_typeof(
 			tree_typeof(tree->child[0]->child[0])));
 
-		printf("mov%s %s, (%s)\n", 
+		sto = registerize_siz(codegen(tree->child[0]->child[0]),
+				membsiz);
+		sto2 = registerize_siz(codegen(tree->child[1]),
+				membsiz);
+
+		printf("mov%s %s, (%s) #ptra\n", 
 			siz2suffix(membsiz),
 			fixreg(sto2, membsiz),
 			sto);
@@ -1651,7 +1709,7 @@ char* codegen(exp_tree_t* tree)
 			/* optimized code for two operands of same size */
 			membsiz = type2siz(tree_typeof(tree->child[0]));
 			sto = sym_lookup(tree->child[1]->tok);
-			sto2 = get_temp_reg();
+			sto2 = get_temp_reg_siz(membsiz);
 			printf("mov%s %s, %s\n", 
 				siz2suffix(membsiz),
 				fixreg(sto, membsiz), 
@@ -1664,19 +1722,20 @@ char* codegen(exp_tree_t* tree)
 			return sym_s;
 		} else if (type2siz(tree_typeof(tree->child[0])) == 4) {
 			/* general case for 4-byte destination */
-			sto = codegen(tree->child[1]);	/* converts stuff to int */
+			membsiz = type2siz(tree_typeof(tree->child[1]));
+			/* n.b. codegen() converts stuff to int */
+			sto = registerize_siz(codegen(tree->child[1]), membsiz);
 			compiler_debug("simple variable assignment -- "
 						  " looking for conversion suffix",
 						  findtok(tree), 0, 0);
-			sto2 = registerize_from(sto, 
-				membsiz = type2siz(tree_typeof(tree->child[1])));
+			sto2 = registerize_from(sto, membsiz);
 			printf("movl %s, %s\n", sto2, sym_s);
 			free_temp_reg(sto2);
 			return sym_s;
 		} else if (type2siz(tree_typeof(tree->child[0])) == 1) {
 			/* general case for 1-byte destination */
 			sto = codegen(tree->child[1]);	/* converts stuff to int */
-			sto2 = registerize(sto);
+			sto2 = registerize_siz(sto, 1);
 			printf("movb %s, %s\n", fixreg(sto2, 1), sym_s);
 			free_temp_reg(sto2);
 			return sym_s;
@@ -1691,19 +1750,20 @@ char* codegen(exp_tree_t* tree)
 		&& tree->child[0]->head_type == ARRAY) {
 		/* head address */
 		sym_s = sym_lookup(tree->child[0]->child[0]->tok);
+		/* member size */
 		membsiz = type2siz(
 			deref_typeof(sym_lookup_type(tree->child[0]->child[0]->tok)));
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
-		sto2 = registerize(str);
+		sto2 = registerize_siz(str, membsiz);
 		/* right operand */
 		str2 = codegen(tree->child[1]);
-		sto3 = registerize(str2);
+		sto3 = registerize_siz(str2, membsiz);
 
 		if (membsiz != 1)
 			printf("imull $%d, %s\n", membsiz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
-		printf("mov%s %s, (%s)\n", 
+		printf("mov%s %s, (%s) #arra\n", 
 			siz2suffix(membsiz),
 			fixreg(sto3, membsiz),
 			sto2);
@@ -1729,7 +1789,7 @@ char* codegen(exp_tree_t* tree)
 		membsiz = type2siz(
 			deref_typeof(sym_lookup_type(tree->child[0]->tok)));
 
-		sto = get_temp_reg();
+		sto = get_temp_reg_siz(membsiz);
 		printf("# build ptr\n");
 		/* multiply offset by member size */
 		if (membsiz != 1)
@@ -1747,7 +1807,7 @@ char* codegen(exp_tree_t* tree)
 
 	/* number */
 	if (tree->head_type == NUMBER) {
-		sto = get_temp_reg();
+		sto = get_temp_reg_siz(4);
 		printf("movl $%s, %s\n", 
 			get_tok_str(*(tree->tok)),
 			sto);
@@ -1758,7 +1818,7 @@ char* codegen(exp_tree_t* tree)
 	 * -- converts char to int
 	 */
 	if (tree->head_type == VARIABLE) {
-		sto = get_temp_reg();
+		sto = get_temp_reg_siz(4);
 		sym_s = sym_lookup(tree->tok);
 		membsiz = type2siz(sym_lookup_type(tree->tok));
 		compiler_debug("variable retrieval -- trying conversion",
@@ -1773,7 +1833,7 @@ char* codegen(exp_tree_t* tree)
 	if ((arith = arith_op(tree->head_type)) && tree->child_count) {
 		/* (with optimized code for number and variable operands
 		 * that avoids wasting temporary registes) */
-		sto = get_temp_reg();
+		sto = get_temp_reg_siz(4);
 		
 		/*
 		 * Check if "pointer arithmetic" is necessary --
@@ -1933,7 +1993,7 @@ char* codegen(exp_tree_t* tree)
 		sto = codegen(tree->child[0]);
 		/* branch if the conditional is false */
 		str = registerize(sto);
-		str2 = get_temp_reg();
+		str2 = get_temp_reg_siz(4);
 		printf("movl $0, %s\n", str2);
 		printf("cmpl %s, %s\n", str, str2);
 		free_temp_reg(sto);
@@ -1999,7 +2059,7 @@ char* codegen(exp_tree_t* tree)
 		sto = codegen(tree->child[0]);
 		/* branch if the conditional is false */
 		str = registerize(sto);
-		str2 = get_temp_reg();
+		str2 = get_temp_reg_siz(4);
 		printf("movl $0, %s\n", str2);
 		printf("cmpl %s, %s\n", str, str2);
 		free_temp_reg(sto);
@@ -2034,7 +2094,7 @@ char* codegen(exp_tree_t* tree)
 	 */
 	if (tree->head_type == NEGATIVE) {
 		sto = get_temp_mem();
-		sto2 = get_temp_reg();
+		sto2 = get_temp_reg_siz(4);
 		str = codegen(tree->child[0]);
 		printf("movl $0, %s\n", sto2);
 		printf("subl %s, %s\n", str, sto2);
@@ -2086,7 +2146,7 @@ char* cheap_relational(exp_tree_t* tree, char *oppcheck)
 {
 	char *sto, *sto2, *sto3;
 	char *str, *str2;
-	sto3 = get_temp_reg();	/* result */
+	sto3 = get_temp_reg_siz(4);	/* result */
 	printf("movl $0, %s\n", sto3);
 	str = registerize(codegen(tree->child[0]));
 	str2 = registerize(codegen(tree->child[1]));
