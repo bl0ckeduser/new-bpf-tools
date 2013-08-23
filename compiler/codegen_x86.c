@@ -841,7 +841,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 						dc->child[0]->tok);
 
 				/* Get number of elements (constant integer) */
-				/* XXX: check it's actually an integer */
+				/* (the parser already ensures it's actually an integer) */
 				sto = atoi(get_tok_str(*(dc->child[1]->tok)));
 
 				/* 
