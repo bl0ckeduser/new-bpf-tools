@@ -1042,6 +1042,19 @@ char* registerize(char *stor)
 	return str;
 }
 
+char *registerize_from(char *stor, int fromsiz)
+{
+	int is_reg = 0;
+	int i;
+	char* str;
+	
+	str = get_temp_reg();
+	printf("%s %s, %s\n", 
+		move_conv_to_long(fromsiz), 
+		fixreg(stor, fromsiz), str);
+	return str;
+}
+
 /*
  * The core codegen routine. It returns
  * the temporary register at which the runtime
@@ -1592,11 +1605,9 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == VARIABLE) {
 		sym_s = sym_lookup(tree->child[0]->tok);
-		/*
-		 * XXX: handles char <- number constant,
-		 *      int <- int, pointer <- pointer,
-		 *      but not other cases like
-		 *		char <- int, int <- char
+		/* 
+		 * XXX: might not handle some complicated cases
+		 * properly yet
 		 */
 		if (tree->child[1]->head_type == NUMBER) {
 			/*
@@ -1609,19 +1620,36 @@ char* codegen(exp_tree_t* tree)
 			printf(" $%s, %s\n",
 				get_tok_str(*(tree->child[1]->tok)), sym_s);
 			return sym_s;
-		} else if (tree->child[1]->head_type == VARIABLE) {
-			/* optimized code for variable operand */
+		} else if (tree->child[1]->head_type == VARIABLE
+			&& type2siz(tree_typeof(tree->child[1])) 
+				== type2siz(tree_typeof(tree->child[0]))) {
+			/* optimized code for two operands of same size */
+			membsiz = type2siz(tree_typeof(tree->child[0]));
 			sto = sym_lookup(tree->child[1]->tok);
 			sto2 = get_temp_reg();
-			printf("movl %s, %s\n", sto, sto2);
+			printf("mov%s %s, %s\n", 
+				siz2suffix(membsiz),
+				fixreg(sto, membsiz), 
+				fixreg(sto2, membsiz));
+			printf("mov%s %s, %s\n", 
+				siz2suffix(membsiz),
+				fixreg(sto2, membsiz), 
+				sym_s);
+			free_temp_reg(sto2);
+			return sym_s;
+		} else if (type2siz(tree_typeof(tree->child[0])) == 4) {
+			/* general case for 4-byte destination */
+			sto = codegen(tree->child[1]);	/* converts stuff to int */
+			sto2 = registerize_from(sto, 
+				membsiz = type2siz(tree_typeof(tree->child[1])));
 			printf("movl %s, %s\n", sto2, sym_s);
 			free_temp_reg(sto2);
 			return sym_s;
-		} else {
-			/* general case */
-			sto = codegen(tree->child[1]);
+		} else if (type2siz(tree_typeof(tree->child[0])) == 1) {
+			/* general case for 1-byte destination */
+			sto = codegen(tree->child[1]);	/* converts stuff to int */
 			sto2 = registerize(sto);
-			printf("movl %s, %s\n", sto2, sym_s);
+			printf("movb %s, %s\n", fixreg(sto2, 1), sym_s);
 			free_temp_reg(sto2);
 			return sym_s;
 		}
