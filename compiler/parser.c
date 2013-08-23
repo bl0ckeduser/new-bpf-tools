@@ -626,6 +626,11 @@ exp_tree_t expr()
  * General parsing routine for 
  * left-associative operators:
  * A-expr := B-expr { C-op B-expr } 
+ *
+ * if no_assoc is set, it instead parses
+ * the non-associative but similary
+ * structured form:
+ * A-expr := B-expr [ C-op B-expr ]
  * 
  * anonymous functions AKA lambdas
  * would have been nice to have in C
@@ -633,12 +638,14 @@ exp_tree_t expr()
 exp_tree_t parse_left_assoc(
 	exp_tree_t(*B_expr)(),
 	int(*is_C_op)(char),
-	void(*tree_dispatch)(char, exp_tree_t*))
+	void(*tree_dispatch)(char, exp_tree_t*),
+	int no_assoc)
 {
 	exp_tree_t child, tree, new;
 	exp_tree_t *child_ptr, *tree_ptr, *new_ptr;
 	exp_tree_t *root;
 	int prev;
+	int cc = 0;
 	token_t oper;
 
 	if (!valid_tree(child = B_expr()))
@@ -662,6 +669,11 @@ exp_tree_t parse_left_assoc(
 
 		/* add term as child */
 		add_child(tree_ptr, alloc_exptree(child));
+
+		/* non-associativity corner-case,
+		 * used for comparison operators */
+		if (cc++ && no_assoc)
+			parse_fail("illegal use of non-associative operator");
 
 		/* bail out early if no more operators */
 		if (!is_C_op((oper = peek()).type))
@@ -696,7 +708,8 @@ exp_tree_t ccor_expr()
 	return parse_left_assoc(
 		&ccand_expr,
 		&is_ccor_op,
-		&ccor_dispatch);
+		&ccor_dispatch,
+		0);
 }
 
 /* ccand_expr := comp_expr ['&&' comp_expr] */
@@ -716,7 +729,8 @@ exp_tree_t ccand_expr()
 	return parse_left_assoc(
 		&comp_expr,
 		&is_ccand_op,
-		&ccand_dispatch);
+		&ccand_dispatch,
+		0);
 }
 
 /* comp_expr := sum_expr [comp-op sum_expr] */
@@ -748,7 +762,8 @@ exp_tree_t comp_expr()
 	return parse_left_assoc(
 		&sum_expr,
 		&is_comp_op,
-		&comp_dispatch);
+		&comp_dispatch,
+		1);
 }
 
 /* sum_expr := mul_expr { add-op mul_expr } */
@@ -768,7 +783,8 @@ exp_tree_t sum_expr()
 	return parse_left_assoc(
 		&mul_expr,
 		&is_add_op,
-		&sum_dispatch);
+		&sum_dispatch,
+		0);
 }
 
 /* mul_expr := unary_expr { mul-op unary_expr } */
@@ -791,7 +807,8 @@ exp_tree_t mul_expr()
 	return parse_left_assoc(
 		&unary_expr,
 		&is_mul_op,
-		&mul_dispatch);
+		&mul_dispatch,
+		0);
 }
 
 /*

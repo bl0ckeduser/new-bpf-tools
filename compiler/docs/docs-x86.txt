@@ -270,7 +270,6 @@ All arithmetic operators are left-associative.
 Assignment is right-associative.
 
 Comparison operators are not associative: expressions like 1 < 2 < 3
-will raise syntax errors. -- actually that needs to be fixed, the parser
-left-associates them as of writing because of a too-quick refactor storm.
+will raise syntax errors.
 
 .............................................................................
