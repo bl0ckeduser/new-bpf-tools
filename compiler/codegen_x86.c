@@ -916,13 +916,19 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				/* 
 				 * Make a symbol named after the array
 				 * and store the *ADDRESS* of its first 
-				 * element there 
+				 * element there.
+			 	 *
+				 * XXX: this isn't how modern/standard C was designed,
+				 * according to "The Development of the C Language"
+				 * (http://www.cs.bell-labs.com/who/dmr/chist.html).
+				 * (See the paragraph about how structs get compiled,
+				 * starting with "The solution constituted ...")
 				 */
 				start_bytes = symbytes;
 				if (!sym_check(dc->child[0]->tok)) {
 					/* 
-					 * 32-bit pointers must be always be 
-					 * 4 bytes, not `membsiz', hence the 4
+					 * On 32-bit x86, pointers must be always be 
+					 * 4 bytes, hence the 4
 					 */
 					sym_num = array_ptr = sym_add(dc->child[0]->tok, 4);
 				}
@@ -1062,6 +1068,10 @@ char* registerize(char *stor)
 	return str;
 }
 
+/* 
+ * Convert integer data of size `fromsiz' to int and move 
+ * it into a new int register
+ */
 char *registerize_from(char *stor, int fromsiz)
 {
 	int is_reg = 0;
@@ -1939,21 +1949,24 @@ char* codegen(exp_tree_t* tree)
 
 	/* arithmetic */
 	if ((arith = arith_op(tree->head_type)) && tree->child_count) {
-		/* (with optimized code for number and variable operands
-		 * that avoids wasting temporary registes) */
+		/* Set aside an int register for the result */
 		sto = get_temp_reg_siz(4);
 		
-		/*
-		 * Check if "pointer arithmetic" is necessary --
+		/* Check if "pointer arithmetic" is necessary --
 		 * this happens in the case of additions containing
-		 * at least one pointer-typed object.
-		 */
+		 * at least one pointer-typed object. */
 		ptr_arith_mode = tree->head_type == ADD
 						&& tree_typeof(tree).ptr;
-		/* if pointer type is char *, then the mulitplier,
+
+		/* If the pointer type is char *, then the mulitplier,
 		 * obj_siz = sizeof(char) -- make sure to deref
-		 * the type before asking for its size ! */ 
-		obj_siz = type2siz(deref_typeof(tree_typeof(tree)));
+		 * the type before asking for its size ! */
+		if (ptr_arith_mode) 
+			obj_siz = type2siz(deref_typeof(tree_typeof(tree)));
+
+		/* Find out which of the operands is the pointer,
+		 * so that it won't get multiplied. if there is
+		 * more than one pointer operand, complain and fail. */
 		ptr_count = 0;
 		if (ptr_arith_mode) {
 			for (i = 0; i < tree->child_count; ++i) {
@@ -1984,6 +1997,7 @@ char* codegen(exp_tree_t* tree)
 				printf("%s $%s, %s\n", 
 					oper, get_tok_str(*(tree->child[i]->tok)), sto);
 			} else if(tree->child[i]->head_type == VARIABLE) {
+				/* XXX: assumes variable can be cleanly read as int */
 				sym_s = sym_lookup(tree->child[i]->tok);
 				printf("%s %s, %s\n", oper, sym_s, sto);
 			} else {
@@ -2054,7 +2068,8 @@ char* codegen(exp_tree_t* tree)
 				free_temp_mem(str);
 			}
 		}
-		/* move EAX to some temporary storage */
+		/* move result (in EAX or EDX depending on operation)
+		 * to some temporary storage */
 		printf("movl %s, %s\n", 
 			tree->head_type == MOD ? "%edx" : "%eax",
 			sto);
