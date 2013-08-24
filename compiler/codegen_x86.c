@@ -1135,6 +1135,10 @@ char* codegen(exp_tree_t* tree)
 	int callee_argbytes;	
 	int offset;
 
+	if (findtok(tree))
+		compiler_debug("trying to compile this line",
+			findtok(tree), 0, 0);		
+
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
 		|| tree->head_type == WHILE
@@ -1957,8 +1961,8 @@ char* codegen(exp_tree_t* tree)
 
 	/* arithmetic */
 	if ((arith = arith_op(tree->head_type)) && tree->child_count) {
-		/* Set aside an int register for the result */
-		sto = get_temp_reg_siz(4);
+		/* Set aside int stack for the result */
+		sto = get_temp_mem();
 		
 		/* Check if "pointer arithmetic" is necessary --
 		 * this happens in the case of additions containing
@@ -1996,28 +2000,30 @@ char* codegen(exp_tree_t* tree)
 			 * p + 5 * sizeof(int)
 			 */
 			if (ptr_arith_mode && i != ptr_memb) {
-				str = codegen(tree->child[i]);
+				str = registerize(codegen(tree->child[i]));
 				if (obj_siz != 1)
 					printf("imull $%d, %s\n", obj_siz, str);
 				printf("%s %s, %s\n", oper, str, sto);
 				free_temp_reg(str);
 			} else if (tree->child[i]->head_type == NUMBER) {
+				str = get_temp_reg_siz(4);
+				printf("movl %s, %s\n", sto, str);
 				printf("%s $%s, %s\n", 
-					oper, get_tok_str(*(tree->child[i]->tok)), sto);
-			} else if(tree->child[i]->head_type == VARIABLE
-				&& is_plain_int(tree_typeof(tree->child[i]))) {
-				/* optimized code for `int' case */
-				sym_s = sym_lookup(tree->child[i]->tok);
-				printf("%s %s, %s\n", oper, sym_s, sto);
-			} else {
-				/* everything else may need some conversions 
-				 * or other magic */
-				str = codegen(tree->child[i]);
-				printf("%s %s, %s\n", oper, str, sto);
+					oper, get_tok_str(*(tree->child[i]->tok)), str);
+				printf("movl %s, %s\n", str, sto);
 				free_temp_reg(str);
+			} else {
+				/* general case. note that codegen() always gives an int */
+				str = registerize(codegen(tree->child[i]));
+				str2 = get_temp_reg_siz(4);
+				printf("movl %s, %s\n", sto, str2);
+				printf("%s %s, %s\n", oper, str, str2);
+				printf("movl %s, %s\n", str2, sto);
+				free_temp_reg(str);
+				free_temp_reg(str2);
 			}
 		}
-		return sto;
+		return registerize(sto);
 	}
 
 
