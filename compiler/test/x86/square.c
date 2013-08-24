@@ -1,3 +1,5 @@
+/* test nested function calls */
+
 square(n) {
 	return n * n;
 }

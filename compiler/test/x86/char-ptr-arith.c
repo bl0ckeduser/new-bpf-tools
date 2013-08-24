@@ -1,3 +1,7 @@
+/*
+ * test pointer arithmetic using char*
+ */
+
 derp(char *ptr)
 {
 	int index = 1;

@@ -1,3 +1,8 @@
+/*
+ * Test "break;" statement
+ * in while and for loops
+ */
+
 main()
 {
 	int i, j, k;

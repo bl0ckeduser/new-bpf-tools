@@ -1,3 +1,5 @@
+/* test tail-call optimization */
+
 diff(a, b) {
 	if ( b > 0 )
 		return diff(a - 1, b - 1);

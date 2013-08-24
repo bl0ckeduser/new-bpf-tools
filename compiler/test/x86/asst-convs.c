@@ -1,6 +1,7 @@
 /*
  * This tests assignment automatic type conversions
  * and also assignments between same-sized types
+ * XXX: why not also test arithmetic
  */
 
 main() {

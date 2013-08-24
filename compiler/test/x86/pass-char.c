@@ -1,3 +1,4 @@
+/* test mixed-size arguments */
 
 func(char a, char b, char c)
 {

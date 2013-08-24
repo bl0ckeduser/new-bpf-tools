@@ -1,3 +1,5 @@
+/* test pointer increments, decrements */
+
 main()
 {
 	int i;

@@ -1,3 +1,5 @@
+/* test && and || short-circuiting */
+
 trace(n) {
 	printf("%d\n", n);
 }

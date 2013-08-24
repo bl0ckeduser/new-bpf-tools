@@ -1,3 +1,5 @@
+/* test string constants */
+
 main() {
 	printf("hello, world !	\n");
 	printf("1+1=%d	\n", 

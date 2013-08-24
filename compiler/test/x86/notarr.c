@@ -1,3 +1,5 @@
+/* test ! operator on an array index expression */
+
 int derp[100];
 int i;
 

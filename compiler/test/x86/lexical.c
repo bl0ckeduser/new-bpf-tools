@@ -1,3 +1,5 @@
+/* test lexical scoping and global symbol compilation */
+
 int x = 789;		// global
 
 foo() {

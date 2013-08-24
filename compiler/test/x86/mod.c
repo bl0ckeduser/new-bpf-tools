@@ -1,3 +1,5 @@
+/* test % operator */
+
 main()
 {
 	int a = 123;

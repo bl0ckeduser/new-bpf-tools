@@ -1,3 +1,5 @@
+/* test pointer arithmetic */
+
 main() {
 	int i[32];
 	int foo = 4;

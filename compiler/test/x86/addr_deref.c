@@ -1,12 +1,3 @@
-/* 
- * Pointer-qualification stars (as in "int ***ptr") 
- * are eaten and IGNORED by the parser for now.
- * The language currently compiled is actually
- * typeless, but I need to write the star-qualifiers
- * in the test code so automatic comparison with
- * gcc-compiled output is possible.
- */
-
 trace(n) {
 	printf("%d\n", n);
 }
