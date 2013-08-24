@@ -103,7 +103,7 @@ int ccid = 0;
 int stack_size;
 int intl_label = 0; 		/* internal label numbering */
 
-char entry_buf[1024], buf[1024];
+char buf[1024];
 
 /* 
  * Stuff for `break' labels in WHILEs.
@@ -115,6 +115,13 @@ int break_count = 0;
 int break_labels[256];
 
 /* ====================================================== */
+
+int is_plain_int(typedesc_t td)
+{
+	return td.ty == INT_DECL
+		&& td.ptr == 0 
+		&& td.arr == 0;
+}
 
 token_t argvartok(exp_tree_t *arg)
 {
@@ -593,7 +600,6 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	 * function's local variables and set aside
 	 * stack space for them
 	 */
-	*entry_buf = 0;
 	setup_symbols(tree, SYMTYPE_STACK);
 
 	for (i = 0; i < TEMP_MEM; ++i) {
@@ -614,7 +620,6 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	printf("\n# >>> compiled code for '%s'\n", name);
 
 	printf("_tco_%s:\n", name);	/* hook for TCO */
-	puts(entry_buf);
 
 	/* 
 	 * Code the body of the procedure
@@ -858,7 +863,6 @@ void setup_symbols(exp_tree_t *tree, int symty)
 	exp_tree_t *dc;
 	int stars, newlen;
 	char *str;
-	int array_ptr;
 	int sym_num;
 	int membsiz;
 	int start_bytes;
@@ -924,32 +928,25 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				 * (See the paragraph about how structs get compiled,
 				 * starting with "The solution constituted ...")
 				 */
-				start_bytes = symbytes;
-				if (!sym_check(dc->child[0]->tok)) {
-					/* 
-					 * On 32-bit x86, pointers must be always be 
-					 * 4 bytes, hence the 4
-					 */
-					sym_num = array_ptr = sym_add(dc->child[0]->tok, 4);
-				}
-				str = get_temp_reg_siz(4);
-				sprintf(buf, "leal %s, %s\n",
-					symstack(start_bytes + sto * membsiz),
-					str);
-				strcat(entry_buf, buf);
-				sprintf(buf, "movl %s, %s\n",
-					str,
-					symstack(start_bytes));
-				strcat(entry_buf, buf);
+
+				/* Check array's variable name not already taken */
+				sym_check(dc->child[0]->tok);
+
+				/* Make storage for the first (n - 1) indices */
+				symsiz[syms++] = membsiz * (sto - 1);
+				symbytes += membsiz * (sto - 1);
+
 				/* 
-				 * Make storage for the subsequent
-				 * indices -- (when we deal with an expression
-				 * such as array[index] we only need to know
-				 * the starting point of the array and the
-				 * value "index" evaluates to)
+			 	 * The symbol maps to the first element of the
+				 * array, not a pointer to it. This is an important
+				 * rule, according to "The Development of the C Language"
+				 * (http://www.cs.bell-labs.com/who/dmr/chist.html).
+				 * 
+				 * The first element of the array is the last added here,
+				 * because the x86 stack grows "backwards" and sym_add()
+				 * follows the growth of the stack.
 				 */
-				symsiz[syms++] = membsiz * sto;
-				symbytes += membsiz * sto;
+				sym_num = sym_add(dc->child[0]->tok, membsiz);
 
 				/* Discard the tree */
 				dc->head_type = NULL_TREE;
@@ -1164,6 +1161,23 @@ char* codegen(exp_tree_t* tree)
 		return codegen(tree->child[1]);
 	}
 
+	/* 
+	 * When arrays are evaluated, the result is a
+	 * pointer to their first element (see earlier
+	 * comments about the paper called 
+	 * "The Development of the C Language"
+	 * and what it says about this)
+	 */
+	if (tree->head_type == VARIABLE
+		&& sym_lookup_type(tree->tok).arr) {
+		/* build pointer to first member of array */
+		sto = get_temp_reg_siz(4);
+		printf("leal %s, %s\n",
+			sym_lookup(tree->tok),
+			sto);
+		return sto;
+	}
+
 	/* "bob123" */
 	if (tree->head_type == STR_CONST) {
 		sto = get_temp_reg_siz(4);
@@ -1203,12 +1217,8 @@ char* codegen(exp_tree_t* tree)
 		membsiz = type2siz(deref_typeof(
 			sym_lookup_type(tree->child[0]->child[0]->tok)));
 
-		sto = get_temp_reg_siz(4);
-
-		/* load base address */
-		printf("movl %s, %s\n",
-				sym_lookup(tree->child[0]->child[0]->tok),
-				sto);
+		/* get base pointer */
+		sto = codegen(tree->child[0]->child[0]);
 
 		/* 
 		 * now we code the array index expression.
@@ -1220,13 +1230,13 @@ char* codegen(exp_tree_t* tree)
 		sto2 = registerize_siz(codegen(tree->child[0]->child[1]),
 				membsiz);
 
-
 		/* multiply index byte-offset by size of members */
 		if (membsiz != 1)
 			printf("imull $%d, %s\n", membsiz, sto2);
 
 		/* ptr = base_adr + membsiz * index_expr */
 		printf("addl %s, %s\n", sto2, sto);
+		free_temp_reg(sto);
 
 		return sto;
 	}
@@ -1685,8 +1695,8 @@ char* codegen(exp_tree_t* tree)
 		|| tree->head_type == DEC)
 		&& tree->child[0]->head_type == ARRAY) {
 
-		/* head address */
-		sym_s = sym_lookup(tree->child[0]->child[0]->tok);
+		/* get base pointer */
+		sym_s = codegen(tree->child[0]->child[0]);
 
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
@@ -1703,6 +1713,7 @@ char* codegen(exp_tree_t* tree)
 		printf("addl %s, %s\n", sym_s, sto2);
 		printf("movl %s, %s\n", sto2, sto);
 		free_temp_reg(sto2);
+		free_temp_reg(sym_s);
 
 		/* write the final move */
 		sto3 = get_temp_reg_siz(membsiz);
@@ -1866,21 +1877,24 @@ char* codegen(exp_tree_t* tree)
 	 */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == ARRAY) {
-		/* head address */
-		sym_s = sym_lookup(tree->child[0]->child[0]->tok);
+		/* get base ptr */
+		sym_s = codegen(tree->child[0]->child[0]);
 		/* member size */
 		membsiz = type2siz(
 			deref_typeof(sym_lookup_type(tree->child[0]->child[0]->tok)));
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
 		sto2 = registerize_siz(str, membsiz);
-		/* right operand */
-		str2 = codegen(tree->child[1]);
-		sto3 = registerize_siz(str2, membsiz);
 
 		if (membsiz != 1)
 			printf("imull $%d, %s\n", membsiz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
+		free_temp_reg(sym_s);
+
+		/* right operand */
+		str2 = codegen(tree->child[1]);
+		sto3 = registerize_siz(str2, membsiz);
+
 		printf("mov%s %s, (%s) #arra\n", 
 			siz2suffix(membsiz),
 			fixreg(sto3, membsiz),
@@ -1897,10 +1911,10 @@ char* codegen(exp_tree_t* tree)
 	 * char data gets converted to an int register
 	 */
 	if (tree->head_type == ARRAY && tree->child_count == 2) {
-		/* head address */
-		sym_s = sym_lookup(tree->child[0]->tok);
+		/* get base ptr */
+		sym_s = codegen(tree->child[0]);
+
 		/* index expression */
-		printf("# index expr\n");
 		str = codegen(tree->child[1]);
 		sto2 = registerize(str);
 		/* member size */
@@ -1908,7 +1922,6 @@ char* codegen(exp_tree_t* tree)
 			deref_typeof(sym_lookup_type(tree->child[0]->tok)));
 
 		sto = get_temp_reg_siz(membsiz);
-		printf("# build ptr\n");
 		/* multiply offset by member size */
 		if (membsiz != 1)
 			printf("imull $%d, %s\n", membsiz, sto2);
@@ -1919,6 +1932,7 @@ char* codegen(exp_tree_t* tree)
 			move_conv_to_long(membsiz), sto2, sto);
 
 		free_temp_reg(sto2);
+		free_temp_reg(sym_s);
 
 		return sto;
 	}
@@ -1996,11 +2010,14 @@ char* codegen(exp_tree_t* tree)
 			} else if (tree->child[i]->head_type == NUMBER) {
 				printf("%s $%s, %s\n", 
 					oper, get_tok_str(*(tree->child[i]->tok)), sto);
-			} else if(tree->child[i]->head_type == VARIABLE) {
-				/* XXX: assumes variable can be cleanly read as int */
+			} else if(tree->child[i]->head_type == VARIABLE
+				&& is_plain_int(tree_typeof(tree->child[i]))) {
+				/* optimized code for `int' case */
 				sym_s = sym_lookup(tree->child[i]->tok);
 				printf("%s %s, %s\n", oper, sym_s, sto);
 			} else {
+				/* everything else may need some conversions 
+				 * or other magic */
 				str = codegen(tree->child[i]);
 				printf("%s %s, %s\n", oper, str, sto);
 				free_temp_reg(str);
