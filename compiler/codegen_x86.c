@@ -31,7 +31,7 @@ extern void compiler_debug(char *message, token_t *token,
 extern token_t *findtok(exp_tree_t *et);
 extern int type2siz(typedesc_t);
 extern typedesc_t mk_typedesc(int bt, int ptr, int arr);
-
+extern int is_arith_op(char);
 
 void setup_symbols(exp_tree_t* tree, int glob);
 
@@ -115,6 +115,16 @@ int break_count = 0;
 int break_labels[256];
 
 /* ====================================================== */
+
+int arith_depth(exp_tree_t *t)
+{
+	int d = 0, i;
+	if (is_arith_op(t->head_type))
+		++d;
+	for (i = 0; i < t->child_count; ++i)
+		d += arith_depth(t->child[i]);
+	return d;
+}
 
 int is_plain_int(typedesc_t td)
 {
@@ -223,6 +233,14 @@ char* get_temp_reg() {
 			return temp_reg[i];
 		}
 	fail("out of registers");
+}
+
+int free_register_count() {
+	int i, c = 0;
+	for (i = 0; i < TEMP_REGISTERS; ++i)
+		if (!ts_used[i])
+			++c;
+	return c;
 }
 
 /*
@@ -1134,6 +1152,7 @@ char* codegen(exp_tree_t* tree)
 	typedesc_t *callee_argtyp = NULL;
 	int callee_argbytes;	
 	int offset;
+	int stackstor;
 
 	if (findtok(tree))
 		compiler_debug("trying to compile this line",
@@ -1961,9 +1980,21 @@ char* codegen(exp_tree_t* tree)
 
 	/* arithmetic */
 	if ((arith = arith_op(tree->head_type)) && tree->child_count) {
-		/* Set aside int stack for the result */
-		sto = get_temp_mem();
-		
+		/* 
+		 * Set aside the temporary storage for the result
+		 * as a register if there's enough left to go through
+		 * with the calculation using exclusively 
+		 * registers. Otherwise, use stack.
+		 */
+		if (free_register_count() > 3 * arith_depth(tree)) {
+			sto = get_temp_reg();
+			stackstor = 0;
+		}
+		else {
+			sto = get_temp_mem();
+			stackstor = 1;
+		}
+
 		/* Check if "pointer arithmetic" is necessary --
 		 * this happens in the case of additions containing
 		 * at least one pointer-typed object. */
@@ -2004,23 +2035,26 @@ char* codegen(exp_tree_t* tree)
 				if (obj_siz != 1)
 					printf("imull $%d, %s\n", obj_siz, str);
 				printf("%s %s, %s\n", oper, str, sto);
-				free_temp_reg(str);
+				if (stackstor)
+					free_temp_reg(str);
 			} else if (tree->child[i]->head_type == NUMBER) {
-				str = get_temp_reg_siz(4);
-				printf("movl %s, %s\n", sto, str);
+				str = registerize(sto);
 				printf("%s $%s, %s\n", 
 					oper, get_tok_str(*(tree->child[i]->tok)), str);
-				printf("movl %s, %s\n", str, sto);
-				free_temp_reg(str);
+				if (stackstor) {
+					printf("movl %s, %s\n", str, sto);			
+					free_temp_reg(str);
+				}
 			} else {
 				/* general case. note that codegen() always gives an int */
 				str = registerize(codegen(tree->child[i]));
-				str2 = get_temp_reg_siz(4);
-				printf("movl %s, %s\n", sto, str2);
+				str2 = registerize(sto);
 				printf("%s %s, %s\n", oper, str, str2);
-				printf("movl %s, %s\n", str2, sto);
+				if (stackstor) {
+					printf("movl %s, %s\n", str2, sto);
+					free_temp_reg(str2);
+				}
 				free_temp_reg(str);
-				free_temp_reg(str2);
 			}
 		}
 		return registerize(sto);
