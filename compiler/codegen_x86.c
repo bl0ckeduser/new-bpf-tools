@@ -924,6 +924,12 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				symsiz[syms++] = membsiz * (sto - 1);
 				symbytes += membsiz * (sto - 1);
 
+				/* Clear the symbol name tag for the symbol table
+				 * space taken over by the array indices -- otherwise
+				 * the symbol table lookup routines may give incorrect
+				 * results */
+				*symtab[syms - 1] = 0;
+
 				/* 
 			 	 * The symbol maps to the first element of the
 				 * array, not a pointer to it. This is an important
