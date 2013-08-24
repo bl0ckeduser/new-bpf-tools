@@ -1243,10 +1243,12 @@ char* codegen(exp_tree_t* tree)
 						  findtok(tree), 0, 0);
 		}
 
-		/* use appropriate size suffix in the MOV */
-		printf("mov%s (%s), %s\n", 
-			siz2suffix(membsiz),
-			sto, fixreg(sto2, membsiz));
+		/* deref and convert to int -- because
+		 * the rest of the code assumes codegen()
+		 * gives ints */
+		printf("%s (%s), %s\n", 
+			move_conv_to_long(membsiz),
+			sto, sto2);
 		free_temp_reg(sto);
 
 		return sto2;
@@ -1948,7 +1950,10 @@ char* codegen(exp_tree_t* tree)
 		 */
 		ptr_arith_mode = tree->head_type == ADD
 						&& tree_typeof(tree).ptr;
-		obj_siz = type2siz(tree_typeof(tree));
+		/* if pointer type is char *, then the mulitplier,
+		 * obj_siz = sizeof(char) -- make sure to deref
+		 * the type before asking for its size ! */ 
+		obj_siz = type2siz(deref_typeof(tree_typeof(tree)));
 		ptr_count = 0;
 		if (ptr_arith_mode) {
 			for (i = 0; i < tree->child_count; ++i) {
