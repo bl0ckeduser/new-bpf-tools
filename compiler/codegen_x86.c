@@ -917,18 +917,6 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				/* (the parser already ensures it's actually an integer) */
 				sto = atoi(get_tok_str(*(dc->child[1]->tok)));
 
-				/* 
-				 * Make a symbol named after the array
-				 * and store the *ADDRESS* of its first 
-				 * element there.
-			 	 *
-				 * XXX: this isn't how modern/standard C was designed,
-				 * according to "The Development of the C Language"
-				 * (http://www.cs.bell-labs.com/who/dmr/chist.html).
-				 * (See the paragraph about how structs get compiled,
-				 * starting with "The solution constituted ...")
-				 */
-
 				/* Check array's variable name not already taken */
 				sym_check(dc->child[0]->tok);
 
