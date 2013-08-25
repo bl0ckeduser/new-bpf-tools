@@ -286,17 +286,24 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 
 	/*
 	 * For arithmetic, promote to the
-	 * largest and "most-starred" type,
-	 * if the operation is an addition.
+	 * pointer operand's type,
+	 * if the operation is an addition
+	 * or subtraction (pointer arithmetic
+	 * applies).
 	 * 
 	 *		int *i;
 	 *		i + 1 + 2; <-- type "int *"
 	 *
 	 *		int i;
 	 * 		3 + 1 + &x;	<-- type "int *"
+	 *
+	 * (see K&R 2nd edition (ANSI C89), page 205, A7.7)
 	 * 
 	 * If two pointers are being subtracted
 	 * return type "int".
+	 * XXX: Actually it should be "ptrdiff_t"
+	 * which is defined in <stddef.h>
+	 * (see K&R 2nd edition (ANSI C89), page 206, A7.7)
 	 *
 	 * If pointers are being multiplied or
 	 * divided or remainder'ed, put up
@@ -314,7 +321,7 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 		max_decl = ctd.ty;
 		max_ptr = ctd.arr + ctd.ptr;
 
-		/* replace type with bigger one if any */
+		/* promote to pointer type if any */
 		for (i = 0; i < tp->child_count; ++i) {
 			if ((siz = decl2siz((ctd = tree_typeof(tp->child[i])).ty))
 				&& siz >= max_siz
@@ -330,9 +337,12 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 		td.arr = 0;
 		td.ptr = max_ptr;
 
-		/* handle subtraction case */
-		if (tp->head_type == SUB && td.ptr && tp->child_count == 2) {
-			td.ty = INT_DECL;
+		/* handle pointer subtraction case */
+		if (tp->head_type == SUB && td.ptr && tp->child_count == 2
+			&& (tree_typeof(tp->child[0]).ptr || tree_typeof(tp->child[0]).arr)
+			&& (tree_typeof(tp->child[1]).ptr || tree_typeof(tp->child[1]).arr)) {
+			td.ty = INT_DECL;	/* XXX: should be "ptrdiff_t" according
+								 * to K&R 2 */
 			td.arr = td.ptr = 0;
 		}
 
@@ -341,7 +351,7 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 			td.ty = INT_DECL;
 
 		/* warning on strange arithmetic */
-		if (tp->head_type != ADD && td.ptr)
+		if (!(tp->head_type == ADD || tp->head_type == SUB) && td.ptr)
 			compiler_fail("please don't use pointers in incomprehensible ways",
 				findtok(tp), 0, 0);
 

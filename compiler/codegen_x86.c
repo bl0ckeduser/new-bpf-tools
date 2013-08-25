@@ -1171,6 +1171,7 @@ char* codegen(exp_tree_t* tree)
 	int stackstor;
 	exp_tree_t *argl, *codeblock;
 	int custom_return_type;
+	int ptr_diff;
 
 /*
 	if (findtok(tree))
@@ -2041,10 +2042,14 @@ char* codegen(exp_tree_t* tree)
 			stackstor = 1;
 		}
 
-		/* Check if "pointer arithmetic" is necessary --
-		 * this happens in the case of additions containing
-		 * at least one pointer-typed object. */
-		ptr_arith_mode = tree->head_type == ADD
+		/* 
+		 * Check if "pointer arithmetic" is necessary --
+		 * this happens in the case of additions or subtractions
+		 * containing at least one pointer-typed object.
+		 * See K&R 2nd edition (ANSI C89), page 205-206, A7.7
+		 */
+		ptr_arith_mode = (tree->head_type == ADD
+						|| tree->head_type == SUB)
 						&& tree_typeof(tree).ptr;
 
 		/* If the pointer type is char *, then the mulitplier,
@@ -2063,7 +2068,8 @@ char* codegen(exp_tree_t* tree)
 					|| tree_typeof(tree->child[i]).arr) {
 					ptr_memb = i;
 					if (ptr_count++)
-						codegen_fail("please don't add pointers",
+						codegen_fail("please don't + or - several "
+									 " pointers",
 							tree->child[i]->tok);
 				}
 			}
@@ -2074,7 +2080,9 @@ char* codegen(exp_tree_t* tree)
 			/* 
 			 * Pointer arithmetic mode -- e.g. if 
 			 * `p' is an `int *', p + 5 becomes
-			 * p + 5 * sizeof(int)
+			 * p + 5 * sizeof(int) --
+			 * 
+			 * See K&R 2nd edition (ANSI C89) page 205, A7.7
 			 */
 			if (ptr_arith_mode && i != ptr_memb) {
 				str = registerize(codegen(tree->child[i]));
@@ -2103,6 +2111,8 @@ char* codegen(exp_tree_t* tree)
 				free_temp_reg(str);
 			}
 		}
+		if (stackstor)
+			free_temp_mem(sto);
 		return registerize(sto);
 	}
 

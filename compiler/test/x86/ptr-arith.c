@@ -7,9 +7,14 @@ main() {
 	char **bob;
 	char **bob2;
 	char **bob3;
+	int *j = &i[6];
 
+	i[3] = 456;
 	i[4] = 123;
 	printf("%d\n", *(i + foo));
+	printf("%d\n", *(i + foo - 1));
+	printf("%d\n", *(j - 2));
+	printf("%d\n", *(j - 1 - 1));
 	printf("%d\n", *ptr);
 	printf("%d\n", *(i + 4));
 	printf("%d\n", *(4 + i));
