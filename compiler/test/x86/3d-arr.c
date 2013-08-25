@@ -15,6 +15,5 @@ main() {
 				printf("%d*%d*%d=%d\n",
 					i, j, k, box[i][j][k]);
 	printf("read ok\n");
-	/* XXX: segfaults on exit */
 }
 

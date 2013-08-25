@@ -24,6 +24,4 @@ main() {
 		for (j = 0; j < 30; ++j)
 			printf("%d+%d=%d\n", i, j, mat[i][j]);
 	printf("read ok\n");
-
-	/* XXX: segfaults on exit */
 }
