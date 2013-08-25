@@ -315,7 +315,7 @@ multi_array_access:
 		| instr '(' expr1, expr2, ..., exprN ')' ';'
 		| ident ':'
 		| goto ident ';'
-		| ['proc'] ident '(' arg { ',' arg } ')' block
+		| ident '(' arg { ',' arg } ')' block
 		| 'return' expr ';'
 		| 'break' ';'
 */
@@ -330,12 +330,6 @@ exp_tree_t block()
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	int sav_indx;
 
-	/* proc bob(a, b, c) { ... } */
-	if (peek().type == TOK_PROC) {
-		++indx;	/* eat "proc" */
-		tok = need(TOK_IDENT);
-		goto proc_parse;
-	}
 	/* bob(a, b, c) { ... } */
 	if ((tok = peek()).type == TOK_IDENT) {
 		sav_indx = indx++;
