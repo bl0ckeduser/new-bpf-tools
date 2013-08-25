@@ -32,6 +32,7 @@ extern token_t *findtok(exp_tree_t *et);
 extern int type2siz(typedesc_t);
 extern typedesc_t mk_typedesc(int bt, int ptr, int arr);
 extern int is_arith_op(char);
+extern int type2offs(typedesc_t ty);
 
 void setup_symbols(exp_tree_t* tree, int glob);
 
@@ -905,24 +906,46 @@ int int_type_decl(char ty)
 	return ty == CHAR_DECL || ty == INT_DECL;
 }
 
-/* See codegen_proc above */
 void setup_symbols(exp_tree_t *tree, int symty)
+{
+	extern void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass);
+	setup_symbols_iter(tree, symty, 1);
+	setup_symbols_iter(tree, symty, 0);
+}
+
+void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 {
 	int i, j, k, sto;
 	exp_tree_t *dc;
 	int stars, newlen;
 	char *str;
 	int sym_num;
-	int membsiz;
+	int objsiz;
 	int start_bytes;
 	int decl = tree->head_type;
 	typedesc_t typedat;
 	int array_bytes;
+	int dim;
+	typedesc_t array_base_type;
 
-	/* Only integer (i.e. char, int) types are supported */
+	/*
+	 * Only integer (i.e. char, int) based-types are supported
+	 * (arrays of them, pointers of them)
+	 */
 	if (int_type_decl(decl)) {
 		for (i = 0; i < tree->child_count; ++i) {
 			dc = tree->child[i];
+
+			/* 
+			 * Do all the smaller stuff first;
+			 * for some reason, if I put ints at
+			 * big offsets like -2408(%ebp),
+			 * segfaults happen. (???)
+			 */
+			if (first_pass && check_array(dc))
+				continue;
+			if (!first_pass && !check_array(dc))
+				continue;
 
 			/* 
 			 * Count & eat up the pointer-qualification stars,
@@ -944,21 +967,21 @@ void setup_symbols(exp_tree_t *tree, int symty)
 			typedat.arr_dim = malloc(typedat.arr * sizeof(int));
 			for (j = 0; j < typedat.arr; ++j)
 				typedat.arr_dim[j] = get_arr_dim(dc, j); 
+			array_base_type = typedat;
+			array_base_type.arr = 0;
 
-			/* 
-			 * Figure out size of array members, in bytes
-			 */
-			membsiz = type2offs(typedat);
+			/* Figure out size of the whole object in bytes */
+			objsiz = type2offs(typedat);
 
 			/* Add some padding; otherwise werid glitches happen */
-			if (membsiz < 4 && !check_array(dc))
-				membsiz = 4;
+			if (objsiz < 4 && !check_array(dc))
+				objsiz = 4;
 	
 			/* 
 			 * Switch symbols/stack setup code
 			 * based on array dimensions of object
 			 */
-			if (check_array(dc) == 1) {
+			if (check_array(dc) > 0) {
 				/*
 				 * Set up symbols and stack storage
 			 	 * for an N-dimensional array
@@ -977,8 +1000,8 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				sym_check(dc->child[0]->tok);
 
 				/* Make storage for the first (n - 1) indices */
-				symsiz[syms++] = membsiz * (sto - 1);
-				symbytes += membsiz * (sto - 1);
+				symsiz[syms++] = objsiz - type2siz(array_base_type);
+				symbytes += objsiz - type2siz(array_base_type);
 
 				/* Clear the symbol name tag for the symbol table
 				 * space taken over by the array indices -- otherwise
@@ -996,7 +1019,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				 * because the x86 stack grows "backwards" and sym_add()
 				 * follows the growth of the stack.
 				 */
-				sym_num = sym_add(dc->child[0]->tok, membsiz);
+				sym_num = sym_add(dc->child[0]->tok, type2siz(array_base_type));
 
 				/* Discard the tree */
 				dc->head_type = NULL_TREE;
@@ -1012,7 +1035,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 						 * Stack-based storage and symbol
 						 */
 						if (!sym_check(dc->child[0]->tok))
-							sym_num = sym_add(dc->child[0]->tok, membsiz);
+							sym_num = sym_add(dc->child[0]->tok, objsiz);
 						break;
 					case SYMTYPE_GLOBALS:
 						/*
@@ -1074,14 +1097,15 @@ void setup_symbols(exp_tree_t *tree, int symty)
 				globtyp[sym_num] = typedat;
 			}
 		}
-
-		/* 
+		
+		/*
 		 * Turn the declaration sequence into
 		 * a standard code sequence, because at
 		 * this point the assignments are ASGN
 		 * and the rest are NULL_TREE
 		 */
-		tree->head_type = BLOCK;
+		if (!first_pass)
+			tree->head_type = BLOCK;
 	}
 	
 	/* Child recursion */
@@ -1090,7 +1114,7 @@ void setup_symbols(exp_tree_t *tree, int symty)
 		||	tree->child[i]->head_type == IF
 		||	tree->child[i]->head_type == WHILE
 		||	int_type_decl(tree->child[i]->head_type))
-			setup_symbols(tree->child[i], symty);
+			setup_symbols_iter(tree->child[i], symty, first_pass);
 }
 
 /*
@@ -1277,7 +1301,7 @@ char* codegen(exp_tree_t* tree)
 		&& tree->child[0]->head_type == ARRAY) {
 
 		offs_siz = type2offs(deref_typeof(
-			sym_lookup_type(tree->child[0]->child[0]->tok)));
+			tree_typeof(tree->child[0]->child[0])));
 
 		/* get base pointer */
 		sto = codegen(tree->child[0]->child[0]);
@@ -2022,7 +2046,6 @@ char* codegen(exp_tree_t* tree)
 		printf("addl %s, %s\n", sym_s, sto2);
 		compiler_debug("array retrieval -- trying conversion",
 			findtok(tree), 0, 0);
-		fprintf(stderr, "membsiz = %d\n", membsiz);
 
 		/*
 		 * Assuming the declaration "int mat[20][30]",
