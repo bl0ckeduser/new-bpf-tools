@@ -74,15 +74,16 @@ int argsiz[256] = {0};		/* size of each object */
 typedesc_t argtyp[256];
 
 /* 
- * Table of argument type tables associated
+ * Table of argument and return type tables associated
  * to function names -- used for locally-declared
  * functions
  */
 struct {
 	typedesc_t argtyp[256];
+	typedesc_t ret_typ;
 	char name[SYMLEN];
 	int argc;
-} func_args[256];
+} func_desc[256];
 int funcdefs = 0;
 
 /* Table of string-constant symbols */
@@ -115,6 +116,21 @@ int break_count = 0;
 int break_labels[256];
 
 /* ====================================================== */
+
+typedesc_t func_ret_typ(char *func_nam)
+{
+	int i;
+	for (i = 0; i < funcdefs; ++i)
+		if (!strcmp(func_desc[i].name, func_nam))
+			return func_desc[i].ret_typ;
+	/*
+	 * If the function is not found in the table,
+	 * it's probably an external one like printf().
+	 * Least insane behaviour is to default to int.
+	 * XXX: search extern def table if any ever gets added
+	 */
+	return mk_typedesc(INT_DECL, 0, 0);
+}
 
 int arith_depth(exp_tree_t *t)
 {
@@ -1154,6 +1170,7 @@ char* codegen(exp_tree_t* tree)
 	int offset;
 	int stackstor;
 	exp_tree_t *argl, *codeblock;
+	int custom_return_type;
 
 	if (findtok(tree))
 		compiler_debug("trying to compile this line",
@@ -1311,18 +1328,18 @@ char* codegen(exp_tree_t* tree)
 		/* XXX: extern declarations would go in another table */
 		callee_argtyp = NULL;
 		for (i = 0; i < funcdefs; ++i) {
-			if (!strcmp(func_args[i].name,
+			if (!strcmp(func_desc[i].name,
 				get_tok_str(*(tree->tok)))) {
-					callee_argtyp = func_args[i].argtyp;
+					callee_argtyp = func_desc[i].argtyp;
 					/*
 					 * Check for arg count mismatch
 					 */
-					if (tree->child_count != func_args[i].argc) {
+					if (tree->child_count != func_desc[i].argc) {
 						sprintf(sbuf, "Argument count mismatch -- "
 									  "`%s' expects %d arguments but "
 									  "you have given it %d",
-										func_args[i].name,
-										func_args[i].argc,
+										func_desc[i].name,
+										func_desc[i].argc,
 										tree->child_count);
 						compiler_fail(sbuf,
 							findtok(tree), 0, 0);
@@ -1448,7 +1465,9 @@ char* codegen(exp_tree_t* tree)
 		 * Put the list of arguments in char *proc_args,
 		 * and also populate the argument type descriptions table
 		 */
+		custom_return_type = 0;
 		if (tree->child[0]->head_type == CAST_TYPE) {
+			custom_return_type = 1;
 			argl = tree->child[1];
 			compiler_warn("return types unimplemented -- "
 						  " ignoring return type, using int",
@@ -1488,12 +1507,21 @@ char* codegen(exp_tree_t* tree)
 			}
 			proc_args[i] = NULL;
 
-			/* Register argument info */
-			for (i = 0; i < argl->child_count; ++i) {
-				func_args[funcdefs].argtyp[i] = argtyp[i];
-			}
-			strcpy(func_args[funcdefs].name, get_tok_str(*(tree->tok)));
-			func_args[funcdefs].argc = argl->child_count;
+			/* 
+			 * Register function typing info
+			 */
+			/* argument types */
+			for (i = 0; i < argl->child_count; ++i)
+				func_desc[funcdefs].argtyp[i] = argtyp[i];
+			/* name */
+			strcpy(func_desc[funcdefs].name, get_tok_str(*(tree->tok)));
+			func_desc[funcdefs].argc = argl->child_count;
+			/* return type */
+			if (custom_return_type)
+				func_desc[funcdefs].ret_typ = tree_typeof(tree);
+			else
+				/* default return type is "int" */
+				func_desc[funcdefs].ret_typ = mk_typedesc(INT_DECL, 0, 0);
 			funcdefs++;
 
 		} else

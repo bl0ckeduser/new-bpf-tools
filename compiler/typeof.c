@@ -21,6 +21,8 @@ typedesc_t tree_typeof_iter(typedesc_t, exp_tree_t*);
 extern typedesc_t sym_lookup_type(token_t* tok);
 extern int int_type_decl(char ty);
 extern int decl2siz(int);
+extern typedesc_t func_ret_typ(char *func_nam);
+extern char* get_tok_str(token_t t);
 
 /* hook to error printout code */
 void compiler_fail(char *message, token_t *token,
@@ -205,7 +207,10 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	 *
 	 * XXX: as it is, codegen() on a
 	 * VARIABLE tree of any type converts
-	 * it to int, so this might be
+	 * it to int,
+	 * (or to a pointer type for arrays
+	 * and pointers, but have same size as int)
+	 * so this might be
 	 * inconsistent / confusing
 	 */
 	if (tp->head_type == VARIABLE) {
@@ -261,15 +266,11 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	}
 
 	/*
-	 * Procedure call return values
-	 * are assumed of type `int' for now.
-	 * XXX: eventually non-int procedures
-	 * might be added to the language
+	 * Procedure call return values:
+	 * query the codegen's return types table.
 	 */
 	if (tp->head_type == PROC_CALL) {
-		td.ty = INT_DECL;
-		td.ptr = td.arr = 0;
-		return td;
+		return func_ret_typ(get_tok_str(*(tp->tok)));
 	}
 
 	/* 
