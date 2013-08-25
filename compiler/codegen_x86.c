@@ -1506,26 +1506,26 @@ char* codegen(exp_tree_t* tree)
 
 			}
 			proc_args[i] = NULL;
-
-			/* 
-			 * Register function typing info
-			 */
-			/* argument types */
-			for (i = 0; i < argl->child_count; ++i)
-				func_desc[funcdefs].argtyp[i] = argtyp[i];
-			/* name */
-			strcpy(func_desc[funcdefs].name, get_tok_str(*(tree->tok)));
-			func_desc[funcdefs].argc = argl->child_count;
-			/* return type */
-			if (custom_return_type)
-				func_desc[funcdefs].ret_typ = tree_typeof(tree);
-			else
-				/* default return type is "int" */
-				func_desc[funcdefs].ret_typ = mk_typedesc(INT_DECL, 0, 0);
-			funcdefs++;
-
 		} else
 			*proc_args = NULL;
+
+		/* 
+		 * Register function typing info
+		 */
+		/* argument types */
+		for (i = 0; i < argl->child_count; ++i)
+			func_desc[funcdefs].argtyp[i] = argtyp[i];
+		/* name */
+		strcpy(func_desc[funcdefs].name, get_tok_str(*(tree->tok)));
+		/* arg count */
+		func_desc[funcdefs].argc = argl->child_count;
+		/* return type */
+		if (custom_return_type)
+			func_desc[funcdefs].ret_typ = tree_typeof(tree);
+		else
+			/* default return type is "int" */
+			func_desc[funcdefs].ret_typ = mk_typedesc(INT_DECL, 0, 0);
+		funcdefs++;
 
 		/* prevent nested procedure defs */
 		proc_ok = 0;
