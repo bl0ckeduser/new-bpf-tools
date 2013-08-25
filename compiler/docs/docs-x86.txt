@@ -60,6 +60,7 @@ structure closely.
 		int variable_name_2 = 29239;
 		int a, *pa = &a, cd = 456;
 		int array_name[1000];
+		int matrix[10][10];
 		int *ptr;
 		int **ptr_ptr;
 		char c;
@@ -74,9 +75,7 @@ structure closely.
 		stars, then it contains the name of the variable, then it 
 		may optionally contain either an initialization assignment 
 		or any number of array-dimension integers-in-brackets 
-		(e.g. [123]). Note however that the compiler can only 
-		generate code for 1-dimensional arrays or N-degree pointers
-		to 1-dimensional arrays at this point.
+		(e.g. [123]). 2d, 3d, ... arrays are supported.
 
 3. Control flow
 	i. if statement
