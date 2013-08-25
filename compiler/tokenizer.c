@@ -523,11 +523,11 @@ token_t* tokenize(char *buf)
 				} else {
 					TOK_FAIL("Dafuq is a */ doing there ?");
 				}
-			/* Start a C++ comment, unless already in a C comment */
+			/* Start a C++ comment, unless already in a C comment
+			 * (the string // inside a C comment is legal) */
 			} else if (c.success == CPP_CMNT) {
-				if (comstat == INSIDE_A_C_COMMENT)
-					TOK_FAIL("Don't mix and nest comments, please");
-				comstat = INSIDE_A_CPP_COMMENT;	
+				if (comstat != INSIDE_A_C_COMMENT)
+					comstat = INSIDE_A_CPP_COMMENT;	
 			}
 			/* C++ comments end at the end of their line */
 			if (comstat == INSIDE_A_CPP_COMMENT
