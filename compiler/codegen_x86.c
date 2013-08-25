@@ -1153,6 +1153,7 @@ char* codegen(exp_tree_t* tree)
 	int callee_argbytes;	
 	int offset;
 	int stackstor;
+	exp_tree_t *argl, *codeblock;
 
 	if (findtok(tree))
 		compiler_debug("trying to compile this line",
@@ -1447,24 +1448,34 @@ char* codegen(exp_tree_t* tree)
 		 * Put the list of arguments in char *proc_args,
 		 * and also populate the argument type descriptions table
 		 */
+		if (tree->child[0]->head_type == CAST_TYPE) {
+			argl = tree->child[1];
+			compiler_warn("return types unimplemented -- "
+						  " ignoring return type, using int",
+							findtok(tree),
+							0, 0);
+		}
+		else
+			argl = tree->child[0];
+
 		argbytes = 0;
-		if (tree->child[0]->child_count) {
-			for (i = 0; tree->child[0]->child[i]; ++i) {
+		if (argl->child_count) {
+			for (i = 0; argl->child[i]; ++i) {
 				/* copy argument name string to proc_args[i] */
 				buf = malloc(64);
 				strcpy(buf, get_tok_str
-					(argvartok(tree->child[0]->child[i])));
+					(argvartok(argl->child[i])));
 				proc_args[i] = buf;
 
 				#ifdef DEBUG
 				/* debug-print argument type info */
 				fprintf(stderr, "%s: \n",
-					get_tok_str(argvartok(tree->child[0]->child[i])));
-				dump_td(tree_typeof(tree->child[0]->child[i]));
+					get_tok_str(argvartok(argl->child[i])));
+				dump_td(tree_typeof(argl->child[i]));
 				#endif
 
 				/* obtain and store argument type data */
-				argtyp[i] = tree_typeof(tree->child[0]->child[i]);
+				argtyp[i] = tree_typeof(argl->child[i]);
 
 				/* if not type specified, default to int */
 				if (argtyp[i].ty == TO_UNK)
@@ -1478,11 +1489,11 @@ char* codegen(exp_tree_t* tree)
 			proc_args[i] = NULL;
 
 			/* Register argument info */
-			for (i = 0; i < tree->child[0]->child_count; ++i) {
+			for (i = 0; i < argl->child_count; ++i) {
 				func_args[funcdefs].argtyp[i] = argtyp[i];
 			}
 			strcpy(func_args[funcdefs].name, get_tok_str(*(tree->tok)));
-			func_args[funcdefs].argc = tree->child[0]->child_count;
+			func_args[funcdefs].argc = argl->child_count;
 			funcdefs++;
 
 		} else
@@ -1495,10 +1506,15 @@ char* codegen(exp_tree_t* tree)
 		 * Do the boilerplate routine stuff and code
 		 * the procedure body (and symbols, etc.)
 		 */
+		if (tree->child[0]->head_type == CAST_TYPE)
+			codeblock = tree->child[2];
+		else
+			codeblock = tree->child[1];
 		buf = malloc(64);
+		/* procedure name */
 		strcpy(buf, get_tok_str(*(tree->tok)));
 		codegen_proc(buf,
-			tree->child[1],
+			codeblock,
 			proc_args);
 		free(buf);
 
