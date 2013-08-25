@@ -973,6 +973,17 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			/* Figure out size of the whole object in bytes */
 			objsiz = type2offs(typedat);
 
+			/* 
+			 * Use 4 bytes instead of 1 for chars in char arrays.
+			 * unfortunately, parts of the code still expect this. 
+			 * XXX: find a better fix to this problem
+			 */
+			if (check_array(dc) && array_base_type.ptr == 0
+				&& array_base_type.ty == CHAR_DECL) {
+				objsiz *= 4;
+				array_base_type.ty = INT_DECL;
+			}
+
 			/* Add some padding; otherwise werid glitches happen */
 			if (objsiz < 4 && !check_array(dc))
 				objsiz = 4;
