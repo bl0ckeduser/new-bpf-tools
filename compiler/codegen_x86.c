@@ -1172,9 +1172,11 @@ char* codegen(exp_tree_t* tree)
 	exp_tree_t *argl, *codeblock;
 	int custom_return_type;
 
+/*
 	if (findtok(tree))
 		compiler_debug("trying to compile this line",
 			findtok(tree), 0, 0);		
+*/
 
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
