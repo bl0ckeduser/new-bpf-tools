@@ -1944,7 +1944,7 @@ char* codegen(exp_tree_t* tree)
 		sym_s = codegen(tree->child[0]->child[0]);
 		/* member size */
 		membsiz = type2siz(
-			deref_typeof(sym_lookup_type(tree->child[0]->child[0]->tok)));
+			deref_typeof(tree_typeof(tree->child[0]->child[0])));
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
 		sto2 = registerize_siz(str, membsiz);
@@ -1982,7 +1982,7 @@ char* codegen(exp_tree_t* tree)
 		sto2 = registerize(str);
 		/* member size */
 		membsiz = type2siz(
-			deref_typeof(sym_lookup_type(tree->child[0]->tok)));
+			deref_typeof(tree_typeof(tree->child[0])));
 
 		sto = get_temp_reg_siz(membsiz);
 		/* multiply offset by member size */

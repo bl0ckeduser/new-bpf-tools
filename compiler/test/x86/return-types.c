@@ -1,5 +1,11 @@
 /* tests various return types */
 
+/* and also test a basic 2D array
+ * (not the complicated kind where you e.g. say int bob[5][32]
+ * and then do pointer arithmetic on bob[i], the easy kind where
+ * you declare int** bob then do bob[i][j])
+ */
+
 /*
  * XXX: The below all work even if the codegen assumes int size (32 bits)
  * all the time.
@@ -47,16 +53,10 @@ char **collection_of_repeated_letters()
 				 * 10 * 4 bytes = 40
 				 */
 	for (i = 0; i < 10; ++i) {
-		coll[i] = malloc(11);
-		/*
-		 * XXX: coll[i][j] = ...
-		 * proboably this is really just a matter of
-		 * fixing the parser
-		 */
-		ptr = coll[i];
+		coll[i] = malloc(11);	/* 10 chars + NULL terminator */
 		for (j = 0; j < 10; ++j)
-			ptr[j] = letter_of_the_alphabet(i, 1);
-		ptr[j] = 0;	/* XXX: '\0' */
+			coll[i][j] = letter_of_the_alphabet(i, 1);
+		coll[i][j] = 0;		/* XXX: '\0' */
 	}
 	return coll;
 }

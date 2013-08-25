@@ -267,7 +267,7 @@ multi_array_decl:
 exp_tree_t lval()
 {
 	token_t tok = peek();
-	exp_tree_t tree, subtree;
+	exp_tree_t tree, subtree, new_tree;
 
 	/* *x */
 	if (peek().type == TOK_MUL) {
@@ -293,6 +293,19 @@ multi_array_access:
 			need(TOK_RBRACK);
 			if (peek().type == TOK_LBRACK) {
 				++indx;
+				/*
+			 	 * Make a nested ARRAY node so that e.g. mat[i][j] parses to:
+				 * (ARRAY (ARRAY (VARIABLE:matrix) (VARIABLE:i)) (VARIABLE:j))
+				 * 
+				 * The motivation of this design is that it allows the
+				 * codegen to write code for N-dimension arrays just as if
+				 * they were all 1-dimensional arrays by recursing the
+				 * code generation of the base pointer. (Well TBH I have
+				 * only tested it with 2D at this point).
+				 */
+				new_tree = new_exp_tree(ARRAY, NULL);
+				add_child(&new_tree, alloc_exptree(tree));
+				tree = new_tree;
 				goto multi_array_access;
 			}
 			return tree;	
