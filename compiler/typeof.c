@@ -83,6 +83,20 @@ int type2siz(typedesc_t ty)
 	return ty.ptr || ty.arr ? 4 : decl2siz(ty.ty);
 }
 
+int type2offs(typedesc_t ty)
+{
+	int prod, i;
+	if (ty.arr >= 0 && ty.arr_dim) {
+		prod = 1;
+		for (i = 0; i < ty.arr; ++i) {
+			prod *= ty.arr_dim[i];
+		}
+		ty.arr = 0;
+		return type2siz(ty) * prod;
+	}
+	return type2siz(ty);
+}
+
 /*
  * Write out typdesc_t data
  */
@@ -95,12 +109,12 @@ void dump_td(typedesc_t td)
 		fprintf(stderr, "ptr: %d\n", td.ptr);
 	if (td.arr) {
 		fprintf(stderr, "arr: %d\n", td.arr);
-/*
 		fprintf(stderr, "arr_dim: ");
-		for (i = 0; i < td.arr; ++i)
-			fprintf(stderr, "%d ", td.arr_dim[i]);
-		fprintf(stderr, "\n");
-*/
+		if (td.arr_dim) {
+			for (i = 0; i < td.arr; ++i)
+				fprintf(stderr, "%d:%d ", i, td.arr_dim[i]);
+			fprintf(stderr, "\n");
+		}
 	}
 	fprintf(stderr, "===================\n");
 }
@@ -112,8 +126,9 @@ void dump_td(typedesc_t td)
 typedesc_t deref_typeof(typedesc_t td)
 {
 	if (td.arr) {
-			td.ptr = td.ptr + td.arr - 1;
-			td.arr = 0;
+			--td.arr;
+			if (td.arr_dim)
+				++td.arr_dim;
 	}
 	else
 		--td.ptr;
@@ -235,12 +250,7 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	 */
 	if (tp->head_type == ADDR) {
 		td = tree_typeof_iter(td, tp->child[0]);
-		if (td.arr) {
-			td.ptr = td.ptr + td.arr + 1;
-			td.arr = 0;
-		}
-		else
-			++td.ptr;
+		++td.ptr;
 		return td;
 	}
 
@@ -256,12 +266,12 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	/*
 	 * Array access
 	 */
-	if (tp->head_type == ARRAY) {
+	if (tp->head_type == ARRAY || tp->head_type == ARRAY_ADR) {
 		/* type of base */
 		td = tree_typeof_iter(td, tp->child[0]);
-		/* dereference by number of [] */
-		td.ptr = td.arr + td.ptr - (tp->child_count - 1);
-		td.arr = 0;
+		/* dereference by number of []  - 1*/
+		for (i = 0; i < tp->child_count - 1; ++i)
+			td = deref_typeof(td);
 		return td;
 	}
 
@@ -377,7 +387,7 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 		 || tp->head_type == EQL
 		 || tp->head_type == NEQL
  		 || tp->head_type == CC_OR
-	     	 || tp->head_type == CC_AND
+ 		 || tp->head_type == CC_AND
 		 || tp->head_type == CC_NOT) {
 		td.ty = INT_DECL;
 		td.ptr = td.arr = 0;

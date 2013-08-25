@@ -55,6 +55,7 @@ enum {		/* head_type */
 	TO_BLOCK,
 	BREAK,
 	ARG,
+	ARRAY_ADR,
 	/* special */
 	NULL_TREE
 };
@@ -111,6 +112,7 @@ static char* tree_nam[] = {
 	"TO_BLOCK",
 	"BREAK",
 	"ARG",
+	"ARRAY_ADR",
 	"NULL_TREE"
 };
 

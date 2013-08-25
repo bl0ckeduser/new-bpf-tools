@@ -850,6 +850,21 @@ int check_array(exp_tree_t *decl)
 	return array;
 }
 
+/* get Nth array dimension from array declaration */
+int get_arr_dim(exp_tree_t *decl, int n)
+{
+	int array = 0;
+	int i;
+	int r;
+	for (i = 0; i < decl->child_count; ++i)
+		if (decl->child[i]->head_type == ARRAY_DIM)
+			if (array++ == n) {
+				sscanf(get_tok_str(*(decl->child[i]->tok)), "%d", &r);
+				return r;
+			}
+	return -1;
+}
+
 /* 
  * Get a GAS X86 instruction suffix
  * from a type declaration code
@@ -901,6 +916,8 @@ void setup_symbols(exp_tree_t *tree, int symty)
 	int membsiz;
 	int start_bytes;
 	int decl = tree->head_type;
+	typedesc_t typedat;
+	int array_bytes;
 
 	/* Only integer (i.e. char, int) types are supported */
 	if (int_type_decl(decl)) {
@@ -920,10 +937,18 @@ void setup_symbols(exp_tree_t *tree, int symty)
 			if (stars)
 				dc->child_count = newlen;
 
+			/*
+			 * Build type description for the object
+			 */
+			typedat = mk_typedesc(decl, stars, check_array(dc));
+			typedat.arr_dim = malloc(typedat.arr * sizeof(int));
+			for (j = 0; j < typedat.arr; ++j)
+				typedat.arr_dim[j] = get_arr_dim(dc, j); 
+
 			/* 
 			 * Figure out size of array members, in bytes
 			 */
-			membsiz = type2siz(mk_typedesc(decl, stars, check_array(dc)));
+			membsiz = type2offs(typedat);
 
 			/* Add some padding; otherwise werid glitches happen */
 			if (membsiz < 4 && !check_array(dc))
@@ -933,13 +958,10 @@ void setup_symbols(exp_tree_t *tree, int symty)
 			 * Switch symbols/stack setup code
 			 * based on array dimensions of object
 			 */
-			if (check_array(dc) > 1) {
-				codegen_fail("N-dimensional, where N > 1, arrays are "
-					         "currently unsupported", dc->child[0]->tok);
-			} else if (check_array(dc) == 1) {
+			if (check_array(dc) == 1) {
 				/*
 				 * Set up symbols and stack storage
-			 	 * for a 1-dimensional array
+			 	 * for an N-dimensional array
 				 */
 
 				/* XXX: global arrays unsupported */
@@ -1043,12 +1065,13 @@ void setup_symbols(exp_tree_t *tree, int symty)
 			}
 
 			/*
-			 * Store information about the type of the object
+			 * Store type information about the object
+			 * in the appropriate symbol table (local or global)
 		 	 */
 			if (symty == SYMTYPE_STACK) {				
-				symtyp[sym_num] = mk_typedesc(decl, stars, check_array(dc));
+				symtyp[sym_num] = typedat;
 			} else if (symty == SYMTYPE_GLOBALS) {
-				globtyp[sym_num] = mk_typedesc(decl, stars, check_array(dc));
+				globtyp[sym_num] = typedat;
 			}
 		}
 
@@ -1163,7 +1186,7 @@ char* codegen(exp_tree_t* tree)
 	char *sav1, *sav2;
 	int my_ccid;
 	int ptr_arith_mode, obj_siz, ptr_memb, ptr_count;
-	int membsiz;
+	int membsiz, offs_siz;
 	typedesc_t typedat;
 	typedesc_t *callee_argtyp = NULL;
 	int callee_argbytes;	
@@ -1172,6 +1195,7 @@ char* codegen(exp_tree_t* tree)
 	exp_tree_t *argl, *codeblock;
 	int custom_return_type;
 	int ptr_diff;
+	int do_deref;
 
 /*
 	if (findtok(tree))
@@ -1252,7 +1276,7 @@ char* codegen(exp_tree_t* tree)
 		&& tree->child_count == 1
 		&& tree->child[0]->head_type == ARRAY) {
 
-		membsiz = type2siz(deref_typeof(
+		offs_siz = type2offs(deref_typeof(
 			sym_lookup_type(tree->child[0]->child[0]->tok)));
 
 		/* get base pointer */
@@ -1270,7 +1294,7 @@ char* codegen(exp_tree_t* tree)
 
 		/* multiply index byte-offset by size of members */
 		if (membsiz != 1)
-			printf("imull $%d, %s\n", membsiz, sto2);
+			printf("imull $%d, %s\n", offs_siz, sto2);
 
 		/* ptr = base_adr + membsiz * index_expr */
 		printf("addl %s, %s\n", sto2, sto);
@@ -1769,11 +1793,13 @@ char* codegen(exp_tree_t* tree)
 		/* byte size of array members */
 		membsiz = type2siz(
 			deref_typeof(sym_lookup_type(tree->child[0]->child[0]->tok)));
+		offs_siz = type2offs(
+			deref_typeof(sym_lookup_type(tree->child[0]->child[0]->tok)));
 
 		/* build pointer */
 		sto = get_temp_reg_siz(4);
-		if (membsiz != 1)
-			printf("imull $%d, %s\n", membsiz, sto2);
+		if (offs_siz != 1)
+			printf("imull $%d, %s\n", offs_siz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
 		printf("movl %s, %s\n", sto2, sto);
 		free_temp_reg(sto2);
@@ -1946,12 +1972,14 @@ char* codegen(exp_tree_t* tree)
 		/* member size */
 		membsiz = type2siz(
 			deref_typeof(tree_typeof(tree->child[0]->child[0])));
+		offs_siz = type2offs(
+			deref_typeof(tree_typeof(tree->child[0]->child[0])));
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
 		sto2 = registerize_siz(str, membsiz);
 
-		if (membsiz != 1)
-			printf("imull $%d, %s\n", membsiz, sto2);
+		if (offs_siz != 1)
+			printf("imull $%d, %s\n", offs_siz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
 		free_temp_reg(sym_s);
 
@@ -1971,7 +1999,7 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* 
-	 * array retrieval -- works for int, char, char *
+	 * Array retrieval -- works for int, char, char *
 	 * char data gets converted to an int register
 	 */
 	if (tree->head_type == ARRAY && tree->child_count == 2) {
@@ -1984,16 +2012,50 @@ char* codegen(exp_tree_t* tree)
 		/* member size */
 		membsiz = type2siz(
 			deref_typeof(tree_typeof(tree->child[0])));
+		offs_siz = type2offs(
+			deref_typeof(tree_typeof(tree->child[0])));
 
 		sto = get_temp_reg_siz(membsiz);
 		/* multiply offset by member size */
-		if (membsiz != 1)
-			printf("imull $%d, %s\n", membsiz, sto2);
+		if (offs_siz != 1)
+			printf("imull $%d, %s\n", offs_siz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
-		compiler_debug("array retrival -- trying conversion",
+		compiler_debug("array retrieval -- trying conversion",
 			findtok(tree), 0, 0);
-		printf("%s (%s), %s\n", 
-			move_conv_to_long(membsiz), sto2, sto);
+		fprintf(stderr, "membsiz = %d\n", membsiz);
+
+		/*
+		 * Assuming the declaration "int mat[20][30]",
+		 * 
+		 * mat[i][j] = *(&mat[0] + i * 30 * sizeof(int)
+		 *	             + j * sizeof(int))
+		 * 
+		 * which means that the inner expression mat[i] 
+		 * does *NOT* trigger a dereference upon evaluation.
+		 * If it weren't for this subtlety, instead the compiler
+		 * would compile it as
+		 * 
+		 *  *(*(&mat[0] + i * 30 * sizeof(int))
+		 *  	 + j * sizeof(int))
+		 * 
+		 * which assumes that mat[i] is a legal pointer, which it
+		 * isn't because array symbols are not compiled as pointers,
+		 * but only converted to pointers at evaluation.
+		 * 
+		 * Now, what about e.g. int *mat[20] ? Then mat[i] is a legal
+		 * pointer and in that case, you do dereference.
+		 */
+		if (tree_typeof(tree).arr)
+			do_deref = 0;
+		else
+			do_deref = 1;
+
+		if (do_deref)
+			printf("%s (%s), %s\n", 
+				move_conv_to_long(membsiz), sto2, sto);
+		else
+			printf("movl %s, %s\n", 
+				sto2, sto);		
 
 		free_temp_reg(sto2);
 		free_temp_reg(sym_s);
@@ -2056,7 +2118,7 @@ char* codegen(exp_tree_t* tree)
 		 * obj_siz = sizeof(char) -- make sure to deref
 		 * the type before asking for its size ! */
 		if (ptr_arith_mode) 
-			obj_siz = type2siz(deref_typeof(tree_typeof(tree)));
+			obj_siz = type2offs(deref_typeof(tree_typeof(tree)));
 
 		/* Find out which of the operands is the pointer,
 		 * so that it won't get multiplied. if there is
