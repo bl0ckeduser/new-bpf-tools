@@ -315,7 +315,7 @@ multi_array_access:
 		| instr '(' expr1, expr2, ..., exprN ')' ';'
 		| ident ':'
 		| goto ident ';'
-		| ident '(' arg { ',' arg } ')' block
+		| [cast-type] ident '(' arg { ',' arg } ')' block
 		| 'return' expr ';'
 		| 'break' ';'
 */
@@ -325,14 +325,27 @@ exp_tree_t block()
 	exp_tree_t tree, subtree;
 	exp_tree_t subtree2, subtree3;
 	exp_tree_t subtree4;
+	exp_tree_t proctyp;
+	int typed_proc = 0;
 	token_t tok;
 	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
-	int sav_indx;
+	int sav_indx, ident_indx;
+
+	/* return-value type before a procedure */
+	sav_indx = indx;
+	if (valid_tree(proctyp = cast_type()))
+		typed_proc = 1;
+
+	if (peek().type != TOK_IDENT)
+		indx = sav_indx;
 
 	/* bob(a, b, c) { ... } */
 	if ((tok = peek()).type == TOK_IDENT) {
-		sav_indx = indx++;
+		ident_indx = indx;
+		if (!typed_proc)
+			sav_indx = indx;
+		++indx;
 		/*
 		 * Check that it is actually a procedure
 		 * definition
@@ -357,9 +370,12 @@ exp_tree_t block()
 		if (peek().type != TOK_LBRACE)
 			goto not_proc;
 is_proc:
-		indx = sav_indx + 1;
-proc_parse:
+
+		indx = ident_indx + 1;			
 		tree = new_exp_tree(PROC, &tok);
+		/* optional return type */
+		if (typed_proc)
+			add_child(&tree, alloc_exptree(proctyp));
 		/* argument list */
 		subtree = new_exp_tree(ARG_LIST, NULL);
 		need(TOK_LPAREN);

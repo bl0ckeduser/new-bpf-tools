@@ -45,7 +45,7 @@ block := expr ';'
 	| instr '(' expr1, expr2, ..., exprN ')' ';'
 	| ident ':'
 	| goto ident ';'
-	| ident '(' arg { ',' arg } ')' block
+	| [cast-type] ident '(' arg { ',' arg } ')' block
 	| 'return' expr ';'
 	| 'break' ';'
 
