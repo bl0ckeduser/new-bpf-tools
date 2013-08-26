@@ -1054,6 +1054,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 					tag_name);
 				fprintf(stderr, "size: %d bytes, offset: %d\n", 
 					objsiz, tag_offs);
+				dump_td(tag_type);
 			#endif
 
 			/* write tag data to struct description */
@@ -1300,7 +1301,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		||	tree->child[i]->head_type == IF
 		||	tree->child[i]->head_type == WHILE
 		||	int_type_decl(tree->child[i]->head_type)
-		||  tree->child[i]->head_type == STRUCT_DECL)
+		||  (!first_pass && tree->child[i]->head_type == STRUCT_DECL))
 			setup_symbols_iter(tree->child[i], symty, first_pass);
 }
 
