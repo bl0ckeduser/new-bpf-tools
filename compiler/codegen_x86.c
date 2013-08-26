@@ -1124,7 +1124,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			sym_num = sym_add(dc->child[0]->tok, objsiz);
 			symtyp[sym_num] = typedat;
 
-			dump_td(typedat);
+			#ifdef DEBUG
+				dump_td(typedat);
+			#endif
 		}
 
 		return;
