@@ -133,6 +133,13 @@ typedesc_t func_ret_typ(char *func_nam)
 	return mk_typedesc(INT_DECL, 0, 0);
 }
 
+/*
+ * Find number of arithmetic nodes
+ * in a tree. (Used by the arithmetic
+ * code writer to try to figure out
+ * if it's going to run out of 
+ * registers)
+ */
 int arith_depth(exp_tree_t *t)
 {
 	int d = 0, i;
@@ -143,6 +150,10 @@ int arith_depth(exp_tree_t *t)
 	return d;
 }
 
+/* 
+ * Checks for a plain "int" (without any pointer stars 
+ * or array dimensions) 
+ */
 int is_plain_int(typedesc_t td)
 {
 	return td.ty == INT_DECL
@@ -348,9 +359,9 @@ char *symstack(int id) {
 	if (!id)
 		sprintf(buf, "(%%ebp)");
 	else if (id < 0)
-		sprintf(buf, "%d(%%ebp)", -id /* * 4 */);
+		sprintf(buf, "%d(%%ebp)", -id);
 	else
-		sprintf(buf, "-%d(%%ebp)", id /* * 4 */);
+		sprintf(buf, "-%d(%%ebp)", id);
 	return buf;
 }
 
@@ -672,7 +683,11 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 
 /*
  * Determine if main() is defined
- * in a user's program.
+ * in a user's program. (If it isn't,
+ * all the code at function level
+ * is considered the main(), like in
+ * losethos/templeOS's modified 
+ * C / C++ compiler).
  */
 int look_for_main(exp_tree_t *tree)
 {
@@ -721,7 +736,8 @@ void run_codegen(exp_tree_t *tree)
 
 	/*
 	 * If there is a main() defined,
-	 * gotta do globals
+	 * the variables at function level
+	 * are globals
 	 */
 	if (main_defined) {
 		printf("# start globals =============\n");
@@ -731,7 +747,8 @@ void run_codegen(exp_tree_t *tree)
 		printf("# end globals =============\n\n");
 	}
 
-	/* Don't ask me why this is necessary */
+	/* Don't ask me why this is necessary.
+ 	 * I probably pasted it from an assembly tutorial. */
 	printf(".section .text\n");
 #ifdef MINGW_BUILD
 	printf(".globl _main\n\n");
@@ -802,7 +819,8 @@ void deal_with_str_consts(exp_tree_t *tree)
 		/* 
 		 * The quotation marks are part of the
 		 * token string, so there is no need 
-		 * to write them again.
+		 * to write them again. Hence their
+		 * absence from this printf().
 		 */
 		printf("_str_const_%d: .string %s\n", 
 			id, get_tok_str(*(tree->tok)));
@@ -941,6 +959,13 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			 * for some reason, if I put ints at
 			 * big offsets like -2408(%ebp),
 			 * segfaults happen. (???)
+			 * 
+			 * Maybe it's actually an alignment
+			 * issue, but googling gives nothing
+			 * and I'm not smart and brave enough
+			 * to spend 3 hours reading Intel PDFs.
+			 * And anyway this is just a toy project,
+			 * innit ?
 			 */
 			if (first_pass && check_array(dc))
 				continue;
@@ -1003,21 +1028,21 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 					codegen_fail("global arrays are currently unsupported",
 						dc->child[0]->tok);
 
-				/* Get number of elements (constant integer) */
-				/* (the parser already ensures it's actually an integer) */
-				sto = atoi(get_tok_str(*(dc->child[1]->tok)));
-
-				/* Check array's variable name not already taken */
+				/* Check that the array's variable name is not already taken */
 				sym_check(dc->child[0]->tok);
 
-				/* Make storage for the first (n - 1) indices */
+				/* Make storage for all but the first entries 
+				 * (the whole array is objsiz bytes, while one entry
+				 * has type array_base_type)
+				 */
 				symsiz[syms++] = objsiz - type2siz(array_base_type);
 				symbytes += objsiz - type2siz(array_base_type);
 
 				/* Clear the symbol name tag for the symbol table
-				 * space taken over by the array indices -- otherwise
+				 * space taken over by the array entries -- otherwise
 				 * the symbol table lookup routines may give incorrect
-				 * results */
+				 * results if there is some leftover stuff from another
+				 * procedure */
 				*symtab[syms - 1] = 0;
 
 				/* 
@@ -1087,8 +1112,8 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				}
 
 				/* 
-				 * For stack variables, make the initial value
-				 * an assignment in the body of the relevant
+				 * For stack variables, turn the initial value node
+				 * into an assignment in the body of the
 				 * procedure; otherwise, discard the tree 
 				 */
 				if (dc->child_count == 2 
@@ -1113,7 +1138,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		 * Turn the declaration sequence into
 		 * a standard code sequence, because at
 		 * this point the assignments are ASGN
-		 * and the rest are NULL_TREE
+		 * and the rest are NULL_TREE and the
+		 * stack variable initializers (the ASGNs)
+		 * have to be coded.
 		 */
 		if (!first_pass)
 			tree->head_type = BLOCK;
@@ -1134,7 +1161,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
  * copy it to a new temporary register and give
  * this new register. (This is used because
  * several x86 instructions seem to expect
- * registers rather than stack offsets)
+ * registers rather than stack offsets).
  */
 char* registerize(char *stor)
 {
@@ -1414,6 +1441,7 @@ char* codegen(exp_tree_t* tree)
 		 * Compute stack size of all the arguments together
 		 */
 		if (!callee_argtyp) {
+			/* default is int */
 			compiler_warn("no declaration found, "
 				      "assuming all arguments are 32-bit int",
 				findtok(tree), 0, 0);
@@ -1471,11 +1499,12 @@ char* codegen(exp_tree_t* tree)
 		/* 
 		 * Call the subroutine
 		 */
-#ifdef MINGW_BUILD
-		printf("call _%s\n", get_tok_str(*(tree->tok)));
-#else
-		printf("call %s\n", get_tok_str(*(tree->tok)));
-#endif
+		#ifdef MINGW_BUILD
+			printf("call _%s\n", get_tok_str(*(tree->tok)));
+		#else
+			printf("call %s\n", get_tok_str(*(tree->tok)));
+		#endif
+
 		/* 
 		 * Throw off the arguments from the stack
 		 */
@@ -1517,10 +1546,10 @@ char* codegen(exp_tree_t* tree)
 	/* procedure definition */
 	if (tree->head_type == PROC) {
 		/*
-		 * Can't nest procedure definitions
+		 * Can't nest procedure definitions, not in C, anyway
 		 */
 		if (!proc_ok)
-			compiler_fail("function definition not allowed here", 
+			compiler_fail("function definition not allowed here (it's nested)",
 				findtok(tree), 0, 0);
 
 		/* 
@@ -1542,27 +1571,29 @@ char* codegen(exp_tree_t* tree)
 		argbytes = 0;
 		if (argl->child_count) {
 			for (i = 0; argl->child[i]; ++i) {
-				/* copy argument name string to proc_args[i] */
+				/* 
+				 * Copy this argument's variable name to proc_args[i]
+				 */
 				buf = malloc(64);
 				strcpy(buf, get_tok_str
 					(argvartok(argl->child[i])));
 				proc_args[i] = buf;
 
 				#ifdef DEBUG
-				/* debug-print argument type info */
-				fprintf(stderr, "%s: \n",
-					get_tok_str(argvartok(argl->child[i])));
-				dump_td(tree_typeof(argl->child[i]));
+					/* debug-print argument type info */
+					fprintf(stderr, "%s: \n",
+						get_tok_str(argvartok(argl->child[i])));
+					dump_td(tree_typeof(argl->child[i]));
 				#endif
 
-				/* obtain and store argument type data */
+				/* Obtain and store argument type data */
 				argtyp[i] = tree_typeof(argl->child[i]);
 
-				/* if not type specified, default to int */
+				/* If no type specified, default to int */
 				if (argtyp[i].ty == TO_UNK)
 					argtyp[i].ty = INT_DECL;
 
-				/* calculate byte offsets */
+				/* Calculate byte offsets */
 				argsiz[i] = type2siz(argtyp[i]);
 				argbytes += argsiz[i];
 
