@@ -25,6 +25,7 @@ exp_tree_t decl2();
 exp_tree_t cast();
 exp_tree_t cast_type();
 exp_tree_t arg();
+exp_tree_t struct_decl();
 int decl_dispatch(char type);
 
 void printout(exp_tree_t et);
@@ -169,7 +170,7 @@ exp_tree_t cast_type()
 }
 
 /* 
- * decl := basic-type decl2 { ','  decl2 } 
+ * decl := (basic-type | struct-decl) decl2 { ','  decl2 } 
  */
 int decl_dispatch(char type)
 {
@@ -187,10 +188,15 @@ exp_tree_t decl()
 	token_t tok = peek();
 	exp_tree_t tree, subtree;
 
-	/* basic-type decl2 { ','  decl2 }  */
+	/* 
+	 * (basic-type|struct-decl) decl2 { ','  decl2 }
+  	 */
+	if (valid_tree((tree = struct_decl())))
+		goto decl_decl2;
 	if(is_basic_type(tok.type)) {
 		++indx;	/* eat basic-type token */
 		tree = new_exp_tree(decl_dispatch(tok.type), NULL);
+decl_decl2:
 		while (1) {
 			if (!valid_tree(subtree = decl2()))
 				parse_fail("bad declaration syntax");
@@ -203,7 +209,38 @@ exp_tree_t decl()
 		}
 		return tree;
 	}
+	return null_tree;
+}
 
+/*
+ * struct-decl := 'struct' ident '{' decl ';' { decl ';' } '}'
+ */
+exp_tree_t struct_decl()
+{
+	exp_tree_t tree, subtree;
+	token_t name;
+	int sav_indx;
+	if (peek().type == TOK_STRUCT) {
+		++indx;
+		name = need(TOK_IDENT);
+		if (peek().type == TOK_LBRACE) {
+			++indx;
+			tree = new_exp_tree(STRUCT_DECL, &name);
+			while (peek().type != TOK_RBRACE) {
+				subtree = decl();
+				if (!valid_tree(subtree))
+					parse_fail("member declaration expected in struct declaration");
+				add_child(&tree, alloc_exptree(subtree));
+				if (peek().type == TOK_SEMICOLON)
+					++indx;
+				else
+					break;
+			}
+			need(TOK_RBRACE);
+			return tree;
+		} else
+			indx = sav_indx;
+	}
 	return null_tree;
 }
 

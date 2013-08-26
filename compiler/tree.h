@@ -56,6 +56,7 @@ enum {		/* head_type */
 	BREAK,
 	ARG,
 	ARRAY_ADR,
+	STRUCT_DECL,
 	/* special */
 	NULL_TREE
 };
@@ -113,6 +114,7 @@ static char* tree_nam[] = {
 	"BREAK",
 	"ARG",
 	"ARRAY_ADR",
+	"STRUCT_DECL",
 	"NULL_TREE"
 };
 
