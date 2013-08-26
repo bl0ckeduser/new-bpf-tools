@@ -13,12 +13,31 @@
  *  gathers several into an array, yields it from
  *  a function, or is a pointer to it"
  */
+
+/* 
+ * Arranged in order of precedence
+ * (e.g. if there's an arr and a ptr, it's
+ * an array of pointers, not the reverse)
+ */
 typedef struct {
-	int ty;			/* e.g. INT_DECL for "int" */
-	int ptr;		/* e.g. 2 for "int **" */
 	int arr;		/* e.g. 3 for "int [12][34][56]" */
 	int *arr_dim;	/* e.g. {12, 34, 56} for "int [12][34][56]" */
+
+	int ptr;		/* e.g. 2 for "int **" */
+
+	int is_struct;
+	struct struct_desc_s *struct_desc;
+
+	int ty;			/* e.g. INT_DECL for "int" */
+
 } typedesc_t;
+
+typedef struct struct_desc_s {
+	int cc;					/* number of tags */
+	char *name[128];		/* tag names */
+	typedesc_t* typ[128];	/* tag types */
+	int offs[128];			/* tag byte offsets */
+} struct_desc_t;
 
 extern typedesc_t tree_typeof(exp_tree_t *tp);
 extern void dump_td(typedesc_t);

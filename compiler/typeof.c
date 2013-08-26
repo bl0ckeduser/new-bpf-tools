@@ -41,6 +41,7 @@ typedesc_t mk_typedesc(int bt, int ptr, int arr)
 	td.ptr = ptr;
 	td.arr = arr;
 	td.arr_dim = NULL;
+	td.is_struct = 0;
 	return td;
 }
 
@@ -100,22 +101,53 @@ int type2offs(typedesc_t ty)
 /*
  * Write out typdesc_t data
  */
-void dump_td(typedesc_t td)
+void dump_td(typedesc_t td) {
+	extern void dump_td_iter(typedesc_t td, int depth);
+	dump_td_iter(td, 0);
+}
+void indent(FILE *out, int len) {
+	while (len --> 0)
+		fprintf(out, "   ");
+}
+void dump_td_iter(typedesc_t td, int depth)
 {
 	int i;
+	indent(stderr, depth);
 	fprintf(stderr, "==== dump_td ======\n");
-	fprintf(stderr, "ty: %s\n", tree_nam[td.ty]);
-	if (td.ptr)
-		fprintf(stderr, "ptr: %d\n", td.ptr);
-	if (td.arr) {
-		fprintf(stderr, "arr: %d\n", td.arr);
-		fprintf(stderr, "arr_dim: ");
-		if (td.arr_dim) {
-			for (i = 0; i < td.arr; ++i)
-				fprintf(stderr, "%d:%d ", i, td.arr_dim[i]);
-			fprintf(stderr, "\n");
+
+	if (td.is_struct) {
+		indent(stderr, depth);
+		fprintf(stderr, "** struct **\n");
+		indent(stderr, depth);
+		fprintf(stderr, "struct_desc ptr = %p\n", td.struct_desc);
+		indent(stderr, depth);
+		fprintf(stderr, "tags: %d\n", td.struct_desc->cc);
+		for (i = 0; i < td.struct_desc->cc; ++i) {
+			indent(stderr, depth);
+			fprintf(stderr, "tag: %s\n", td.struct_desc->name[i]);
+			dump_td_iter(*(td.struct_desc->typ[i]), depth + 1);
+		}
+	} else {
+		indent(stderr, depth);
+		fprintf(stderr, "ty: %s\n", tree_nam[td.ty]);
+		if (td.ptr) {
+			indent(stderr, depth);
+			fprintf(stderr, "ptr: %d\n", td.ptr);
+		}
+		if (td.arr) {
+			indent(stderr, depth);
+			fprintf(stderr, "arr: %d\n", td.arr);
+			indent(stderr, depth);
+			fprintf(stderr, "arr_dim: ");
+			if (td.arr_dim) {
+				indent(stderr, depth);
+				for (i = 0; i < td.arr; ++i) 
+					fprintf(stderr, "%d:%d ", i, td.arr_dim[i]);
+				fprintf(stderr, "\n");
+			}
 		}
 	}
+	indent(stderr, depth);
 	fprintf(stderr, "===================\n");
 }
 

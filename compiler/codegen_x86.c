@@ -799,10 +799,12 @@ void run_codegen(exp_tree_t *tree)
 	#ifdef DEBUG
 		int i;
 		exp_tree_t *child;
-		for (i = 0; i < tree->child_count; ++i)
-			printout_tree(*(tree->child[i])),
-			 fprintf(stderr, "\n"),
+		for (i = 0; i < tree->child_count; ++i) {
+			printout_tree(*(tree->child[i]));
+			fprintf(stderr, "\n");
+			if (tree->child[i]->head_type != NULL_TREE)
 			 dump_td(tree_typeof(tree->child[i]));
+		}
 	#endif
 }
 
@@ -931,6 +933,59 @@ void setup_symbols(exp_tree_t *tree, int symty)
 	setup_symbols_iter(tree, symty, 0);
 }
 
+void count_stars(exp_tree_t *dc, int *stars)
+{
+	/* 
+	 * Count & eat up the pointer-qualification stars,
+	 * as in e.g. "int ***herp_derp"
+	 */
+	int j, newlen = 0;
+	for (j = 0; j < dc->child_count; ++j)
+		if (dc->child[j]->head_type == DECL_STAR)
+			newlen = newlen ? newlen : j,
+			++*stars,
+			dc->child[j]->head_type = NULL_TREE;
+	if (*stars)
+		dc->child_count = newlen;
+}
+
+void parse_type(exp_tree_t *dc, typedesc_t *typedat,
+				typedesc_t *array_base_type, int *objsiz, int decl)
+{
+	int stars = 0;
+	int newlen = 0;
+	int i, j, k;
+
+	/* count pointer stars */
+	count_stars(dc, &stars);
+
+	/* build type description for the object */
+	*typedat = mk_typedesc(decl, stars, check_array(dc));
+	typedat->arr_dim = malloc(typedat->arr * sizeof(int));
+	for (j = 0; j < typedat->arr; ++j)
+		typedat->arr_dim[j] = get_arr_dim(dc, j); 
+	*array_base_type = *typedat;
+	array_base_type->arr = 0;
+
+	/* figure out size of the whole object in bytes */
+	*objsiz = type2offs(*typedat);
+
+	/* 
+	 * Use 4 bytes instead of 1 for chars in char arrays.
+	 * unfortunately, parts of the code still expect this. 
+	 * XXX: find a better fix to this problem
+	 */
+	if (check_array(dc) && array_base_type->ptr == 0
+		&& array_base_type->ty == CHAR_DECL) {
+		*objsiz *= 4;
+		array_base_type->ty = INT_DECL;
+	}
+
+	/* Add some padding; otherwise werid glitches happen */
+	if (*objsiz < 4 && !check_array(dc))
+		*objsiz = 4;
+}
+
 void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 {
 	int i, j, k, sto;
@@ -941,14 +996,135 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 	int objsiz;
 	int start_bytes;
 	int decl = tree->head_type;
-	typedesc_t typedat;
+	typedesc_t typedat, struct_base, tag_type;
 	int array_bytes;
 	int dim;
 	typedesc_t array_base_type;
+	struct_desc_t* sd;
+	int tag_offs;
+	char tag_name[64];
+	int struct_bytes;
 
 	/*
-	 * Only integer (i.e. char, int) based-types are supported
-	 * (arrays of them, pointers of them)
+	 * Handle structs in the second pass
+	 */
+	if (tree->head_type == STRUCT_DECL && !first_pass) {
+		/* XXX: global structs unsupported */
+		if (symty == SYMTYPE_GLOBALS)
+			codegen_fail("global structs are unsupported",
+				findtok(dc));
+
+		/* discard the tree from further codegeneneration */
+		tree->head_type = NULL_TREE;
+
+		/* build the struct's type description
+		 * (derived types like pointers come later in the
+		 * declaration children) */
+		struct_base.ty = 0;		
+		struct_base.arr = struct_base.ptr = 0;
+
+		/* allocate struct-description structure
+		 * (yes this is starting to get meta) */
+		sd = malloc(sizeof(struct_desc_t));
+
+		/* figure out tag count */
+		sd->cc = 0;
+		for (i = 0; i < tree->child_count; ++i)
+			if (tree->child[i]->head_type == DECL_CHILD)
+				break;
+			else
+				sd->cc += 1;
+
+		/* iterate over tags */
+		tag_offs = 0;
+		for (i = 0; i < sd->cc; ++i) {
+			dc = tree->child[i]->child[0];
+			/* get tag name */
+			strcpy(tag_name, get_tok_str(*(dc->child[0]->tok)));
+
+			/* get information on the tag's type */
+			/* XXX: tags can't be structs themselves yet ! */
+			parse_type(dc, &tag_type, &array_base_type, &objsiz, 
+				tree->child[i]->head_type);
+
+			#ifdef DEBUG
+				fprintf(stderr, "struct `%s' -> tag `%s' -> ", 
+					get_tok_str(*(tree->tok)),
+					tag_name);
+				fprintf(stderr, "size: %d bytes, offset: %d\n", 
+					objsiz, tag_offs);
+			#endif
+
+			/* write tag data to struct description */
+			sd->offs[i] = tag_offs;
+			sd->name[i] = malloc(128);
+			strcpy(sd->name[i], tag_name);
+			sd->typ[i] = &tag_type;
+
+			/* bump tag offset calculation */
+			tag_offs += objsiz;
+		}
+
+		/* size in bytes of the whole struct */
+		struct_bytes = tag_offs;
+
+		/* bind struct desc to struct base type desc */
+		struct_base.struct_desc = sd;
+		struct_base.is_struct = 1;
+
+		/* 
+		 * Now do the declaration children (i.e. the actual
+		 * variables, with pointer/array modifiers and 
+		 * symbol name identifiers, after the "struct { ... } " part)
+		 */
+		for (i = sd->cc; i < tree->child_count; ++i) {
+			dc = tree->child[i];
+
+			/* 
+			 * The type of the declaration child is derived
+			 * from the struct type by adding pointer or array
+			 * qualifications
+			 */
+
+			typedat = struct_base;
+			typedat.arr = check_array(dc);
+			count_stars(dc, &(typedat.ptr));
+
+			#ifdef DEBUG
+				fprintf(stderr, "struct `%s' -> ",
+					get_tok_str(*(tree->tok)));
+				fprintf(stderr, "decl var `%s`, qual a=%d,p=%d \n",
+					get_tok_str(*(dc->child[0]->tok)),
+					typedat.arr, typedat.ptr);
+			#endif
+
+			/* figure out the size of the object */
+			if (typedat.ptr)
+				/* pointers are always 4 bytes on 32-bit x86
+				 * hurr durr amirite */
+				objsiz = 4;
+			else if (typedat.arr)
+				/* XXX: TODO: arrays of struct: more messy calculations
+				 * and symbol table stack mapping subtleties */
+				codegen_fail("I can't do arrays of structs yet !", findtok(dc));
+			else
+				/* single variable: it's just the size of the struct */
+				objsiz = struct_bytes;
+
+			/* add the variable name, size, and type to the symbol table */
+			/* XXX: if global structs were supported a dispatch
+		 	 * to the global symbol table would be needed here */
+			sym_num = sym_add(dc->child[0]->tok, objsiz);
+			symtyp[sym_num] = typedat;
+
+			dump_td(typedat);
+		}
+
+		return;
+	}
+
+	/*
+	 * Handle integer (char, int) types and pointers/arrays of them
 	 */
 	if (int_type_decl(decl)) {
 		for (i = 0; i < tree->child_count; ++i) {
@@ -973,46 +1149,12 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				continue;
 
 			/* 
-			 * Count & eat up the pointer-qualification stars,
-			 * as in e.g. "int ***herp_derp"
-		 	 */
-			stars = newlen = 0;
-			for (j = 0; j < dc->child_count; ++j)
-				if (dc->child[j]->head_type == DECL_STAR)
-					newlen = newlen ? newlen : j,
-					++stars,
-					dc->child[j]->head_type = NULL_TREE;
-			if (stars)
-				dc->child_count = newlen;
-
-			/*
-			 * Build type description for the object
+			 * Get some type information about the object
+			 * declared
 			 */
-			typedat = mk_typedesc(decl, stars, check_array(dc));
-			typedat.arr_dim = malloc(typedat.arr * sizeof(int));
-			for (j = 0; j < typedat.arr; ++j)
-				typedat.arr_dim[j] = get_arr_dim(dc, j); 
-			array_base_type = typedat;
-			array_base_type.arr = 0;
+			parse_type(dc, &typedat, &array_base_type,
+						&objsiz, decl);
 
-			/* Figure out size of the whole object in bytes */
-			objsiz = type2offs(typedat);
-
-			/* 
-			 * Use 4 bytes instead of 1 for chars in char arrays.
-			 * unfortunately, parts of the code still expect this. 
-			 * XXX: find a better fix to this problem
-			 */
-			if (check_array(dc) && array_base_type.ptr == 0
-				&& array_base_type.ty == CHAR_DECL) {
-				objsiz *= 4;
-				array_base_type.ty = INT_DECL;
-			}
-
-			/* Add some padding; otherwise werid glitches happen */
-			if (objsiz < 4 && !check_array(dc))
-				objsiz = 4;
-	
 			/* 
 			 * Switch symbols/stack setup code
 			 * based on array dimensions of object
@@ -1145,13 +1287,14 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		if (!first_pass)
 			tree->head_type = BLOCK;
 	}
-	
+
 	/* Child recursion */
 	for (i = 0; i < tree->child_count; ++i)
 		if (tree->child[i]->head_type == BLOCK
 		||	tree->child[i]->head_type == IF
 		||	tree->child[i]->head_type == WHILE
-		||	int_type_decl(tree->child[i]->head_type))
+		||	int_type_decl(tree->child[i]->head_type)
+		||  tree->child[i]->head_type == STRUCT_DECL)
 			setup_symbols_iter(tree->child[i], symty, first_pass);
 }
 
