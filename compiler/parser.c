@@ -262,12 +262,26 @@ multi_array_decl:
 /*
  * lvalue := ident { '[' expr ']' }  | '*' unary-expr
  *          | '(' cast-type ') lvalue
+ *			| '(' lvalue ')'
  */
 /* XXX: TODO: cast part */
 exp_tree_t lval()
 {
 	token_t tok = peek();
 	exp_tree_t tree, subtree, new_tree;
+	int sav_indx;
+
+	/* parenthesized lvalue */
+	if (peek().type == TOK_LPAREN) {
+		sav_indx = indx++;
+		if (valid_tree((subtree = lval()))) {
+			if (peek().type == TOK_RPAREN) {
+				++indx;
+				return subtree;
+			}
+		}
+		indx = sav_indx;
+	}
 
 	/* *x */
 	if (peek().type == TOK_MUL) {

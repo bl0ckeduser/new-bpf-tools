@@ -60,6 +60,7 @@ expr := lvalue asg-op expr
  */
 lvalue := ident { '[' expr ']' }  | '*' unary-expr
 	  | '(' cast-type ') lvalue
+	  | '(' lvalue ')'
 
 ccor_expr := ccand_expr ['||' ccand_expr]
 
