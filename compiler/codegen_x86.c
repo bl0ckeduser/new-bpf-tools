@@ -1027,6 +1027,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		/* allocate struct-description structure
 		 * (yes this is starting to get meta) */
 		sd = malloc(sizeof(struct_desc_t));
+	
+		/* track structure name */
+		strcpy(sd->snam, get_tok_str(*(tree->tok)));
 
 		/* figure out tag count */
 		sd->cc = 0;

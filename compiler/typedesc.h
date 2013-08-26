@@ -34,6 +34,7 @@ typedef struct {
 
 typedef struct struct_desc_s {
 	int cc;					/* number of tags */
+	char snam[128];			/* structure name */
 	char *name[128];		/* tag names */
 	typedesc_t* typ[128];	/* tag types */
 	int offs[128];			/* tag byte offsets */
