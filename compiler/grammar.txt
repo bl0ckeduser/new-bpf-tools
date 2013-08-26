@@ -84,7 +84,11 @@ comp_expr := sum_expr [comp-op sum_expr]
 
 sum_expr := mul_expr { add-op mul_expr }
 
-mul_expr := unary_expr { mul-op unary_expr }
+mul_expr := dot_expr { mul-op dot_expr }
+
+/* XXX: If the `.' (struct tag access) operator isn't left-associative,
+ * this will have to be changed */
+dot_expr := unary_expr {'.' unary_expr }
 
 unary_expr := ([ - ] ( lvalue | integer
 			      | char-const 

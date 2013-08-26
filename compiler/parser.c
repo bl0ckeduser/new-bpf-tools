@@ -26,6 +26,7 @@ exp_tree_t cast();
 exp_tree_t cast_type();
 exp_tree_t arg();
 exp_tree_t struct_decl();
+exp_tree_t dot_expr();
 int decl_dispatch(char type);
 
 void printout(exp_tree_t et);
@@ -890,7 +891,7 @@ exp_tree_t sum_expr()
 		0);
 }
 
-/* mul_expr := unary_expr { mul-op unary_expr } */
+/* mul_expr := dot_expr { mul-op dot_expr } */
 void mul_dispatch(char oper, exp_tree_t *dest)
 {
 	switch (oper) {
@@ -908,9 +909,30 @@ void mul_dispatch(char oper, exp_tree_t *dest)
 exp_tree_t mul_expr()
 {
 	return parse_left_assoc(
-		&unary_expr,
+		&dot_expr,
 		&is_mul_op,
 		&mul_dispatch,
+		0);
+}
+
+/* dot_expr := unary_expr {'.' unary_expr } */
+void dot_dispatch(char oper, exp_tree_t *dest)
+{
+	switch (oper) {
+		case TOK_DOT:
+			*dest = new_exp_tree(STRUCT_MEMB, NULL);
+		break;
+	}
+}
+int is_dot(char ty) {
+	return ty == TOK_DOT;
+}
+exp_tree_t dot_expr()
+{
+	return parse_left_assoc(
+		&unary_expr,
+		&is_dot,
+		&dot_dispatch,
 		0);
 }
 

@@ -71,7 +71,8 @@ enum {
 	TOK_NOMORETOKENSLEFT,
 	TOK_CHAR,
 	TOK_BREAK,
-	TOK_STRUCT
+	TOK_STRUCT,
+	TOK_DOT
 };
 
 static char* tok_nam[] = {
@@ -138,7 +139,8 @@ static char* tok_nam[] = {
 	"TOK_NOMORETOKENSLEFT",
 	"TOK_CHAR",
 	"TOK_BREAK",
-	"TOK_STRUCT"
+	"TOK_STRUCT",
+	"TOK_DOT"
 };
 
 static char* tok_desc[] = {
