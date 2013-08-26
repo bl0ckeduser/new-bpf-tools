@@ -1430,12 +1430,75 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* 
-	 * XXX: struct access unimplemented,
-	 * but I return nothing instead of failing
-	 * so that the type analyzer debugger will start
+	 * struct member retrieval
 	 */
-	if (tree->head_type == STRUCT_MEMB)
-		return NULL;
+	if (tree->head_type == STRUCT_MEMB) {
+		char buf[128];
+		strcpy(buf, get_tok_str(*(tree->child[1]->tok)));
+		int offs = struct_tag_offs(tree_typeof(tree->child[0]),
+						buf);
+
+		printf("# load tag `%s' with offset %d\n", buf, offs);
+
+		membsiz = type2siz(tree_typeof(tree));
+
+		/* get base adr */
+		/* XXX: doesn't work for non-variable base expressions ! */
+		if (tree->child[0]->head_type != VARIABLE)
+			return NULL;
+
+		sym_s = sym_lookup(tree->child[0]->tok);
+
+		sto = get_temp_reg();
+		sto2 = get_temp_reg();
+
+		/* build pointer */
+		printf("leal %s, %s\n", sym_s, sto2);
+		printf("addl $%d, %s\n", offs, sto2);
+	
+		/* deref */ 
+		printf("%s (%s), %s\n", 
+			move_conv_to_long(membsiz), sto2, sto);
+
+		free_temp_reg(sto2);
+		return sto;
+	}
+
+	/*
+	 * struct member write, e.g. a.b = foo
+	 */
+	if (tree->head_type == ASGN
+		&& tree->child[0]->head_type == STRUCT_MEMB) {
+		char buf[128];
+		strcpy(buf, get_tok_str(*(tree->child[0]->child[1]->tok)));
+		int offs = struct_tag_offs(tree_typeof(tree->child[0]->child[0]),
+						buf);
+
+		printf("# load address of tag `%s' with offset %d\n", buf, offs);
+
+		membsiz = type2siz(tree_typeof(tree));
+
+		/* get base adr */
+		/* XXX: doesn't work for non-variable base expressions ! */
+		if (tree->child[0]->child[0]->head_type != VARIABLE)
+			return NULL;
+
+		sym_s = sym_lookup(tree->child[0]->child[0]->tok);
+
+		sto = get_temp_reg();
+		sto2 = get_temp_reg();
+
+		/* build pointer */
+		printf("leal %s, %s\n", sym_s, sto2);
+		printf("addl $%d, %s\n", offs, sto2);
+	
+		sto3 = registerize(codegen(tree->child[1]));
+		printf("movl %s, (%s)\n", sto3, sto2);
+
+		free_temp_reg(sto3);
+		free_temp_reg(sto2);
+		return sto;
+	}
 
 	/* 
 	 * XXX: CAST tree -- might want to have some code here,

@@ -11,6 +11,8 @@
  * file codegen_x86.c
  */
 
+char err_buf[1024];
+
 /* Internal-use prototype */
 typedesc_t tree_typeof_iter(typedesc_t, exp_tree_t*);
 
@@ -23,6 +25,7 @@ extern int int_type_decl(char ty);
 extern int decl2siz(int);
 extern typedesc_t func_ret_typ(char *func_nam);
 extern char* get_tok_str(token_t t);
+extern void fail(char *);
 
 /* hook to error printout code */
 void compiler_fail(char *message, token_t *token,
@@ -44,6 +47,21 @@ typedesc_t mk_typedesc(int bt, int ptr, int arr)
 	td.is_struct = 0;
 	return td;
 }
+
+/* offset (in bytes) of a tag in a structure */
+int struct_tag_offs(typedesc_t stru, char *tag_name)
+{
+	int i;
+
+	/* figure out the type of the tag and return it */
+	for (i = 0; i < stru.struct_desc->cc; ++i) {
+		if (!strcmp(stru.struct_desc->name[i], tag_name)) {
+			return stru.struct_desc->offs[i];
+		}
+	}
+
+	fail("could not find a struct tag offset");
+} 
 
 /* 
  * INT_DECL => 4 because "int" is 4 bytes, etc.
@@ -186,10 +204,14 @@ int is_arith_op(char ty)
 typedesc_t tree_typeof(exp_tree_t *tp)
 {
 	typedesc_t td;
+
+	/* create `unknown' default result */
 	td.ty = TO_UNK;
 	td.ptr = 0;
 	td.arr = 0;
 	td.arr_dim = NULL;
+	td.is_struct = 0;
+
 	return tree_typeof_iter(td, tp);
 }
 
@@ -202,6 +224,8 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	int i;
 	int max_decl, max_siz, max_ptr, siz;
 	typedesc_t ctd;
+	typedesc_t struct_typ, tag_typ;
+	char tag_name[128];
 
 	/* 
 	 * If a block has one child, find the type of that,
@@ -214,6 +238,42 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 			td.ty = TO_UNK;
 			return td;
 		}
+	}
+
+	if (tp->head_type == STRUCT_MEMB) {
+		/* find type of base */
+		struct_typ = tree_typeof(tp->child[0]);
+		strcpy(tag_name, get_tok_str(*(tp->child[1]->tok)));
+
+		if (struct_typ.arr || struct_typ.ptr)
+			compiler_fail("you can't apply the `.' operator on a"
+						 " non-structure...",
+				findtok(tp->child[0]), 0, 0);
+
+		#if 0
+		#ifdef DEBUG
+			fprintf(stderr, "******************************************\n");
+			fprintf(stderr, "trying to figure out the type of a `.' expr\n");
+			fprintf(stderr, "---------------- base struct type: \n");
+			dump_td_iter(struct_typ, 1);
+			fprintf(stderr, "---------------------------------- \n");
+			fprintf(stderr, "tag name: %s\n", tag_name);
+			fprintf(stderr, "******************************************\n");
+		#endif
+		#endif
+		
+		/* figure out the type of the tag and return it */
+		for (i = 0; i < struct_typ.struct_desc->cc; ++i) {
+			if (!strcmp(struct_typ.struct_desc->name[i], tag_name)) {
+				return *(struct_typ.struct_desc->typ[i]);
+			}
+		}
+
+		/* the tag doesn't even exist, come on !!! */
+		sprintf(err_buf, "a structure of type `%s' has no tag `%s'",
+			struct_typ.struct_desc->snam,
+			tag_name);
+		compiler_fail(err_buf, findtok(tp->child[0]), 0, 0);
 	}
 
 	/*

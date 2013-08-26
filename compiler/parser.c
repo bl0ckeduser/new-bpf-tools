@@ -671,7 +671,7 @@ exp_tree_t expr()
 	token_t tok;
 	int save = indx;
 
-	if (valid_tree(lv = lval())) {
+	if (valid_tree(lv = dot_expr())) {
 		/* "lvalue asg-op expr" pattern */
 		if(is_asg_op(peek().type)) {
 			tree = new_exp_tree(ASGN, NULL);
