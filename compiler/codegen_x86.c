@@ -1004,6 +1004,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 	int tag_offs;
 	char tag_name[64];
 	int struct_bytes;
+	typedesc_t *heap_typ;
 
 	/*
 	 * Handle structs in the second pass
@@ -1059,7 +1060,12 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			sd->offs[i] = tag_offs;
 			sd->name[i] = malloc(128);
 			strcpy(sd->name[i], tag_name);
-			sd->typ[i] = &tag_type;
+			/* (gotta *copy* the tag type data to heap because it's stack 
+			 * -- otherwise funny things happen when you try to 
+			 * read it outside of this function) */
+			heap_typ = malloc(sizeof(typedesc_t));
+			memcpy(heap_typ, &tag_type, sizeof(typedesc_t));
+			sd->typ[i] = heap_typ;
 
 			/* bump tag offset calculation */
 			tag_offs += objsiz;
@@ -1416,6 +1422,14 @@ char* codegen(exp_tree_t* tree)
 		new_temp_mem();
 		new_temp_reg();
 	}
+
+	/* 
+	 * XXX: struct access unimplemented,
+	 * but I return nothing instead of failing
+	 * so that the type analyzer debugger will start
+	 */
+	if (tree->head_type == STRUCT_MEMB)
+		return NULL;
 
 	/* 
 	 * XXX: CAST tree -- might want to have some code here,
