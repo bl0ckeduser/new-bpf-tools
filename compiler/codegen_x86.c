@@ -1007,6 +1007,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 	int struct_bytes;
 	typedesc_t *heap_typ;
 	int padding;
+	int struct_pass;
 
 	/*
 	 * Handle structs in the second pass
@@ -1042,7 +1043,16 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				sd->cc += 1;
 
 		/* iterate over tags */
+		struct_pass = 0;
 		tag_offs = 0;
+struct_pass_iter:
+		/*
+		 * For whatever mysterious reason,
+		 * compiled code appears to segfault on FreeBSD 32-bit
+		 * unless I align every tag to 16 bytes
+		 * and code all non-array tags first.
+		 * (?????)
+		 */
 		for (i = 0; i < sd->cc; ++i) {
 			dc = tree->child[i]->child[0];
 			/* get tag name */
@@ -1053,6 +1063,11 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			parse_type(dc, &tag_type, &array_base_type, &objsiz, 
 				tree->child[i]->head_type);
 
+			if (!struct_pass && check_array(dc))
+				continue;
+			if (struct_pass && !check_array(dc))
+				continue;
+
 			#ifdef DEBUG
 				fprintf(stderr, "struct `%s' -> tag `%s' -> ", 
 					get_tok_str(*(tree->tok)),
@@ -1062,16 +1077,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				dump_td(tag_type);
 			#endif
 
-			/* 
-			 * Align struct tags offsets to 16 bytes.
-			 * I have no idea why, but this seems to fix
-			 * some segfaults in compiled code.
-			 */
-			padding = 0;
-			while ((tag_offs + padding) % 16) {
-				++padding;
-			}
-			tag_offs += padding;
+			/* mystery segfault-proofing padding */
+			while (tag_offs % 16)
+				++tag_offs;
 
 			/* write tag data to struct description */
 			sd->offs[i] = tag_offs;
@@ -1087,6 +1095,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			/* bump tag offset calculation */
 			tag_offs += objsiz;
 		}
+
+		if (!struct_pass++)
+			goto struct_pass_iter;
 
 		/* size in bytes of the whole struct */
 		struct_bytes = tag_offs;

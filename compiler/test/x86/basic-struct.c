@@ -3,7 +3,7 @@ main()
 	struct stuff {
 		int a;
 		int b;
-		char message[16];
+		char message[1024];
 		int c;
 	} stuff_datum;
 
