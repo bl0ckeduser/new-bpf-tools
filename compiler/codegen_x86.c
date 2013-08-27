@@ -1005,6 +1005,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 	char tag_name[64];
 	int struct_bytes;
 	typedesc_t *heap_typ;
+	int padding;
 
 	/*
 	 * Handle structs in the second pass
@@ -1059,6 +1060,17 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 					objsiz, tag_offs);
 				dump_td(tag_type);
 			#endif
+
+			/* 
+			 * Align struct tags offsets to 16 bytes.
+			 * I have no idea why, but this seems to fix
+			 * some segfaults in compiled code.
+			 */
+			padding = 0;
+			while ((tag_offs + padding) % 16) {
+				++padding;
+			}
+			tag_offs += padding;
 
 			/* write tag data to struct description */
 			sd->offs[i] = tag_offs;
