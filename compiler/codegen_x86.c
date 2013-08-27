@@ -1461,19 +1461,29 @@ char* codegen(exp_tree_t* tree)
 
 		sym_s = sym_lookup(tree->child[0]->tok);
 
-		sto = get_temp_reg();
 		sto2 = get_temp_reg();
 
 		/* build pointer */
 		printf("leal %s, %s\n", sym_s, sto2);
 		printf("addl $%d, %s\n", offs, sto2);
 	
-		/* deref */ 
-		printf("%s (%s), %s\n", 
-			move_conv_to_long(membsiz), sto2, sto);
-
-		free_temp_reg(sto2);
-		return sto;
+		/* 
+		 * Yet another subtlety...
+		 * if the tag is an array,
+		 * do not dereference, because
+		 * arrays evaluate to pointers at run-time.
+		 */
+		if (tree_typeof(tree).arr) {
+			/* return pointer */ 
+			return sto2;
+		} else {
+			/* dereference */ 
+			sto = get_temp_reg();
+			printf("%s (%s), %s\n", 
+				move_conv_to_long(membsiz), sto2, sto);
+			free_temp_reg(sto2);
+			return sto;
+		}
 	}
 
 	/*
