@@ -33,6 +33,7 @@ extern int type2siz(typedesc_t);
 extern typedesc_t mk_typedesc(int bt, int ptr, int arr);
 extern int is_arith_op(char);
 extern int type2offs(typedesc_t ty);
+extern int struct_tag_offs(typedesc_t stru, char *tag_name);
 
 void setup_symbols(exp_tree_t* tree, int glob);
 

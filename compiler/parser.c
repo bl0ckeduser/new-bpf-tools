@@ -12,6 +12,12 @@ token_t *tokens;
 int indx;
 int tok_count;
 
+char typedef_tag[32][64];
+exp_tree_t typedef_desc[64];
+int typedefs = 0;
+
+extern char* get_tok_str(token_t t);
+
 exp_tree_t block();
 exp_tree_t expr();
 exp_tree_t sum_expr();
@@ -31,6 +37,30 @@ int decl_dispatch(char type);
 
 void printout(exp_tree_t et);
 extern void fail(char* mesg);
+
+int check_typedef(char *str)
+{
+	int i;
+	for (i = 0; i < typedefs; ++i)
+		if (!strcmp(typedef_tag[i], str))
+			return 1;
+	return 0;
+}
+
+exp_tree_t copy_tree(exp_tree_t src_a)
+{
+	exp_tree_t *src = &src_a;
+    exp_tree_t et = new_exp_tree(src->head_type, src->tok);
+    int i;
+
+    for (i = 0; i < src->child_count; ++i)
+            if (src->child[i]->child_count == 0)
+                    add_child(&et, alloc_exptree(*src->child[i]));
+            else
+                    add_child(&et, alloc_exptree(copy_tree(*(src->child[i]))));
+
+    return *alloc_exptree(et);
+}
 
 /* give the current token */
 token_t peek()
@@ -148,26 +178,44 @@ exp_tree_t cast()
 }
 
 /*
- * cast-type := basic-type {'*'}
+ * cast-type := basic-type {'*'} | <typedef-tag> {'*'}
  */
 exp_tree_t cast_type()
 {
 	token_t bt;
 	exp_tree_t btt, btct, ct, star;
+	char *str = get_tok_str(peek());
+	int i;
+
+	for (i = 0; i < typedefs; ++i) {
+		if (!strcmp(typedef_tag[i], str)) {
+			++indx;
+			btct = copy_tree(typedef_desc[i]);
+			if (btct.head_type == CAST_TYPE) {
+				ct = btct;
+				goto cast_typedef_2;
+			}
+			goto cast_typedef;
+		}
+	}
 
 	if (is_basic_type((bt = peek()).type)) {
 		++indx;			/* eat basic-type */
-		ct = new_exp_tree(CAST_TYPE, NULL);
 		btct = new_exp_tree(decl_dispatch(bt.type), NULL);
+cast_typedef:
+		ct = new_exp_tree(CAST_TYPE, NULL);
 		btt = new_exp_tree(BASE_TYPE, NULL);
 		add_child(&btt, alloc_exptree(btct));
 		add_child(&ct, alloc_exptree(btt));
 		star = new_exp_tree(DECL_STAR, NULL);
+cast_typedef_2:
 		while (peek().type == TOK_MUL)
 			++indx, add_child(&ct, alloc_exptree(star));
 		return ct;
-	} else
-		return null_tree;
+	} else if(valid_tree((btt = struct_decl())))
+		return btt;
+
+	return null_tree;
 }
 
 /* 
@@ -184,19 +232,47 @@ int decl_dispatch(char type)
 		break;
 	}
 }
+int decl_dedispatch(char type)
+{
+	switch (type) {
+		case INT_DECL:
+			return TOK_INT;
+		break;
+		case CHAR_DECL:
+			return TOK_CHAR;
+		break;
+	}
+}
 exp_tree_t decl()
 {
 	token_t tok = peek();
 	exp_tree_t tree, subtree;
+	char *str = get_tok_str(peek());
+	int i, id;
+	int td_decl = 0;
 
 	/* 
-	 * (basic-type|struct-decl) decl2 { ','  decl2 }
+	 * (basic-type|struct-decl|<typedef-tag>) decl2 { ','  decl2 }
   	 */
+	for (i = 0; i < typedefs; ++i) {
+		if (!strcmp(typedef_tag[i], str)) {
+			++indx;
+			tree = copy_tree(typedef_desc[i]);
+			if (is_basic_type(decl_dedispatch(tree.child[0]->child[0]->head_type))) {
+				id = tree.child[0]->child[0]->head_type;
+				goto int_decl;
+			}
+			goto decl_decl2;
+		}
+	}
+
 	if (valid_tree((tree = struct_decl())))
 		goto decl_decl2;
 	if(is_basic_type(tok.type)) {
 		++indx;	/* eat basic-type token */
-		tree = new_exp_tree(decl_dispatch(tok.type), NULL);
+		id = decl_dispatch(tok.type);
+int_decl:
+		tree = new_exp_tree(id, NULL);
 decl_decl2:
 		while (1) {
 			if (!valid_tree(subtree = decl2()))
@@ -383,6 +459,7 @@ multi_array_access:
 		| [cast-type] ident '(' arg { ',' arg } ')' block
 		| 'return' expr ';'
 		| 'break' ';'
+		| 'typedef' cast-type ident ';'
 */
 exp_tree_t block()
 {
@@ -419,7 +496,7 @@ exp_tree_t block()
 			goto not_proc;		
 		++indx;
 		while (peek().type != TOK_RPAREN) {
-			if (is_basic_type(peek().type))
+			if (is_basic_type(peek().type) || check_typedef(get_tok_str(peek())))
 				goto is_proc;
 			if (peek().type != TOK_IDENT)
 				goto not_proc;
@@ -435,7 +512,6 @@ exp_tree_t block()
 		if (peek().type != TOK_LBRACE)
 			goto not_proc;
 is_proc:
-
 		indx = ident_indx + 1;			
 		tree = new_exp_tree(PROC, &tok);
 		/* optional return type */
@@ -464,6 +540,22 @@ not_proc:
 		indx = sav_indx;
 		/* carry on with other checks */
 	}
+
+	/* typedef cast-type ident ';' */
+	if (peek().type == TOK_TYPEDEF) {
+		++indx;
+		subtree = cast_type();
+		if (!valid_tree(subtree))
+			parse_fail("expected a declarator after 'typedef'");
+		tok = need(TOK_IDENT);
+		strcpy(typedef_tag[typedefs], get_tok_str(tok));
+		typedef_desc[typedefs] = copy_tree(subtree);
+		++typedefs;
+		need(TOK_SEMICOLON);
+		/* okay carry on with whatever */
+		return block();
+	}
+
 	/* empty block -- ';' */
 	if (peek().type == TOK_SEMICOLON) {
 		++indx;	/* eat semicolon */
@@ -482,13 +574,13 @@ not_proc:
 		 * a label after all */
 		else --indx;
 	}
-	/* expr ';' */
-	if (valid_tree(tree = expr())) {
+	/* decl ';' */
+	if (valid_tree(tree = decl())) {
 		need(TOK_SEMICOLON);
 		return tree;
 	}
-	/* decl ';' */
-	if (valid_tree(tree = decl())) {
+	/* expr ';' */
+	if (valid_tree(tree = expr())) {
 		need(TOK_SEMICOLON);
 		return tree;
 	}

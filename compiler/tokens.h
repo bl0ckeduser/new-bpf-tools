@@ -72,7 +72,8 @@ enum {
 	TOK_CHAR,
 	TOK_BREAK,
 	TOK_STRUCT,
-	TOK_DOT
+	TOK_DOT,
+	TOK_TYPEDEF
 };
 
 static char* tok_nam[] = {
@@ -140,7 +141,8 @@ static char* tok_nam[] = {
 	"TOK_CHAR",
 	"TOK_BREAK",
 	"TOK_STRUCT",
-	"TOK_DOT"
+	"TOK_DOT",
+	"TOK_TYPEDEF"
 };
 
 static char* tok_desc[] = {
@@ -217,7 +219,7 @@ struct bpf_kw {
 	char tok;
 };
 
-#define KW_COUNT 19
+#define KW_COUNT 20
 
 static struct bpf_kw kw_tab[] = 
 {
@@ -239,7 +241,8 @@ static struct bpf_kw kw_tab[] =
 	{ "proc", TOK_PROC },
 	{ "return", TOK_RET },
 	{ "for", TOK_FOR },
-	{ "struct", TOK_STRUCT }
+	{ "struct", TOK_STRUCT },
+	{ "typedef", TOK_TYPEDEF }
 };
 
 /* routines */

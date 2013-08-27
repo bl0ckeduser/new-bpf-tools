@@ -47,6 +47,8 @@ struct-decl := 'struct' ident '{'
 
 cast := '(' cast-type ')' unary_expr
 cast-type := basic-type {'*'}
+		| struct-decl
+		| <typedef-tag>
 
 /* ====================================================== */
 
@@ -62,6 +64,7 @@ block := expr ';'
 	| [cast-type] ident '(' arg { ',' arg } ')' block
 	| 'return' expr ';'
 	| 'break' ';'
+	| 'typedef' cast-type ident ';'
 
 arg := [cast-type] ident
 
