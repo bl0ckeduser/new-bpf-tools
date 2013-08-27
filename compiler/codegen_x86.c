@@ -1590,6 +1590,9 @@ char* codegen(exp_tree_t* tree)
 		offs_siz = type2offs(deref_typeof(
 			tree_typeof(tree->child[0]->child[0])));
 
+		membsiz = type2siz(deref_typeof(
+			tree_typeof(tree->child[0]->child[0])));
+
 		/* get base pointer */
 		sto = codegen(tree->child[0]->child[0]);
 
@@ -1604,7 +1607,7 @@ char* codegen(exp_tree_t* tree)
 				membsiz);
 
 		/* multiply index byte-offset by size of members */
-		if (membsiz != 1)
+		if (offs_siz != 1)
 			printf("imull $%d, %s\n", offs_siz, sto2);
 
 		/* ptr = base_adr + membsiz * index_expr */
