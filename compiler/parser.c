@@ -22,7 +22,6 @@ exp_tree_t block();
 exp_tree_t expr();
 exp_tree_t sum_expr();
 exp_tree_t mul_expr();
-exp_tree_t unary_expr();
 exp_tree_t ccor_expr();
 exp_tree_t ccand_expr();
 exp_tree_t comp_expr();
@@ -32,7 +31,11 @@ exp_tree_t cast();
 exp_tree_t cast_type();
 exp_tree_t arg();
 exp_tree_t struct_decl();
-exp_tree_t dot_expr();
+exp_tree_t e1();
+exp_tree_t e0();
+exp_tree_t e0_2();
+exp_tree_t e0_3();
+exp_tree_t e0_4();
 int decl_dispatch(char type);
 
 void printout(exp_tree_t et);
@@ -153,7 +156,7 @@ exp_tree_t parse(token_t *t)
  */
 
 /*
- * cast := '(' cast-type ')' unary_expr
+ * cast := '(' cast-type ')' e0
  */
 exp_tree_t cast()
 {
@@ -167,7 +170,7 @@ exp_tree_t cast()
 			tree = new_exp_tree(CAST, NULL);
 			add_child(&tree, alloc_exptree(ct));
 			need(TOK_RPAREN);	/* eat and check ')' */
-			if (!valid_tree(ue = unary_expr()))
+			if (!valid_tree(ue = e1()))
 				parse_fail("unary expression expected after cast");
 			add_child(&tree, alloc_exptree(ue));
 			return tree;
@@ -374,7 +377,7 @@ multi_array_decl:
 }
 
 /*
- * lvalue := ident { '[' expr ']' }  | '*' unary-expr
+ * lvalue := ident
  *          | '(' cast-type ') lvalue
  *			| '(' lvalue ')'
  */
@@ -397,53 +400,13 @@ exp_tree_t lval()
 		indx = sav_indx;
 	}
 
-	/* *x */
-	if (peek().type == TOK_MUL) {
-		++indx;	/* eat * */
-		subtree = unary_expr();
-		if (!valid_tree(subtree))
-			parse_fail("expression expected");
-		tree = new_exp_tree(DEREF, NULL);
-		add_child(&tree, alloc_exptree(subtree));
-		return tree;
+	if (tok.type == TOK_IDENT) {
+		/* identifier alone -- variable */
+		++indx;	/* eat the identifier */
+		return new_exp_tree(VARIABLE, &tok);
 	}
-	else if (tok.type == TOK_IDENT) {
-		/* array access: identifier[index][index2]... */
-		if(tokens[indx + 1].type == TOK_LBRACK) {
-			tree = new_exp_tree(ARRAY, NULL);
-			add_child(&tree,
-				alloc_exptree(new_exp_tree(VARIABLE, &tok)));
-			indx += 2;	/* eat the identifier and the [ */
-multi_array_access:
-			if (!valid_tree(subtree = expr()))
-				parse_fail("expression expected");
-			add_child(&tree, alloc_exptree(subtree));
-			need(TOK_RBRACK);
-			if (peek().type == TOK_LBRACK) {
-				++indx;
-				/*
-			 	 * Make a nested ARRAY node so that e.g. mat[i][j] parses to:
-				 * (ARRAY (ARRAY (VARIABLE:matrix) (VARIABLE:i)) (VARIABLE:j))
-				 * 
-				 * The motivation of this design is that it allows the
-				 * codegen to write code for N-dimension arrays just as if
-				 * they were all 1-dimensional arrays by recursing the
-				 * code generation of the base pointer. (Well TBH I have
-				 * only tested it with 2D at this point).
-				 */
-				new_tree = new_exp_tree(ARRAY, NULL);
-				add_child(&new_tree, alloc_exptree(tree));
-				tree = new_tree;
-				goto multi_array_access;
-			}
-			return tree;	
-		/* identifier alone -- variable */		
-		} else {
-			++indx;	/* eat the identifier */
-			return new_exp_tree(VARIABLE, &tok);
-		}
-	} else
-		return null_tree;
+	
+	return null_tree;
 }
 
 /*
@@ -749,7 +712,7 @@ exp_tree_t arg()
 }
 
 /*
-	expr := lvalue asg-op expr 
+	expr := e1 asg-op expr 
 		| ccor_expr
 		| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
 		| str-const
@@ -763,7 +726,7 @@ exp_tree_t expr()
 	token_t tok;
 	int save = indx;
 
-	if (valid_tree(lv = dot_expr())) {
+	if (valid_tree(lv = e1())) {
 		/* "lvalue asg-op expr" pattern */
 		if(is_asg_op(peek().type)) {
 			tree = new_exp_tree(ASGN, NULL);
@@ -815,6 +778,7 @@ exp_tree_t expr()
 		tree = new_exp_tree(STR_CONST, &tok);
 		return tree;
 	}
+
 	return null_tree;
 }
 
@@ -983,7 +947,7 @@ exp_tree_t sum_expr()
 		0);
 }
 
-/* mul_expr := dot_expr { mul-op dot_expr } */
+/* mul_expr := e1 { mul-op e1 } */
 void mul_dispatch(char oper, exp_tree_t *dest)
 {
 	switch (oper) {
@@ -1001,264 +965,306 @@ void mul_dispatch(char oper, exp_tree_t *dest)
 exp_tree_t mul_expr()
 {
 	return parse_left_assoc(
-		&dot_expr,
+		&e1,
 		&is_mul_op,
 		&mul_dispatch,
 		0);
 }
 
-/* dot_expr := unary_expr {('.'|'->') unary_expr } */
-void dot_dispatch(char oper, exp_tree_t *dest)
+/*
+	e1 := '++' e1
+		 | '--' e1
+		 | '-' e1
+		 | '!' e1
+		 | cast
+		 | '*' e1
+		 | '&' e1
+		 | e0
+*/
+exp_tree_t e1()
 {
-	switch (oper) {
-		case TOK_DOT:
-			*dest = new_exp_tree(STRUCT_MEMB, NULL);
-		break;
-		case TOK_ARROW:
-			*dest = new_exp_tree(DEREF_STRUCT_MEMB, NULL);
-		break;
+	exp_tree_t tree, subtree;
+	token_t tok = peek();
+
+	/* ++ e1 */
+	if (tok.type == TOK_PLUSPLUS) {
+		++indx; /* eat ++ */
+		tree = new_exp_tree(INC, NULL);
+		goto e1_prefix;
 	}
-}
-int is_dot(char ty) {
-	return ty == TOK_DOT || ty == TOK_ARROW;
-}
-void build_arrow(exp_tree_t* tr) {
-	int i;
-	exp_tree_t *deref, *sm;
-	if (tr->head_type == DEREF_STRUCT_MEMB) {
-		deref = alloc_exptree(new_exp_tree(DEREF, NULL));
-		add_child(deref, 
-			alloc_exptree(copy_tree(*(tr->child[0]))));
-		sm = alloc_exptree(new_exp_tree(STRUCT_MEMB, NULL));
-		add_child(sm, deref);
-		add_child(sm, 
-			alloc_exptree(copy_tree(*(tr->child[1]))));
-		memcpy(tr, sm, sizeof(exp_tree_t));
+	/* -- e1 */
+	if (tok.type == TOK_MINUSMINUS) {
+		++indx; /* eat -- */
+		tree = new_exp_tree(DEC, NULL);
+		goto e1_prefix;
 	}
-	for (i = 0; i < tr->child_count; ++i)
-		build_arrow(tr->child[i]);
-}
-exp_tree_t dot_expr()
-{
-	exp_tree_t tr =
-	 parse_left_assoc(
-		&unary_expr,
-		&is_dot,
-		&dot_dispatch,
-		0);
-	return tr;
+	/* - e1 */
+	if (tok.type == TOK_MINUS) {
+		++indx; /* eat - */
+		tree = new_exp_tree(NEGATIVE, NULL);
+		goto e1_prefix;
+	}
+	/* ! e1 */
+	if (tok.type == TOK_CC_NOT) {
+		++indx; /* eat ! */
+		tree = new_exp_tree(CC_NOT, NULL);
+		goto e1_prefix;
+	}
+	/* cast */
+	if (valid_tree(tree = cast()))
+		return tree;
+	/* * e1 */
+	if (tok.type == TOK_MUL) {
+		++indx;
+		tree = new_exp_tree(DEREF, NULL);
+		goto e1_prefix;
+	}
+	/* & e1 */
+	if (tok.type == TOK_ADDR) {
+		++indx;
+		tree = new_exp_tree(ADDR, NULL);
+		goto e1_prefix;
+	}
+
+	/* try the higher-precedence stuff on its own */
+	return e0();
+
+e1_prefix:
+	subtree = e1();
+	if (!valid_tree(subtree))
+		parse_fail("expression expected after prefix operator");
+	add_child(&tree,
+		alloc_exptree(subtree));
+	return tree;
 }
 
 /*
-	unary_expr := ([ - ] ( lvalue | integer
-				      | char-const 
-			  	      | unary_expr
-			 	      | octal-integer
-			  	      | hex-integer ) ) 
-			|  '(' expr ')' 
-			| lvalue ++ 
-			| lvalue --
-			| ++ lvalue 
-			| -- lvalue
-			| ident '(' expr1, expr2, exprN ')'
-			| '&' lvalue
-			| '!' unary_expr
-			| cast
+	e0 :=
+		| e0_2 '++'
+		| e0_2 '--'
+		| e0_2
 */
-exp_tree_t unary_expr()
+exp_tree_t e0()
+{
+	exp_tree_t tree0, tree1, tree2, new_tree;
+
+	tree0 = e0_2();
+	if (!valid_tree(tree0))
+		return null_tree;
+
+	/* post ++ */
+	if (peek().type == TOK_PLUSPLUS) {
+		++indx;
+		tree1 = new_exp_tree(POST_INC, NULL);
+		add_child(&tree1, alloc_exptree(tree0));
+		return tree1;
+	}
+
+	/* post -- */
+	if (peek().type == TOK_MINUSMINUS) {
+		++indx;
+		tree1 = new_exp_tree(POST_DEC, NULL);
+		add_child(&tree1, alloc_exptree(tree0));
+		return tree1;
+	}
+
+	/* e0_2 as-is */
+	return tree0;
+}
+
+/*
+	e0_2 := e0_3 { '[' expr ']' }
+*/
+exp_tree_t e0_2()
+{
+	exp_tree_t tree0, tree1, tree2, new_tree;
+
+	tree0 = e0_3();
+	if (!valid_tree(tree0))
+		return null_tree;
+
+	/* [ ] -- array access */
+	if(peek().type == TOK_LBRACK) {
+		tree1 = new_exp_tree(ARRAY, NULL);
+		add_child(&tree1, alloc_exptree(tree0));
+		indx++;	/* eat [ */
+multi_array_access:
+		if (!valid_tree(tree2 = expr()))
+			parse_fail("expression expected");
+		add_child(&tree1, alloc_exptree(tree2));
+		need(TOK_RBRACK);
+		if (peek().type == TOK_LBRACK) {
+			++indx;
+			/*
+		 	 * Make a nested ARRAY node so that e.g. mat[i][j] parses to:
+			 * (ARRAY (ARRAY (VARIABLE:matrix) (VARIABLE:i)) (VARIABLE:j))
+			 * 
+			 * The motivation of this design is that it allows the
+			 * codegen to write code for N-dimension arrays just as if
+			 * they were all 1-dimensional arrays by recursing the
+			 * code generation of the base pointer. (Well TBH I have
+			 * only tested it with 2D at this point).
+			 */
+			new_tree = new_exp_tree(ARRAY, NULL);
+			add_child(&new_tree, alloc_exptree(tree1));
+			tree1 = new_tree;
+			goto multi_array_access;
+		}
+		return tree1;
+	}
+
+	/* e0_3 as-is */
+	return tree0;
+}
+
+/*
+	e0_3 :=
+		 e0_4 '.' e0_3
+		| e0_4 '->' e0_3
+		| e0_4
+*/
+exp_tree_t e0_3()
+{
+	exp_tree_t tree0, tree1, tree2, subtree;
+	
+	tree0 = e0_4();
+	if (!valid_tree(tree0))
+		return null_tree;	
+
+	/* . */
+	if (peek().type == TOK_DOT) {
+		++indx;
+		tree1 = new_exp_tree(STRUCT_MEMB, NULL);
+		tree2 = e0_3();
+		if (!valid_tree(tree2))
+			parse_fail("expected expression after .");
+		add_child(&tree1, alloc_exptree(tree0));
+		add_child(&tree1, alloc_exptree(tree2));
+		return tree1;
+	}
+
+	/* -> */
+	if (peek().type == TOK_ARROW) {
+		++indx;
+		tree1 = new_exp_tree(DEREF_STRUCT_MEMB, NULL);
+		tree2 = e0_3();
+		if (!valid_tree(tree2))
+			parse_fail("expected expression after ->");
+		add_child(&tree1, alloc_exptree(tree0));
+		add_child(&tree1, alloc_exptree(tree2));
+		return tree1;
+	}
+
+	/* e0_3 alone */
+	return tree0;
+}
+
+/*
+	e0_4 := ident '(' expr1, expr2, exprN ')'
+		| '(' expr ')'
+		| lvalue
+		| integer
+		| octal-integer
+		| hex-integer
+		| char-const
+*/
+exp_tree_t e0_4()
 {
 	exp_tree_t tree = null_tree, subtree = null_tree;
 	exp_tree_t subtree2 = null_tree, subtree3;
-	token_t tok;
+	token_t tok = peek();
 	token_t fake_int;
 	char *buff;
 	int val;
 	int neg = 0;
 
-	if (peek().type == TOK_MINUS) {
-		neg = 1;
-		tree = new_exp_tree(NEGATIVE, NULL);
-		++indx;	/* eat sign */
-	}
-
-	/* ident ( expr1, expr2, exprN ) */
+	/* 
+	 * ident ( expr1, expr2, exprN )
+	 * (function call)
+	 */
 	if (peek().type == TOK_IDENT) {
 		tok = peek();
 		++indx;
 		if (peek().type == TOK_LPAREN) {
 			++indx;	/* eat ( */
-			subtree = new_exp_tree(PROC_CALL, &tok);
+			tree = new_exp_tree(PROC_CALL, &tok);
 			while (peek().type != TOK_RPAREN) {
 				subtree2 = expr();
 				if (!valid_tree(subtree2))
 					parse_fail("expression expected");
-				add_child(&subtree, alloc_exptree(subtree2));
+				add_child(&tree, alloc_exptree(subtree2));
 				if (peek().type != TOK_RPAREN)
 					need(TOK_COMMA);
 			}
 			++indx;
-			/* if there's already a negative sign,
-			 * use that as a parent tree */
-			if (valid_tree(tree))
-				add_child(&tree, alloc_exptree(subtree));
-			else
-				tree = subtree;
 			return tree;
 		} else
 			--indx;
 	}
 
-	if (peek().type == TOK_PLUSPLUS
-	||  peek().type == TOK_MINUSMINUS
-	||  peek().type == TOK_CC_NOT) {
-		switch ((tok = peek()).type) {
-			case TOK_PLUSPLUS:
-				subtree = new_exp_tree(INC, NULL);
-				break;
-			case TOK_MINUSMINUS:
-				subtree = new_exp_tree(DEC, NULL);
-				break;
-			case TOK_CC_NOT:
-				subtree = new_exp_tree(CC_NOT, NULL);
-				break;
-			}
-			++indx;	/* eat operator */
-			if (tok.type == TOK_CC_NOT) {
-				if (!valid_tree(subtree2 = unary_expr()))
-					parse_fail("expression expected");				
-			} else {
-				if (!valid_tree(subtree2 = lval()))
-					parse_fail("lvalue expected");
-			}
-			add_child(&subtree, alloc_exptree(subtree2));	
-		if (valid_tree(tree)) {	/* negative sign ? */
-			add_child(&tree, alloc_exptree(subtree));
-		} else
-			tree = subtree;
-		return tree;
-	}
-
-	tok = peek();
-	if (valid_tree(subtree = lval())
-	|| tok.type == TOK_INTEGER 
-	|| tok.type == TOK_CHAR_CONST
-	|| tok.type == TOK_OCTAL_INTEGER
-	|| tok.type == TOK_HEX_INTEGER) {
-
-		if (tok.type == TOK_OCTAL_INTEGER) {
-				fake_int.type = TOK_INTEGER;
-				buff = malloc(256);
-				strncpy(buff, tok.start + 1, tok.len - 1);
-				sscanf(buff, "%o", &val);
-				sprintf(buff, "%d", val);
-				fake_int.start = buff;
-				fake_int.len = strlen(buff);
-				fake_int.from_line = 0;
-				fake_int.from_line = 1;
-				subtree = new_exp_tree(NUMBER, &fake_int);
-				++indx;	/* eat number */
-		}
-		else if (tok.type == TOK_HEX_INTEGER) {
-				fake_int.type = TOK_INTEGER;
-				buff = malloc(256);
-				strncpy(buff, tok.start + 2, tok.len - 2);
-				sscanf(buff, "%x", &val);
-				sprintf(buff, "%d", val);
-				fake_int.start = buff;
-				fake_int.len = strlen(buff);
-				fake_int.from_line = 0;
-				fake_int.from_line = 1;
-				subtree = new_exp_tree(NUMBER, &fake_int);
-				++indx;	/* eat number */
-		}
-		else if (tok.type == TOK_CHAR_CONST) {
-				/* XXX: doesn't handle escapes like \n */
-				fake_int.type = TOK_INTEGER;
-				buff = malloc(8);
-				sprintf(buff, "%d", *(tok.start + 1));
-				fake_int.start = buff;
-				fake_int.len = strlen(buff);
-				fake_int.from_line = 0;
-				fake_int.from_line = 1;
-				subtree = new_exp_tree(NUMBER, &fake_int);
-				++indx;	/* eat number */
-		}
-		else if (tok.type == TOK_INTEGER) {
-				subtree = new_exp_tree(NUMBER, &tok);
-				++indx;	/* eat number */
-		} else {
-			if (peek().type == TOK_PLUSPLUS) {
-				++indx;	/* eat ++ */
-				subtree2 = new_exp_tree(POST_INC, NULL);
-				add_child(&subtree2, alloc_exptree(subtree));
-			}
-			if (peek().type == TOK_MINUSMINUS) {
-				++indx;	/* eat -- */
-				subtree2 = new_exp_tree(POST_DEC, NULL);
-				add_child(&subtree2, alloc_exptree(subtree));
-			}
-		}
-
-		if (valid_tree(subtree2))
-			subtree3 = subtree2;
-		else
-			subtree3 = subtree;
-
-		if (valid_tree(tree)) {	/* negative sign ? */
-			add_child(&tree, alloc_exptree(subtree3));
-		} else
-			tree = subtree3;
-
-		return tree;
-	}
-
-	/* &x */
-	if (peek().type == TOK_ADDR) {
-		/* i'm too lazy to deal with negatives,
-		 * and anyway it would make no sense */
-		if (neg)
-			parse_fail("minus address-of ??? seriously ??? forget about it");
-		++indx;	/* eat & */
-		subtree = lval();
-		if (!valid_tree(subtree))
-			parse_fail("lvalue expected");
-		tree = new_exp_tree(ADDR, NULL);
-		add_child(&tree, alloc_exptree(subtree));
-		return tree;
-	}
-
-	/* - (unary_expr) */
-	if (valid_tree(tree)) {
-		if (valid_tree(subtree = unary_expr())) {
-			add_child(&tree, alloc_exptree(subtree));
-			return tree;
-		}
-	}
-
-	/* cast */
-	/* (this has to come before the 
-	 * parenthesized expression thing) */
-	if (valid_tree(subtree = cast())) {
-
-		if (valid_tree(tree)) {	/* negative sign ? */
-			add_child(&tree, alloc_exptree(subtree));
-		} else
-			tree = subtree;
-
-		return tree;
-	}
-
-	/* parenthesized expression */
+	/* 
+	 * Parenthesized expression
+	 */
 	if(peek().type == TOK_LPAREN) {
 		++indx;	/* eat ( */
-		subtree = expr();
+		tree = expr();
 		need(TOK_RPAREN);
-		
-		if (valid_tree(tree))	/* negative sign ? */
-			add_child(&tree, alloc_exptree(subtree));
-		else
-			tree = subtree;
-		
+		return tree;
+	}
+
+	/*
+	 * lvalue
+	 */
+	if (valid_tree((tree = lval())))
+		return tree;
+
+	/*
+	 * Integer and character constants
+	 */
+	if (tok.type == TOK_OCTAL_INTEGER) {
+		fake_int.type = TOK_INTEGER;
+		buff = malloc(256);
+		strncpy(buff, tok.start + 1, tok.len - 1);
+		sscanf(buff, "%o", &val);
+		sprintf(buff, "%d", val);
+		fake_int.start = buff;
+		fake_int.len = strlen(buff);
+		fake_int.from_line = 0;
+		fake_int.from_line = 1;
+		tree = new_exp_tree(NUMBER, &fake_int);
+		++indx;	/* eat number */
+		return tree;
+	}
+	if (tok.type == TOK_HEX_INTEGER) {
+		fake_int.type = TOK_INTEGER;
+		buff = malloc(256);
+		strncpy(buff, tok.start + 2, tok.len - 2);
+		sscanf(buff, "%x", &val);
+		sprintf(buff, "%d", val);
+		fake_int.start = buff;
+		fake_int.len = strlen(buff);
+		fake_int.from_line = 0;
+		fake_int.from_line = 1;
+		tree = new_exp_tree(NUMBER, &fake_int);
+		++indx;	/* eat number */
+		return tree;
+	}
+	if (tok.type == TOK_CHAR_CONST) {
+		/* XXX: doesn't handle escapes like \n */
+		fake_int.type = TOK_INTEGER;
+		buff = malloc(8);
+		sprintf(buff, "%d", *(tok.start + 1));
+		fake_int.start = buff;
+		fake_int.len = strlen(buff);
+		fake_int.from_line = 0;
+		fake_int.from_line = 1;
+		tree = new_exp_tree(NUMBER, &fake_int);
+		++indx;	/* eat number */
+		return tree;
+	}
+	if (tok.type == TOK_INTEGER) {
+		tree = new_exp_tree(NUMBER, &tok);
+		++indx;	/* eat number */
 		return tree;
 	}
 

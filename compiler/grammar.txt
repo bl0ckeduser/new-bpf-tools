@@ -1,5 +1,3 @@
-/* XXX: (*p)++ doesn't parse, maybe it should */
-
 /* types */
 /* TODO: structs and whatever else */
 
@@ -10,8 +8,7 @@ basic-type := 'int'
 /* declaration stuff */
 
 /* e.g. int a, b, c; */
-decl := basic-type decl2 { ',' decl2 }
-	| struct-decl
+decl := (basic-type | struct-decl) decl2 { ','  decl2 } 
 
 /*
  * 	*foo
@@ -28,10 +25,7 @@ decl2 := { '*' } ident [ ('=' expr) | { ('[' integer ']') } ]
  *	char *pointer_to_whatever;
  * }
  */
-struct-decl := 'struct' ident '{'
-	decl ';'
-	{ decl ';' }
-'}'
+struct-decl := 'struct' ident '{' decl ';' { decl ';' } '}'
 
 /* TODO stuff like "struct derp* foo;" */
 
@@ -45,7 +39,7 @@ struct-decl := 'struct' ident '{'
  *	(CAST (CAST_TYPE (BASE_TYPE (INT_DECL)) (DECL_STAR)) (VARIABLE:p)) 
  */
 
-cast := '(' cast-type ')' unary_expr
+cast := '(' cast-type ')' e0
 cast-type := basic-type {'*'}
 		| struct-decl
 		| <typedef-tag>
@@ -68,15 +62,12 @@ block := expr ';'
 
 arg := [cast-type] ident
 
-expr := lvalue asg-op expr 
+expr := e1 asg-op expr 
 	| ccor_expr
 	| str-const
 
-/*
- * Notice [] binds tighter than *
- */
-lvalue := ident { '[' expr ']' }  | '*' unary-expr
-	  | '(' cast-type ') lvalue
+lvalue := ident
+          | '(' cast-type ') lvalue
 	  | '(' lvalue ')'
 
 ccor_expr := ccand_expr ['||' ccand_expr]
@@ -87,23 +78,38 @@ comp_expr := sum_expr [comp-op sum_expr]
 
 sum_expr := mul_expr { add-op mul_expr }
 
-mul_expr := dot_expr { mul-op dot_expr }
+mul_expr := e1 { mul-op e1 }
 
-/* XXX: If the `.' (struct tag access) operator isn't left-associative,
- * this will have to be changed */
-dot_expr := unary_expr {('.'|'->') unary_expr }
+/* 
+ * I have tried to follow this table:
+ * http://www.difranco.net/compsci/C_Operator_Precedence_Table.htm
+ */
 
-unary_expr := ([ - ] ( lvalue | integer
-			      | char-const 
-		  	      | unary_expr
-		 	      | octal-integer
-		  	      | hex-integer ) ) 
-		|  '(' expr ')' 
-		| lvalue ++ 
-		| lvalue --
-		| ++ lvalue 
-		| -- lvalue
-		| ident '(' expr1, expr2, exprN ')'
-		| '&' lvalue
-		| '!' unary_expr
-		| cast
+e1 := '++' e1
+	 | '--' e1
+	 | '-' e1
+	 | '!' e1
+	 | cast
+	 | '*' e1
+	 | '&' e1
+	 | e0
+
+e0 :=
+	| e0_2 '++'
+	| e0_2 '--'
+	| e0_2
+
+e0_2 := e0_3 { '[' expr ']' }
+
+e0_3 :=
+	 e0_4 '.' e0_3
+	| e0_4 '->' e0_3
+	| e0_4
+
+e0_4 := ident '(' expr1, expr2, exprN ')'
+	| '(' expr ')'
+	| lvalue
+	| integer
+	| octal-integer
+	| hex-integer
+	| char-const
