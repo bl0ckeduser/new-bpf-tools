@@ -4,6 +4,12 @@ It targets 32-bit x86 (via GNU assembler).
 
 This 32-bit x86 compiler is tested on FreeBSD, Linux, and Windows (via MinGW).
 
+[Sometimes the output code segfaults for reasons that remain unclear to me.
+And some of the precedences in the parser are wrong. And some syntaxes are
+not supported at all. This is a wannabe compiler. At least it has failed less
+awfully than my earlier wannabe compilers which didn't even have any stacks
+or grammars and were written in dark ingorance of any compiler theory].
+
 Please go in the "compiler" directory and read "compiler/docs/docs-x86.txt" 
 for more info.
 
