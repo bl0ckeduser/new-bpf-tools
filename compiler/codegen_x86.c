@@ -975,14 +975,14 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			#endif
 
 			/* figure out the size of the object */
-			if (typedat.ptr)
+			if (typedat.ptr && typedat.arr == 0)
 				/* pointers are always 4 bytes on 32-bit x86
 				 * hurr durr amirite */
 				objsiz = 4;
 			else if (typedat.arr)
 				/* XXX: TODO: arrays of struct: more messy calculations
 				 * and symbol table stack mapping subtleties */
-				codegen_fail("I can't do arrays of structs yet !", findtok(dc));
+				codegen_fail("I can't do arrays of [pointers to] structs yet !", findtok(dc));
 			else
 				/* single variable: it's just the size of the struct */
 				objsiz = struct_bytes;
