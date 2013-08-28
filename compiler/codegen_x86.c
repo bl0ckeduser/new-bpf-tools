@@ -1016,7 +1016,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		/* XXX: global structs unsupported */
 		if (symty == SYMTYPE_GLOBALS)
 			codegen_fail("global structs are unsupported",
-				findtok(dc));
+				findtok(tree));
 
 		/* discard the tree from further codegeneneration */
 		tree->head_type = NULL_TREE;
