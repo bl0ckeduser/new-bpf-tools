@@ -48,40 +48,6 @@ typedesc_t mk_typedesc(int bt, int ptr, int arr)
 	return td;
 }
 
-/* offset (in bytes) of a tag in a structure */
-int struct_tag_offs(typedesc_t stru, char *tag_name)
-{
-	int i;
-
-	/* figure out the type of the tag and return it */
-	for (i = 0; i < stru.struct_desc->cc; ++i) {
-		if (!strcmp(stru.struct_desc->name[i], tag_name)) {
-			return stru.struct_desc->offs[i];
-		}
-	}
-
-	fail("could not find a struct tag offset");
-} 
-
-/* 
- * INT_DECL => 4 because "int" is 4 bytes, etc.
- * (this program compiles code specifically 
- * for 32-bit x86, so I can say that 
- * "int" is 4 bytes with no fear of being 
- * crucified by pedants).
- */
-int decl2siz(int bt)
-{
-	switch (bt) {
-		case INT_DECL:
-			return 4;
-		case CHAR_DECL:
-			return 1;
-		default:
-			return 0;
-	}
-}
-
 /* 
  * Type description => size of datum in bytes
  */
@@ -114,6 +80,241 @@ int type2offs(typedesc_t ty)
 		return type2siz(ty) * prod;
 	}
 	return type2siz(ty);
+}
+
+/* get Nth array dimension from array declaration */
+int get_arr_dim(exp_tree_t *decl, int n)
+{
+	int array = 0;
+	int i;
+	int r;
+	for (i = 0; i < decl->child_count; ++i)
+		if (decl->child[i]->head_type == ARRAY_DIM)
+			if (array++ == n) {
+				sscanf(get_tok_str(*(decl->child[i]->tok)), "%d", &r);
+				return r;
+			}
+	return -1;
+}
+
+/* 
+ * Count and eat up pointer-qualification stars
+ * in a declaration syntax tree,
+ * as in e.g. "int ***herp_derp"
+ */
+void count_stars(exp_tree_t *dc, int *stars)
+{
+	int j, newlen = 0;
+	for (j = 0; j < dc->child_count; ++j)
+		if (dc->child[j]->head_type == DECL_STAR)
+			newlen = newlen ? newlen : j,
+			++*stars,
+			dc->child[j]->head_type = NULL_TREE;
+	if (*stars)
+		dc->child_count = newlen;
+}
+
+/* 
+ * Check if a declaration tree is for an array,
+ * and if it is, return dimensions 
+ */
+int check_array(exp_tree_t *decl)
+{
+	int array = 0;
+	int i;
+	for (i = 0; i < decl->child_count; ++i)
+		if (decl->child[i]->head_type == ARRAY_DIM)
+			++array;
+	return array;
+}
+
+/*
+ * Parse a declarator syntax tree into
+ * a type descriptor structure
+ */
+void parse_type(exp_tree_t *dc, typedesc_t *typedat,
+				typedesc_t *array_base_type, int *objsiz, int decl)
+{
+	int stars = 0;
+	int newlen = 0;
+	int i, j, k;
+
+	/* count pointer stars */
+	count_stars(dc, &stars);
+
+	/* build type description for the object */
+	*typedat = mk_typedesc(decl, stars, check_array(dc));
+	typedat->arr_dim = malloc(typedat->arr * sizeof(int));
+	for (j = 0; j < typedat->arr; ++j)
+		typedat->arr_dim[j] = get_arr_dim(dc, j); 
+	*array_base_type = *typedat;
+	array_base_type->arr = 0;
+
+	/* figure out size of the whole object in bytes */
+	*objsiz = type2offs(*typedat);
+
+	/* 
+	 * Use 4 bytes instead of 1 for chars in char arrays.
+	 * unfortunately, parts of the code still expect this. 
+	 * XXX: find a better fix to this problem
+	 */
+	if (check_array(dc) && array_base_type->ptr == 0
+		&& array_base_type->ty == CHAR_DECL) {
+		*objsiz *= 4;
+		array_base_type->ty = INT_DECL;
+	}
+
+	/* Add some padding; otherwise werid glitches happen */
+	if (*objsiz < 4 && !check_array(dc))
+		*objsiz = 4;
+}
+
+/*
+ * Parse a struct type declarator into
+ * a type description structure
+ */
+typedesc_t struct_tree_2_typedesc(exp_tree_t *tree, int *bytecount,
+	struct_desc_t **sd_arg)
+{
+	int i, j, k, sto;
+	exp_tree_t *dc;
+	int stars, newlen;
+	char *str;
+	int sym_num;
+	int objsiz;
+	int start_bytes;
+	int decl = tree->head_type;
+	typedesc_t typedat, struct_base, tag_type;
+	int array_bytes;
+	int dim;
+	typedesc_t array_base_type;
+	int tag_offs;
+	char tag_name[64];
+	int struct_bytes;
+	typedesc_t *heap_typ;
+	int padding;
+	int struct_pass;
+
+	/* build the struct's type description
+	 * (derived types like pointers come later in the
+	 * declaration children) */
+	struct_base.ty = 0;		
+	struct_base.arr = struct_base.ptr = 0;
+
+	/* allocate struct-description structure
+	 * (yes this is starting to get meta) */
+	*sd_arg = malloc(sizeof(struct_desc_t));
+
+	/* track structure name */
+	strcpy((*sd_arg)->snam, get_tok_str(*(tree->tok)));
+
+	/* figure out tag count */
+	(*sd_arg)->cc = 0;
+	for (i = 0; i < tree->child_count; ++i)
+		if (tree->child[i]->head_type == DECL_CHILD)
+			break;
+		else
+			(*sd_arg)->cc += 1;
+
+	/* iterate over tags */
+	struct_pass = 0;
+	tag_offs = 0;
+struct_pass_iter:
+	/*
+	 * For whatever mysterious reason,
+	 * compiled code appears to segfault on FreeBSD 32-bit
+	 * unless I align every tag to 16 bytes
+	 * and code all non-array tags first.
+	 * (?????)
+	 */
+	for (i = 0; i < (*sd_arg)->cc; ++i) {
+		dc = tree->child[i]->child[0];
+		/* get tag name */
+		strcpy(tag_name, get_tok_str(*(dc->child[0]->tok)));
+
+		/* get information on the tag's type */
+		/* XXX: tags can't be structs themselves yet ! */
+		parse_type(dc, &tag_type, &array_base_type, &objsiz, 
+			tree->child[i]->head_type);
+
+		if (!struct_pass && check_array(dc))
+			continue;
+		if (struct_pass && !check_array(dc))
+			continue;
+
+		#ifdef DEBUG
+			fprintf(stderr, "struct `%s' -> tag `%s' -> ", 
+				get_tok_str(*(tree->tok)),
+				tag_name);
+			fprintf(stderr, "size: %d bytes, offset: %d\n", 
+				objsiz, tag_offs);
+			dump_td(tag_type);
+		#endif
+
+		/* mystery segfault-proofing padding */
+		while (tag_offs % 16)
+			++tag_offs;
+
+		/* write tag data to struct description */
+		(*sd_arg)->offs[i] = tag_offs;
+		(*sd_arg)->name[i] = malloc(128);
+		strcpy((*sd_arg)->name[i], tag_name);
+		/* (gotta *copy* the tag type data to heap because it's stack 
+		 * -- otherwise funny things happen when you try to 
+		 * read it outside of this function) */
+		heap_typ = malloc(sizeof(typedesc_t));
+		memcpy(heap_typ, &tag_type, sizeof(typedesc_t));
+		(*sd_arg)->typ[i] = heap_typ;
+
+		/* bump tag offset calculation */
+		tag_offs += objsiz;
+	}
+
+	if (!struct_pass++)
+		goto struct_pass_iter;
+
+	/* size in bytes of the whole struct */
+	*bytecount = tag_offs;
+
+	/* bind struct desc to struct base type desc */
+	struct_base.struct_desc = (*sd_arg);
+	struct_base.is_struct = 1;
+
+	return struct_base;
+}
+
+/* offset (in bytes) of a tag in a structure */
+int struct_tag_offs(typedesc_t stru, char *tag_name)
+{
+	int i;
+
+	/* figure out the type of the tag and return it */
+	for (i = 0; i < stru.struct_desc->cc; ++i) {
+		if (!strcmp(stru.struct_desc->name[i], tag_name)) {
+			return stru.struct_desc->offs[i];
+		}
+	}
+
+	fail("could not find a struct tag offset");
+} 
+
+/* 
+ * INT_DECL => 4 because "int" is 4 bytes, etc.
+ * (this program compiles code specifically 
+ * for 32-bit x86, so I can say that 
+ * "int" is 4 bytes with no fear of being 
+ * crucified by pedants).
+ */
+int decl2siz(int bt)
+{
+	switch (bt) {
+		case INT_DECL:
+			return 4;
+		case CHAR_DECL:
+			return 1;
+		default:
+			return 0;
+	}
 }
 
 /*
@@ -226,6 +427,8 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	typedesc_t ctd;
 	typedesc_t struct_typ, tag_typ;
 	char tag_name[128];
+	struct_desc_t *sd;
+	int bc;
 
 	/* 
 	 * If a block has one child, find the type of that,
@@ -307,6 +510,12 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 			td.ty = tp->child[0]->child[0]->child[0]->head_type;
 			td.arr = 0;
 			td.ptr = tp->child[0]->child_count - 1;
+			if (td.ty == STRUCT_DECL) {
+				struct_tree_2_typedesc(tp->child[0]->child[0]->child[0], &bc,
+					&sd);
+				td.is_struct = 1;
+				td.struct_desc = sd;
+			}
 			return td;
 		}
 	}

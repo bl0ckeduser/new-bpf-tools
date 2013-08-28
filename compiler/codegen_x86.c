@@ -34,6 +34,12 @@ extern typedesc_t mk_typedesc(int bt, int ptr, int arr);
 extern int is_arith_op(char);
 extern int type2offs(typedesc_t ty);
 extern int struct_tag_offs(typedesc_t stru, char *tag_name);
+extern typedesc_t struct_tree_2_typedesc(exp_tree_t *tree, int *bytecount,
+	struct_desc_t **sd_arg);
+extern int check_array(exp_tree_t *decl);
+extern void parse_type(exp_tree_t *dc, typedesc_t *typedat,
+				typedesc_t *array_base_type, int *objsiz, int decl);
+void count_stars(exp_tree_t *dc, int *stars);
 
 void setup_symbols(exp_tree_t* tree, int glob);
 
@@ -859,35 +865,6 @@ void deal_with_procs(exp_tree_t *tree)
 }
 
 /* 
- * Check if a declaration is for an array,
- * and if it is, return dimensions 
- */
-int check_array(exp_tree_t *decl)
-{
-	int array = 0;
-	int i;
-	for (i = 0; i < decl->child_count; ++i)
-		if (decl->child[i]->head_type == ARRAY_DIM)
-			++array;
-	return array;
-}
-
-/* get Nth array dimension from array declaration */
-int get_arr_dim(exp_tree_t *decl, int n)
-{
-	int array = 0;
-	int i;
-	int r;
-	for (i = 0; i < decl->child_count; ++i)
-		if (decl->child[i]->head_type == ARRAY_DIM)
-			if (array++ == n) {
-				sscanf(get_tok_str(*(decl->child[i]->tok)), "%d", &r);
-				return r;
-			}
-	return -1;
-}
-
-/* 
  * Get a GAS X86 instruction suffix
  * from a type declaration code
  */
@@ -934,59 +911,6 @@ void setup_symbols(exp_tree_t *tree, int symty)
 	setup_symbols_iter(tree, symty, 0);
 }
 
-void count_stars(exp_tree_t *dc, int *stars)
-{
-	/* 
-	 * Count & eat up the pointer-qualification stars,
-	 * as in e.g. "int ***herp_derp"
-	 */
-	int j, newlen = 0;
-	for (j = 0; j < dc->child_count; ++j)
-		if (dc->child[j]->head_type == DECL_STAR)
-			newlen = newlen ? newlen : j,
-			++*stars,
-			dc->child[j]->head_type = NULL_TREE;
-	if (*stars)
-		dc->child_count = newlen;
-}
-
-void parse_type(exp_tree_t *dc, typedesc_t *typedat,
-				typedesc_t *array_base_type, int *objsiz, int decl)
-{
-	int stars = 0;
-	int newlen = 0;
-	int i, j, k;
-
-	/* count pointer stars */
-	count_stars(dc, &stars);
-
-	/* build type description for the object */
-	*typedat = mk_typedesc(decl, stars, check_array(dc));
-	typedat->arr_dim = malloc(typedat->arr * sizeof(int));
-	for (j = 0; j < typedat->arr; ++j)
-		typedat->arr_dim[j] = get_arr_dim(dc, j); 
-	*array_base_type = *typedat;
-	array_base_type->arr = 0;
-
-	/* figure out size of the whole object in bytes */
-	*objsiz = type2offs(*typedat);
-
-	/* 
-	 * Use 4 bytes instead of 1 for chars in char arrays.
-	 * unfortunately, parts of the code still expect this. 
-	 * XXX: find a better fix to this problem
-	 */
-	if (check_array(dc) && array_base_type->ptr == 0
-		&& array_base_type->ty == CHAR_DECL) {
-		*objsiz *= 4;
-		array_base_type->ty = INT_DECL;
-	}
-
-	/* Add some padding; otherwise werid glitches happen */
-	if (*objsiz < 4 && !check_array(dc))
-		*objsiz = 4;
-}
-
 void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 {
 	int i, j, k, sto;
@@ -1021,90 +945,8 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		/* discard the tree from further codegeneneration */
 		tree->head_type = NULL_TREE;
 
-		/* build the struct's type description
-		 * (derived types like pointers come later in the
-		 * declaration children) */
-		struct_base.ty = 0;		
-		struct_base.arr = struct_base.ptr = 0;
-
-		/* allocate struct-description structure
-		 * (yes this is starting to get meta) */
-		sd = malloc(sizeof(struct_desc_t));
-	
-		/* track structure name */
-		strcpy(sd->snam, get_tok_str(*(tree->tok)));
-
-		/* figure out tag count */
-		sd->cc = 0;
-		for (i = 0; i < tree->child_count; ++i)
-			if (tree->child[i]->head_type == DECL_CHILD)
-				break;
-			else
-				sd->cc += 1;
-
-		/* iterate over tags */
-		struct_pass = 0;
-		tag_offs = 0;
-struct_pass_iter:
-		/*
-		 * For whatever mysterious reason,
-		 * compiled code appears to segfault on FreeBSD 32-bit
-		 * unless I align every tag to 16 bytes
-		 * and code all non-array tags first.
-		 * (?????)
-		 */
-		for (i = 0; i < sd->cc; ++i) {
-			dc = tree->child[i]->child[0];
-			/* get tag name */
-			strcpy(tag_name, get_tok_str(*(dc->child[0]->tok)));
-
-			/* get information on the tag's type */
-			/* XXX: tags can't be structs themselves yet ! */
-			parse_type(dc, &tag_type, &array_base_type, &objsiz, 
-				tree->child[i]->head_type);
-
-			if (!struct_pass && check_array(dc))
-				continue;
-			if (struct_pass && !check_array(dc))
-				continue;
-
-			#ifdef DEBUG
-				fprintf(stderr, "struct `%s' -> tag `%s' -> ", 
-					get_tok_str(*(tree->tok)),
-					tag_name);
-				fprintf(stderr, "size: %d bytes, offset: %d\n", 
-					objsiz, tag_offs);
-				dump_td(tag_type);
-			#endif
-
-			/* mystery segfault-proofing padding */
-			while (tag_offs % 16)
-				++tag_offs;
-
-			/* write tag data to struct description */
-			sd->offs[i] = tag_offs;
-			sd->name[i] = malloc(128);
-			strcpy(sd->name[i], tag_name);
-			/* (gotta *copy* the tag type data to heap because it's stack 
-			 * -- otherwise funny things happen when you try to 
-			 * read it outside of this function) */
-			heap_typ = malloc(sizeof(typedesc_t));
-			memcpy(heap_typ, &tag_type, sizeof(typedesc_t));
-			sd->typ[i] = heap_typ;
-
-			/* bump tag offset calculation */
-			tag_offs += objsiz;
-		}
-
-		if (!struct_pass++)
-			goto struct_pass_iter;
-
-		/* size in bytes of the whole struct */
-		struct_bytes = tag_offs;
-
-		/* bind struct desc to struct base type desc */
-		struct_base.struct_desc = sd;
-		struct_base.is_struct = 1;
+		/* read the struct declaration parse tree */
+		struct_base = struct_tree_2_typedesc(tree, &struct_bytes, &sd);
 
 		/* 
 		 * Now do the declaration children (i.e. the actual
@@ -2409,7 +2251,8 @@ char* codegen(exp_tree_t* tree)
 	 * Array retrieval -- works for int, char, char *
 	 * char data gets converted to an int register
 	 */
-	if (tree->head_type == ARRAY && tree->child_count == 2) {
+	if (tree->head_type == ARRAY
+		 && tree->child_count == 2) {
 		/* get base ptr */
 		sym_s = codegen(tree->child[0]);
 
@@ -2427,6 +2270,7 @@ char* codegen(exp_tree_t* tree)
 		if (offs_siz != 1)
 			printf("imull $%d, %s\n", offs_siz, sto2);
 		printf("addl %s, %s\n", sym_s, sto2);
+		free_temp_reg(sym_s);
 		compiler_debug("array retrieval -- trying conversion",
 			findtok(tree), 0, 0);
 
@@ -2464,7 +2308,6 @@ char* codegen(exp_tree_t* tree)
 				sto2, sto);		
 
 		free_temp_reg(sto2);
-		free_temp_reg(sym_s);
 
 		return sto;
 	}
