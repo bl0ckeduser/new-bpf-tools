@@ -18,7 +18,7 @@ Quick example:
 	625
 	$ 
 
-The 32-bit x86 code generator outputs GAS assembly and the test scripts
+The 32-bit x86 code generator outputs GAS assembly and the run / test scripts
 assemble this using gcc. clang also works; you can modify the scripts to
 use clang if desired.
 
@@ -30,6 +30,9 @@ Below is a quick overview of the language syntax. < > symbols denote
 an optional part in a construction. If the choice of some paragraphs
 seems strange, remember that I'm trying to follow the grammar's 
 structure closely.
+
+I'm really trying to implement C. So most (all ?) of these syntactical
+elements are C syntax.
 
 1. Code blocks
 	i. empty block
@@ -53,6 +56,9 @@ structure closely.
 
 		int
 		char
+
+	(and also structs, to some extent, see lower down the
+	paragraph on structs)
 
 	Here are some quick examples of declarations:
 
@@ -126,10 +132,10 @@ structure closely.
 		-x + 5			(evaluates to something)
 
 	The type of the result depends on several factors: 
-	if you add one or more integers to a pointer, the result 
-	is a pointer. If you subtract two pointers, the result 
-	is an integer. If you try to multiply, subtract more 
-	than two, divide, or remainder pointers, the result 
+	if you add or subtract one or more integers to a pointer, 
+	the result is a pointer. If you subtract two pointers, the result 
+	is an integer. If you try to multiply, subtract or add more 
+	than two, divide, or take-the-remainder-of pointers, the result 
 	is an unhappy compiler that tells you it won't compile nonsense.
 	If you just add a bunch of numbers, the result is int.
 		
@@ -147,8 +153,10 @@ structure closely.
 		var %= 123;
 		var /= 123;
 		var *= 123;
+		s->bob[123] = "hahaha";
 
-	The type is the type of the left operand, i.e. the "lvalue".
+	The type of the whole expression is the type of the 
+	left operand, i.e. the "lvalue".
 
 6. lvalues (essentially, objects to which you can assign values)
 	e.g.
@@ -195,6 +203,7 @@ structure closely.
 	/* this is a C-style comment */
 	// this is a C++ -style comment.
 	// (C++ -style comments last till the end of the line)
+	/* the pattern "//" can happen inside a C comment */
 
 11. Calling libc routines
 
@@ -202,7 +211,11 @@ structure closely.
 	getchar(), puts(), etc, just as you would in C.
 
 	(Well, at the moment, strictly speaking, only
-	those routines which take "int" arguments and return "int")
+	those routines which take "int" arguments and return "int"
+	are supported. For others, "extern" and headers and whatnot
+	would be required, and these are not yet supported.
+	The compiler will warn when you call an external routine
+	without a declaration).
 	
 	For example:
 		printf("herp derp hello world\n");
@@ -221,6 +234,8 @@ structure closely.
 	never "return" anything from a function; if anything tries to use 
 	the return value it will get random garbage.
 
+	TCO might be broken for functions not having int-typed arguments
+
 13. Pointers
 
 	The & (address-of) and * (dereference) operators from C
@@ -233,7 +248,8 @@ structure closely.
 	& can be applied to lvalues only.
 
 	Arrays symbols are implicitly converted to pointers to 
-	the first element of the array.
+	the first element of the array, and this happens 
+	when they are evaluated in an expression.
 
 	For example:
 		int array[32];
@@ -241,11 +257,30 @@ structure closely.
 		*array = 123;
 		printf("%d\n", array[0]);	// 123
 
-14. String constants
+14. Constants
 
-	Example: "bob 123"
+	I. String contants
 
-	Example use: printf("hello\n");
+		Example: "bob 123"
+
+		Example use: printf("hello\n");
+
+		NOTE: escapes (like \n) are not handled yet,
+		however printf() et al. seem to implement them themselves
+
+	II. Character constants
+
+		Example: 'A'
+		Escapes (e.g. '\n') are not handled yet.
+		Octal (e.g. '\0') and other special cases are not handled yet.
+
+	III. Numeric constants
+
+		Examples:
+			123		// base-10 aka decimal
+			0xFF		// base-16 aka hexadecimal
+			0XFF		// base-16 aka hexadecimal
+			012		// base-8 aka octal
 
 15. Logical operations
 
@@ -291,7 +326,7 @@ structure closely.
 
 18. Type system
 
-	C's "char", "int", and 1-d arrays and/or n-depth pointers
+	C's "char", "int", and N-dimensional arrays and/or n-depth pointers
 	of these can be declared and used, but as of writing some
 	operations only compile accurately for "int" and "int *", and
 	some operations may not compile at all. In any event, the
@@ -303,6 +338,59 @@ structure closely.
 
 	casts are an important part of the type system.
 
+	see also: structs, right below this
+
+19. Structs and related access operators (->, .)
+
+	Structs are a work-in-progress. Some relevant example code is:
+
+		test/x86/arrow.c
+		test/x86/basic-struct.c
+		test/x86/return-types.c
+		test/x86/struct-ptr-arr.c
+		test/x86/typedef.c
+
+	The C struct-access -> and . operators have also been implemented.
+	They might not codegen properly for more complicated cases yet,
+	however the parser has gotten pretty good at dealing with them.
+	In any event, they properly codegen for the existing tests.
+
+	Current known pitfalls (as of writing) that I can remember:
+
+		- you can't have a struct inside a struct yet
+		- struct names without typedefs are not supported. 
+		  by this I mean e.g.
+			struct foo {
+				int x;
+				int y;
+			};
+
+			struct foo bob;
+
+			bob.x = 123;
+
+		- structs and derived types (e.g. pointers to structs)
+		  cannot be used as function argument types or as function
+		  return types. in fact I think the codegen crashes if 
+		  you try to use them in that way.
+		- global struct variables or struct-derived variables
+		  (e.g. pointers to struct) are unsupported
+		- arrays of structs are unsupported, but you can still 
+		  use pointers to pointers to struct and a bunch of malloc()s,
+		  as demonstrated in test/x86/struct-ptr-arr.c
+		- struct pointer declaration initializers,
+	   	  e.g. foo_t **x = malloc(4096), are unsupported,
+		  and the compiler doesn't even give an error or warning
+		  about them.
+		- struct assignments (e.g. a = b) are unsupported,
+		  but I guess maybe you can use memcpy and pointers for now
+
+20. typedefs
+
+	See example code: test/x86/typedef.c
+	`typedef' might not work with more subtle cases that I haven't
+	thought of / tested yet.
+
 			-------------------------
 			   Operator precedence
 			    and associativity
@@ -310,7 +398,7 @@ structure closely.
 
 From greatest to lowest precedence:
 
-	[] (array subscript)
+	[]	->	.
 	* (dereference)
 	- (sign), ( ), ++, --, procedure calls, & (address-of), !
 	(...)  (cast)
