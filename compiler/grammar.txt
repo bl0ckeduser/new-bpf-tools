@@ -91,7 +91,7 @@ mul_expr := dot_expr { mul-op dot_expr }
 
 /* XXX: If the `.' (struct tag access) operator isn't left-associative,
  * this will have to be changed */
-dot_expr := unary_expr {'.' unary_expr }
+dot_expr := unary_expr {('.'|'->') unary_expr }
 
 unary_expr := ([ - ] ( lvalue | integer
 			      | char-const 

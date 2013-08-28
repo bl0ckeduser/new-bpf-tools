@@ -73,7 +73,8 @@ enum {
 	TOK_BREAK,
 	TOK_STRUCT,
 	TOK_DOT,
-	TOK_TYPEDEF
+	TOK_TYPEDEF,
+	TOK_ARROW
 };
 
 static char* tok_nam[] = {
@@ -142,7 +143,8 @@ static char* tok_nam[] = {
 	"TOK_BREAK",
 	"TOK_STRUCT",
 	"TOK_DOT",
-	"TOK_TYPEDEF"
+	"TOK_TYPEDEF",
+	"TOK_ARROW"
 };
 
 static char* tok_desc[] = {
@@ -209,7 +211,8 @@ static char* tok_desc[] = {
 	"nothing",
 	"char",
 	"break",
-	"struct"
+	"struct",
+	"->"
 };
 
 /* keywords */

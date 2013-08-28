@@ -240,10 +240,13 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 		}
 	}
 
-	if (tp->head_type == STRUCT_MEMB) {
+	if (tp->head_type == STRUCT_MEMB || tp->head_type == DEREF_STRUCT_MEMB) {
 		/* find type of base */
 		struct_typ = tree_typeof(tp->child[0]);
 		strcpy(tag_name, get_tok_str(*(tp->child[1]->tok)));
+
+		if (tp->head_type == DEREF_STRUCT_MEMB)
+			struct_typ = deref_typeof(struct_typ);
 
 		if (struct_typ.arr || struct_typ.ptr)
 			compiler_fail("you can't apply the `.' operator on a"

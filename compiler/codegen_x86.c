@@ -1454,6 +1454,52 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* 
+	 * -> read
+	 */
+	if (tree->head_type == DEREF_STRUCT_MEMB) {
+		char buf[128];
+		strcpy(buf, get_tok_str(*(tree->child[1]->tok)));
+		int offs = struct_tag_offs(tree_typeof(tree->child[0]),
+						buf);
+
+		printf("# -> load tag `%s' with offset %d\n", buf, offs);
+
+		membsiz = type2siz(tree_typeof(tree));
+
+		/* get base adr */
+		/* XXX: doesn't work for non-variable base expressions ! */
+		if (tree->child[0]->head_type != VARIABLE)
+			codegen_fail("x86 codegen incapable of coding that . pattern, sorry", 
+				findtok(tree));
+
+		sym_s = sym_lookup(tree->child[0]->tok);
+
+		sto2 = get_temp_reg();
+
+		/* build pointer */
+		printf("movl %s, %s\n", sym_s, sto2);
+		printf("addl $%d, %s\n", offs, sto2);
+	
+		/* 
+		 * Yet another subtlety...
+		 * if the tag is an array,
+		 * do not dereference, because
+		 * arrays evaluate to pointers at run-time.
+		 */
+		if (tree_typeof(tree).arr) {
+			/* return pointer */ 
+			return sto2;
+		} else {
+			/* dereference */ 
+			sto = get_temp_reg();
+			printf("%s (%s), %s\n", 
+				move_conv_to_long(membsiz), sto2, sto);
+			free_temp_reg(sto2);
+			return sto;
+		}
+	}
+
+	/* 
 	 * struct member retrieval
 	 */
 	if (tree->head_type == STRUCT_MEMB) {
@@ -1469,7 +1515,8 @@ char* codegen(exp_tree_t* tree)
 		/* get base adr */
 		/* XXX: doesn't work for non-variable base expressions ! */
 		if (tree->child[0]->head_type != VARIABLE)
-			return NULL;
+			codegen_fail("x86 codegen incapable of coding that . pattern, sorry", 
+				findtok(tree));
 
 		sym_s = sym_lookup(tree->child[0]->tok);
 
@@ -1524,6 +1571,42 @@ char* codegen(exp_tree_t* tree)
 
 		/* build pointer */
 		printf("leal %s, %s\n", sym_s, sto2);
+		printf("addl $%d, %s\n", offs, sto2);
+	
+		sto3 = registerize(codegen(tree->child[1]));
+		printf("movl %s, (%s)\n", sto3, sto2);
+
+		free_temp_reg(sto3);
+		free_temp_reg(sto2);
+		return sto;
+	}
+
+	/*
+	 * -> write
+	 */
+	if (tree->head_type == ASGN
+		&& tree->child[0]->head_type == DEREF_STRUCT_MEMB) {
+		char buf[128];
+		strcpy(buf, get_tok_str(*(tree->child[0]->child[1]->tok)));
+		int offs = struct_tag_offs(tree_typeof(tree->child[0]->child[0]),
+						buf);
+
+		printf("# load address of tag `%s' with offset %d\n", buf, offs);
+
+		membsiz = type2siz(tree_typeof(tree));
+
+		/* get base adr */
+		/* XXX: doesn't work for non-variable base expressions ! */
+		if (tree->child[0]->child[0]->head_type != VARIABLE)
+			return NULL;
+
+		sym_s = sym_lookup(tree->child[0]->child[0]->tok);
+
+		sto = get_temp_reg();
+		sto2 = get_temp_reg();
+
+		/* build pointer */
+		printf("movl %s, %s\n", sym_s, sto2);
 		printf("addl $%d, %s\n", offs, sto2);
 	
 		sto3 = registerize(codegen(tree->child[1]));

@@ -653,6 +653,7 @@ void setup_tokenizer()
 	add_token(t[tc++], "&&", TOK_CC_AND);
 	add_token(t[tc++], "!", TOK_CC_NOT);
 	add_token(t[tc++], "\\.", TOK_DOT);
+	add_token(t[tc++], "->", TOK_ARROW);
 
 	/* special characters */
 	add_token(t[tc++], "{", TOK_LBRACE);

@@ -1007,25 +1007,46 @@ exp_tree_t mul_expr()
 		0);
 }
 
-/* dot_expr := unary_expr {'.' unary_expr } */
+/* dot_expr := unary_expr {('.'|'->') unary_expr } */
 void dot_dispatch(char oper, exp_tree_t *dest)
 {
 	switch (oper) {
 		case TOK_DOT:
 			*dest = new_exp_tree(STRUCT_MEMB, NULL);
 		break;
+		case TOK_ARROW:
+			*dest = new_exp_tree(DEREF_STRUCT_MEMB, NULL);
+		break;
 	}
 }
 int is_dot(char ty) {
-	return ty == TOK_DOT;
+	return ty == TOK_DOT || ty == TOK_ARROW;
+}
+void build_arrow(exp_tree_t* tr) {
+	int i;
+	exp_tree_t *deref, *sm;
+	if (tr->head_type == DEREF_STRUCT_MEMB) {
+		deref = alloc_exptree(new_exp_tree(DEREF, NULL));
+		add_child(deref, 
+			alloc_exptree(copy_tree(*(tr->child[0]))));
+		sm = alloc_exptree(new_exp_tree(STRUCT_MEMB, NULL));
+		add_child(sm, deref);
+		add_child(sm, 
+			alloc_exptree(copy_tree(*(tr->child[1]))));
+		memcpy(tr, sm, sizeof(exp_tree_t));
+	}
+	for (i = 0; i < tr->child_count; ++i)
+		build_arrow(tr->child[i]);
 }
 exp_tree_t dot_expr()
 {
-	return parse_left_assoc(
+	exp_tree_t tr =
+	 parse_left_assoc(
 		&unary_expr,
 		&is_dot,
 		&dot_dispatch,
 		0);
+	return tr;
 }
 
 /*
