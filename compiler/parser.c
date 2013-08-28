@@ -1073,7 +1073,7 @@ exp_tree_t e0()
 }
 
 /*
-	e0_2 := e0_3 { '[' expr ']' }
+	e0_2 := e0_3 [ { '[' expr ']' } [('->' | '.') e0_3]
 */
 exp_tree_t e0_2()
 {
@@ -1082,6 +1082,8 @@ exp_tree_t e0_2()
 	tree0 = e0_3();
 	if (!valid_tree(tree0))
 		return null_tree;
+
+eval_e02:
 
 	/* [ ] -- array access */
 	if(peek().type == TOK_LBRACK) {
@@ -1110,6 +1112,41 @@ multi_array_access:
 			tree1 = new_tree;
 			goto multi_array_access;
 		}
+
+		/* a[b]->c */
+		if (peek().type == TOK_ARROW) {
+			new_tree = new_exp_tree(DEREF_STRUCT_MEMB, NULL);
+			add_child(&new_tree, alloc_exptree(tree1));
+			++indx;
+			tree2 = e0_3();
+			if (!valid_tree(tree2))
+				parse_fail("expected unary expression after ->");
+			add_child(&new_tree, alloc_exptree(tree2));
+			/* a[b]->c[d] ??!!! */
+			if (peek().type == TOK_LBRACK) {
+				tree0 = new_tree;
+				goto eval_e02;
+			}
+			return new_tree;
+		}
+
+		/* a[b].c */
+		if (peek().type == TOK_DOT) {
+			new_tree = new_exp_tree(STRUCT_MEMB, NULL);
+			add_child(&new_tree, alloc_exptree(tree1));
+			++indx;
+			tree2 = e0_3();
+			if (!valid_tree(tree2))
+				parse_fail("expected unary expression after .");
+			add_child(&new_tree, alloc_exptree(tree2));
+			/* a[b].c[d] ??!!! */
+			if (peek().type == TOK_LBRACK) {
+				tree0 = new_tree;
+				goto eval_e02;
+			}
+			return new_tree;
+		}
+
 		return tree1;
 	}
 
