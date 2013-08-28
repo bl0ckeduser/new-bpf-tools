@@ -1467,12 +1467,10 @@ char* codegen(exp_tree_t* tree)
 		membsiz = type2siz(tree_typeof(tree));
 
 		/* get base adr */
-		/* XXX: doesn't work for non-variable base expressions ! */
 		if (tree->child[0]->head_type != VARIABLE)
-			codegen_fail("x86 codegen incapable of coding that . pattern, sorry", 
-				findtok(tree));
-
-		sym_s = sym_lookup(tree->child[0]->tok);
+			sym_s = registerize(codegen(tree->child[0]));
+		else
+			sym_s = sym_lookup(tree->child[0]->tok);
 
 		sto2 = get_temp_reg();
 
@@ -1513,12 +1511,10 @@ char* codegen(exp_tree_t* tree)
 		membsiz = type2siz(tree_typeof(tree));
 
 		/* get base adr */
-		/* XXX: doesn't work for non-variable base expressions ! */
 		if (tree->child[0]->head_type != VARIABLE)
-			codegen_fail("x86 codegen incapable of coding that . pattern, sorry", 
-				findtok(tree));
-
-		sym_s = sym_lookup(tree->child[0]->tok);
+			sym_s = registerize(codegen(tree->child[0]));
+		else
+			sym_s = sym_lookup(tree->child[0]->tok);
 
 		sto2 = get_temp_reg();
 
@@ -1560,11 +1556,10 @@ char* codegen(exp_tree_t* tree)
 		membsiz = type2siz(tree_typeof(tree));
 
 		/* get base adr */
-		/* XXX: doesn't work for non-variable base expressions ! */
 		if (tree->child[0]->child[0]->head_type != VARIABLE)
-			return NULL;
-
-		sym_s = sym_lookup(tree->child[0]->child[0]->tok);
+			sym_s = registerize(codegen(tree->child[0]->child[0]));
+		else
+			sym_s = sym_lookup(tree->child[0]->child[0]->tok);
 
 		sto = get_temp_reg();
 		sto2 = get_temp_reg();
@@ -1596,11 +1591,10 @@ char* codegen(exp_tree_t* tree)
 		membsiz = type2siz(tree_typeof(tree));
 
 		/* get base adr */
-		/* XXX: doesn't work for non-variable base expressions ! */
 		if (tree->child[0]->child[0]->head_type != VARIABLE)
-			return NULL;
-
-		sym_s = sym_lookup(tree->child[0]->child[0]->tok);
+			sym_s = registerize(codegen(tree->child[0]->child[0]));
+		else
+			sym_s = sym_lookup(tree->child[0]->child[0]->tok);
 
 		sto = get_temp_reg();
 		sto2 = get_temp_reg();
@@ -2316,6 +2310,7 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* simple variable assignment */
+	/* XXX: TODO: struct assignments */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == VARIABLE) {
 		sym_s = sym_lookup(tree->child[0]->tok);
