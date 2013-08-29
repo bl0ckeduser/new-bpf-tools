@@ -5,6 +5,13 @@ typedef struct stuff {
 	int c;
 } stuff_datum_t;
 
+stuff_datum_t* foobar()
+{
+	stuff_datum_t *sdt = malloc(4096);
+	sdt->a = 123456789;
+	return sdt;
+}
+
 int derp(stuff_datum_t* ptr)
 {
 	ptr->b = 456;
@@ -22,4 +29,5 @@ main()
 
 	printf("%d\n", derp(sd));
 	printf("%d\n", sd->b);
+	printf("%d\n", foobar()->a);
 }

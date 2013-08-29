@@ -371,17 +371,16 @@ elements are C syntax.
 
 			bob.x = 123;
 
-		- structs and derived types (e.g. pointers to structs)
-		  cannot be used as function argument types or as function
-		  return types. in fact I think the codegen crashes if 
-		  you try to use them in that way.
-		  exception: arrays of pointer to struct have been
-		  implemented (and tested by the code in test/x86/e.c)
+		- structs cannot be used as function argument types
+		  or function return types. pointers to struct,
+		  arrays of pointers to struct, and pointers to pointers to
+		  struct should work, though.
 		- global struct variables or struct-derived variables
 		  (e.g. pointers to struct) are unsupported
 		- arrays of structs are unsupported, but you can still 
 		  use pointers to pointers to struct and a bunch of malloc()s,
 		  as demonstrated in test/x86/struct-ptr-arr.c
+		  arrays of pointers to struct are supported, though.
 		- struct pointer declaration initializers,
 	   	  e.g. foo_t **x = malloc(4096), are unsupported,
 		  and the compiler doesn't even give an error or warning
