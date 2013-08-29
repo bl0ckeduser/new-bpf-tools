@@ -1803,8 +1803,7 @@ char* codegen(exp_tree_t* tree)
 		if (tree->child[0]->head_type == CAST_TYPE) {
 			custom_return_type = 1;
 			argl = tree->child[1];
-			compiler_warn("return types unimplemented -- "
-						  " ignoring return type, using int",
+			compiler_warn("only int- or char- sized return types work",
 							findtok(tree),
 							0, 0);
 		}
