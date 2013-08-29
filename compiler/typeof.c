@@ -98,21 +98,35 @@ int get_arr_dim(exp_tree_t *decl, int n)
 }
 
 /* 
- * Count and eat up pointer-qualification stars
+ * Count pointer-qualification stars
  * in a declaration syntax tree,
  * as in e.g. "int ***herp_derp"
  */
 void count_stars(exp_tree_t *dc, int *stars)
 {
 	int j, newlen = 0;
+	*stars = 0;
+	for (j = 0; j < dc->child_count; ++j)
+		if (dc->child[j]->head_type == DECL_STAR)
+			++*stars;
+}
+
+/* 
+ * Discard pointer-qualification stars
+ * from a declaration syntax tree
+ */
+void discard_stars(exp_tree_t *dc)
+{
+	int j, newlen = 0, count = 0;
 	for (j = 0; j < dc->child_count; ++j)
 		if (dc->child[j]->head_type == DECL_STAR)
 			newlen = newlen ? newlen : j,
-			++*stars,
+			++count,
 			dc->child[j]->head_type = NULL_TREE;
-	if (*stars)
+	if (count)
 		dc->child_count = newlen;
 }
+
 
 /* 
  * Check if a declaration tree is for an array,

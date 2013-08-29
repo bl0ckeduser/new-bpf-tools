@@ -344,11 +344,13 @@ elements are C syntax.
 
 	Structs are a work-in-progress. Some relevant example code is:
 
-		test/x86/arrow.c
-		test/x86/basic-struct.c
-		test/x86/return-types.c
-		test/x86/struct-ptr-arr.c
-		test/x86/typedef.c
+			test/x86/arrow.c
+			test/x86/basic-struct.c
+			test/x86/e.c
+			test/x86/return-types.c
+			test/x86/struct-ptr-arr.c
+			test/x86/struct-ptr.c
+			test/x86/typedef.c
 
 	The C struct-access -> and . operators have also been implemented.
 	They might not codegen properly for more complicated cases yet,
@@ -373,6 +375,8 @@ elements are C syntax.
 		  cannot be used as function argument types or as function
 		  return types. in fact I think the codegen crashes if 
 		  you try to use them in that way.
+		  exception: arrays of pointer to struct have been
+		  implemented (and tested by the code in test/x86/e.c)
 		- global struct variables or struct-derived variables
 		  (e.g. pointers to struct) are unsupported
 		- arrays of structs are unsupported, but you can still 

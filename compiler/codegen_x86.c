@@ -613,6 +613,49 @@ char* arith_op(int ty)
 }
 
 /*
+ * Set up symbols and stack storage
+ * for an (N-dimensional) array.
+ * Returns the symbol number.
+ */
+int create_array(int symty, exp_tree_t *dc,
+	typedesc_t array_base_type, int objsiz)
+{
+	/* XXX: global arrays unsupported */
+	if (symty == SYMTYPE_GLOBALS)
+		codegen_fail("global arrays are currently unsupported",
+			dc->child[0]->tok);
+
+	/* Check that the array's variable name is not already taken */
+	sym_check(dc->child[0]->tok);
+
+	/* Make storage for all but the first entries 
+	 * (the whole array is objsiz bytes, while one entry
+	 * has type array_base_type)
+	 */
+	symsiz[syms++] = objsiz - type2siz(array_base_type);
+	symbytes += objsiz - type2siz(array_base_type);
+
+	/* Clear the symbol name tag for the symbol table
+	 * space taken over by the array entries -- otherwise
+	 * the symbol table lookup routines may give incorrect
+	 * results if there is some leftover stuff from another
+	 * procedure */
+	*symtab[syms - 1] = 0;
+
+	/* 
+ 	 * The symbol maps to the first element of the
+	 * array, not a pointer to it. This is an important
+	 * rule, according to "The Development of the C Language"
+	 * (http://www.cs.bell-labs.com/who/dmr/chist.html).
+	 * 
+	 * The first element of the array is the last added here,
+	 * because the x86 stack grows "backwards" and sym_add()
+	 * follows the growth of the stack.
+	 */
+	return sym_add(dc->child[0]->tok, type2siz(array_base_type));
+}
+
+/*
  * Given its name, the names of its arguments,
  * and the tree containing its body block,
  * write the code for a procedure, and set up
@@ -979,10 +1022,22 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				/* pointers are always 4 bytes on 32-bit x86
 				 * hurr durr amirite */
 				objsiz = 4;
+			else if (typedat.ptr && typedat.arr) {
+				if (typedat.arr > 1)
+					codegen_fail("I can't do multidimensional arrays of struct"
+								 " pointers yet", findtok(dc));
+				/* array of pointers to struct */
+				array_base_type = typedat;
+				array_base_type.arr = 0;
+				sym_num = create_array(symty, dc,
+					array_base_type, get_arr_dim(dc, 0) * 4);
+				symtyp[sym_num] = typedat;
+				continue;
+			}
 			else if (typedat.arr)
 				/* XXX: TODO: arrays of struct: more messy calculations
 				 * and symbol table stack mapping subtleties */
-				codegen_fail("I can't do arrays of [pointers to] structs yet !", findtok(dc));
+				codegen_fail("I can't do arrays of structs yet !", findtok(dc));
 			else
 				/* single variable: it's just the size of the struct */
 				objsiz = struct_bytes;
@@ -1032,50 +1087,16 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			 */
 			parse_type(dc, &typedat, &array_base_type,
 						&objsiz, decl);
+			discard_stars(dc);
 
 			/* 
 			 * Switch symbols/stack setup code
 			 * based on array dimensions of object
 			 */
 			if (check_array(dc) > 0) {
-				/*
-				 * Set up symbols and stack storage
-			 	 * for an N-dimensional array
-				 */
-
-				/* XXX: global arrays unsupported */
-				if (symty == SYMTYPE_GLOBALS)
-					codegen_fail("global arrays are currently unsupported",
-						dc->child[0]->tok);
-
-				/* Check that the array's variable name is not already taken */
-				sym_check(dc->child[0]->tok);
-
-				/* Make storage for all but the first entries 
-				 * (the whole array is objsiz bytes, while one entry
-				 * has type array_base_type)
-				 */
-				symsiz[syms++] = objsiz - type2siz(array_base_type);
-				symbytes += objsiz - type2siz(array_base_type);
-
-				/* Clear the symbol name tag for the symbol table
-				 * space taken over by the array entries -- otherwise
-				 * the symbol table lookup routines may give incorrect
-				 * results if there is some leftover stuff from another
-				 * procedure */
-				*symtab[syms - 1] = 0;
-
-				/* 
-			 	 * The symbol maps to the first element of the
-				 * array, not a pointer to it. This is an important
-				 * rule, according to "The Development of the C Language"
-				 * (http://www.cs.bell-labs.com/who/dmr/chist.html).
-				 * 
-				 * The first element of the array is the last added here,
-				 * because the x86 stack grows "backwards" and sym_add()
-				 * follows the growth of the stack.
-				 */
-				sym_num = sym_add(dc->child[0]->tok, type2siz(array_base_type));
+				/* Create the memory and symbols */
+				sym_num = create_array(symty, dc,
+					array_base_type, objsiz);
 
 				/* Discard the tree */
 				dc->head_type = NULL_TREE;
