@@ -9,7 +9,7 @@
  * http://sites.google.com/site/bl0ckeduserssoftware/e.c
  *
  * Checksum of the 1000 places:
- * 	$ ./compile-run-x86.sh e.c 2>/dev/null | sed 's/e = 2\.//g'
+ * 	$ ./compile-run-x86.sh e.c 2>/dev/wannabe_null | sed 's/e = 2\.//g'
  *		| sed 's/\.\.\.\(.*\)//g' | tr -d '\n' | md5sum
  *	509a0539a67baea4730a85ad0d12c289  -
  *	$
@@ -32,7 +32,7 @@ max(a, b) {
 	return b;
 }
 
-int *NULL = 0x0;
+int wannabe_null = 0x0;
 
 typedef struct bignum {
 	char* dig;	/* base-10 digits */
@@ -44,9 +44,9 @@ bignum_t* make_bignum()
 {
 	bignum_t* bn;
 	/* XXX: szieof(bignum_t) */
-	require((bn = malloc(1024 * 1024)) != NULL, 
+	require((bn = malloc(1024 * 1024)) != wannabe_null, 
 		"bignum structure allocation");
-	require((bn->dig = malloc(1000)) != NULL, 
+	require((bn->dig = malloc(1000)) != wannabe_null, 
 		"bignum dig allocation");
 	bn->alloc = 1000;
 	bn->length = 0;
@@ -166,7 +166,7 @@ trunczeroes(bignum_t* a) {
 {
 	char* new = malloc(bignum_len(bn) + 1);
 	char* old = bn->dig;
-	require(new != NULL, "shift digits");
+	require(new != wannabe_null, "shift digits");
 	*new = 0;
 	memcpy(new + 1, old, bignum_len(bn));
 	bn->dig = new;
@@ -183,7 +183,7 @@ trunczeroes(bignum_t* a) {
 	if (src->alloc > dest->alloc) {
 		dest->dig = my_realloc(dest->dig, src->alloc);
 		dest->alloc = src->alloc;
-		require(dest->dig != NULL, "resize on copy");
+		require(dest->dig != wannabe_null, "resize on copy");
 	}
 	memcpy(dest->dig, src->dig, src->length);
 	dest->length = src->length;
@@ -220,7 +220,7 @@ int bignum_len(bignum_t* a){
 		/* make space for new digits if necessary */
 		if (!(i < a->alloc)) {
 			a->alloc += 5;
-			require((a->dig = my_realloc(a->dig, a->alloc)) != NULL,
+			require((a->dig = my_realloc(a->dig, a->alloc)) != wannabe_null,
 				"add new digit during addition");
 		}
 		if (!(i < a->length)) {
@@ -249,7 +249,7 @@ int bignum_len(bignum_t* a){
 	for (i = 0; n; i++) {
 		if (!(i < a->alloc)) {
 			a->alloc += 5;
-			require((a->dig = my_realloc(a->dig, a->alloc)) != NULL,
+			require((a->dig = my_realloc(a->dig, a->alloc)) != wannabe_null,
 				"add new digit during addition");
 		}
 		a->dig[i] = n % 10;
@@ -301,7 +301,7 @@ int bignum_cmp(bignum_t* a, bignum_t* b){
 		/* make space for new digits if necessary */
 		if (!(i < a->alloc)) {
 			a->alloc += 5;
-			require((a->dig = my_realloc(a->dig, a->alloc)) != NULL,
+			require((a->dig = my_realloc(a->dig, a->alloc)) != wannabe_null,
 				"add new digit during addition");
 		}
 		if (!(i < a->length)) {
@@ -334,7 +334,7 @@ int bignum_cmp(bignum_t* a, bignum_t* b){
 		/* make space for new digits if necessary */
 		if (!(i < a->alloc)) {
 			a->alloc += 5;
-			require((a->dig = my_realloc(a->dig, a->alloc)) != NULL,
+			require((a->dig = my_realloc(a->dig, a->alloc)) != wannabe_null,
 				"add new digit during addition");
 		}
 		if (!(i < a->length)) {

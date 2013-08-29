@@ -39,9 +39,10 @@ extern typedesc_t struct_tree_2_typedesc(exp_tree_t *tree, int *bytecount,
 extern int check_array(exp_tree_t *decl);
 extern void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 				typedesc_t *array_base_type, int *objsiz, int decl);
-void count_stars(exp_tree_t *dc, int *stars);
-
+extern void count_stars(exp_tree_t *dc, int *stars);
+extern int get_arr_dim(exp_tree_t *decl, int n);
 void setup_symbols(exp_tree_t* tree, int glob);
+extern void discard_stars(exp_tree_t *dc);
 
 /* ====================================================== */
 
