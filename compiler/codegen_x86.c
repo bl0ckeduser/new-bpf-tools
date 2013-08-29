@@ -976,6 +976,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 	typedesc_t *heap_typ;
 	int padding;
 	int struct_pass;
+	exp_tree_t inits;
+	exp_tree_t init_expr;
+	exp_tree_t *initializer_val;
 
 	/*
 	 * Handle structs in the second pass
@@ -991,6 +994,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 
 		/* read the struct declaration parse tree */
 		struct_base = struct_tree_2_typedesc(tree, &struct_bytes, &sd);
+
+		/* create initializers tree */
+		inits = new_exp_tree(BLOCK, NULL);
 
 		/* 
 		 * Now do the declaration children (i.e. the actual
@@ -1017,6 +1023,33 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 					get_tok_str(*(dc->child[0]->tok)),
 					typedat.arr, typedat.ptr);
 			#endif
+
+
+			/*
+			 * If there is an initializer, add it to the initializer
+			 * code tree
+			 */
+			if (dc->child_count - typedat.arr - typedat.ptr - 1) {
+				for (j = 1; j < dc->child_count; ++j)
+					if (!(dc->child[j]->head_type == ARRAY_DIM
+						|| dc->child[j]->head_type == DECL_STAR)) {
+						initializer_val = dc->child[j];
+						break;
+					}
+				init_expr = new_exp_tree(ASGN, NULL);
+				add_child(&init_expr, dc->child[0]);
+				add_child(&init_expr, initializer_val);
+				add_child(&inits, alloc_exptree(init_expr));
+
+				#ifdef DEBUG
+					fprintf(stderr, "initializer >>>>>>>>\n");
+					printout_tree(*dc);
+					fprintf(stderr, "\n");
+					printout_tree(init_expr);
+					fprintf(stderr, "\n");
+					fprintf(stderr, ">>>>>>>>>>>>>>>>>>>>\n");
+				#endif
+			}
 
 			/* figure out the size of the object */
 			if (typedat.ptr && typedat.arr == 0)
@@ -1053,6 +1086,11 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				dump_td(typedat);
 			#endif
 		}
+
+		/* Copy initializers block to the tree pointer
+		 * so it'll get codegenerated during the main
+		 * codegeneration pass */
+		memcpy(tree, &inits, sizeof (exp_tree_t));
 
 		return;
 	}

@@ -7,10 +7,8 @@ typedef struct stuff {
 
 main()
 {
-	/* XXX: struct pointer initializers are BROKEN ! */
-	stuff_datum_t *sd /* = malloc(1000) */;
+	stuff_datum_t *sd = malloc(1000) ;
 
-	sd = malloc(1000);
 	sd->a = 123;
 	sd->b = 456;
 	sd->c = 789;

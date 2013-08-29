@@ -381,12 +381,10 @@ elements are C syntax.
 		  use pointers to pointers to struct and a bunch of malloc()s,
 		  as demonstrated in test/x86/struct-ptr-arr.c
 		  arrays of pointers to struct are supported, though.
-		- struct pointer declaration initializers,
-	   	  e.g. foo_t **x = malloc(4096), are unsupported,
-		  and the compiler doesn't even give an error or warning
-		  about them.
 		- struct assignments (e.g. a = b) are unsupported,
 		  but I guess maybe you can use memcpy and pointers for now
+		- no struct literals of any kind are supported,
+		  so e.g. no constant struct initializers
 
 20. typedefs
 

@@ -80,11 +80,10 @@ int bruteforce_terms(int digits)
 
 int main(int argc, char** argv)
 {
-	/* XXX: struct pointer initializers */
-	bignum_t* mul; mul = make_bignum();
-	bignum_t* acc; acc = make_bignum();
-	bignum_t* acc2; acc2 = make_bignum();
-	bignum_t* sum; sum = make_bignum();
+	bignum_t* mul = make_bignum();
+	bignum_t* acc = make_bignum();
+	bignum_t* acc2 = make_bignum();
+	bignum_t* sum = make_bignum();
 	int places;
 	bignum_t* ptab[30];
 	bignum_t* one;
