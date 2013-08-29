@@ -9,7 +9,7 @@
  * http://sites.google.com/site/bl0ckeduserssoftware/e.c
  *
  * Checksum of the 1000 places:
- * 	$ ./compile-run-x86.sh e.c 2>/dev/wannabe_null | sed 's/e = 2\.//g'
+ * 	$ ./compile-run-x86.sh e.c 2>/dev/null | sed 's/e = 2\.//g'
  *		| sed 's/\.\.\.\(.*\)//g' | tr -d '\n' | md5sum
  *	509a0539a67baea4730a85ad0d12c289  -
  *	$
@@ -43,7 +43,7 @@ typedef struct bignum {
 bignum_t* make_bignum()
 {
 	bignum_t* bn;
-	/* XXX: szieof(bignum_t) */
+	/* XXX: sizeof(bignum_t) */
 	require((bn = malloc(1024 * 1024)) != wannabe_null, 
 		"bignum structure allocation");
 	require((bn->dig = malloc(1000)) != wannabe_null, 
@@ -80,6 +80,7 @@ int bruteforce_terms(int digits)
 
 int main(int argc, char** argv)
 {
+	/* XXX: struct pointer initializers */
 	bignum_t* mul; mul = make_bignum();
 	bignum_t* acc; acc = make_bignum();
 	bignum_t* acc2; acc2 = make_bignum();
@@ -174,10 +175,12 @@ trunczeroes(bignum_t* a) {
 	//free(old);
 }
 
+/* XXX: this would be void-typed */
  bignum_free(bignum_t* bn)
 {
 }
 
+/* XXX: this would be void-typed */
  bignum_copy(bignum_t* dest, bignum_t* src)
 {
 	if (src->alloc > dest->alloc) {
@@ -189,6 +192,7 @@ trunczeroes(bignum_t* a) {
 	dest->length = src->length;
 }
 
+/* XXX: this would be void-typed */
  bignum_put(bignum_t* a){
 	int i;
 
@@ -210,6 +214,7 @@ int bignum_len(bignum_t* a){
  * number that fits in an int. learnt this
  * trick from a discussion on comp.lang.c 
  * on computing factorials */
+/* XXX: this would be void-typed */
  bignum_nmul(bignum_t* a, int n){
 	int max_len = a->length;
 	int i, j;
@@ -279,6 +284,7 @@ int bignum_cmp(bignum_t* a, bignum_t* b){
 	return 0;
 }
 
+/* XXX: this would be void-typed */
  bignum_sub(bignum_t* a, bignum_t* b){
 	int max_len = max(a->length, b->length);
 	int i, j;
@@ -325,6 +331,7 @@ int bignum_cmp(bignum_t* a, bignum_t* b){
 	trunczeroes(a);
 }
 
+/* XXX: this would be void-typed */
  bignum_add(bignum_t* a, bignum_t* b){
 	int max_len = max(a->length, b->length);
 	int i, j;
