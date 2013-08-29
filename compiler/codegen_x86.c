@@ -1465,6 +1465,7 @@ char* codegen(exp_tree_t* tree)
 
 		/* build pointer */
 		printf("movl %s, %s\n", sym_s, sto2);
+		free_temp_reg(sym_s);
 		printf("addl $%d, %s\n", offs, sto2);
 	
 		sto3 = registerize(codegen(tree->child[1]));
