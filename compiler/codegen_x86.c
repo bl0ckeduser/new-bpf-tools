@@ -1576,7 +1576,7 @@ char* codegen(exp_tree_t* tree)
 
 		/* ptr = base_adr + membsiz * index_expr */
 		printf("addl %s, %s\n", sto2, sto);
-		free_temp_reg(sto);
+		free_temp_reg(sto2);
 
 		return sto;
 	}
