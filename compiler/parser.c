@@ -1171,44 +1171,32 @@ multi_array_access:
 
 /*
 	e0_3 :=
-		 e0_4 '.' e0_3
-		| e0_4 '->' e0_3
+		 e0_4 {'.' e0_4}
+		| e0_4 {'->' e0_4}
 		| e0_4
 */
+void e0_3_dispatch(char oper, exp_tree_t *dest)
+{
+	switch (oper) {
+		case TOK_DOT:
+			*dest = new_exp_tree(STRUCT_MEMB, NULL);
+		break;
+		case TOK_ARROW:
+			*dest = new_exp_tree(DEREF_STRUCT_MEMB, NULL);
+		break;
+	}
+}
+int check_e0_3_op(char oper)
+{
+	return oper == TOK_DOT || oper == TOK_ARROW;
+}
 exp_tree_t e0_3()
 {
-	exp_tree_t tree0, tree1, tree2, subtree;
-	
-	tree0 = e0_4();
-	if (!valid_tree(tree0))
-		return null_tree;	
-
-	/* . */
-	if (peek().type == TOK_DOT) {
-		++indx;
-		tree1 = new_exp_tree(STRUCT_MEMB, NULL);
-		tree2 = e0_3();
-		if (!valid_tree(tree2))
-			parse_fail("expected expression after .");
-		add_child(&tree1, alloc_exptree(tree0));
-		add_child(&tree1, alloc_exptree(tree2));
-		return tree1;
-	}
-
-	/* -> */
-	if (peek().type == TOK_ARROW) {
-		++indx;
-		tree1 = new_exp_tree(DEREF_STRUCT_MEMB, NULL);
-		tree2 = e0_3();
-		if (!valid_tree(tree2))
-			parse_fail("expected expression after ->");
-		add_child(&tree1, alloc_exptree(tree0));
-		add_child(&tree1, alloc_exptree(tree2));
-		return tree1;
-	}
-
-	/* e0_3 alone */
-	return tree0;
+	return parse_left_assoc(
+		&e0_4,
+		&check_e0_3_op,
+		&e0_3_dispatch,
+		0);
 }
 
 /*
