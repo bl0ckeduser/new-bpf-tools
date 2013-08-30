@@ -1026,7 +1026,6 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			strcpy(named_struct_name[named_structs],
 				get_tok_str(*(tree->tok)));
 			++named_structs;
-			fprintf(stderr, "reg %s\n", get_tok_str(*(tree->tok)));
 			children_offs = sd->cc;
 		} else {
 			/* NAMED_STRUCT_DECL -- use existing named struct type */
