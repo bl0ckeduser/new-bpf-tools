@@ -103,9 +103,16 @@ e0 :=
 
 e0_2 := e0_3 { '[' expr ']' }
 
+/* 
+ * . and -> have to be left-associative !!!!! otherwise
+ * funny things happen: for example the expression
+ * a->b->c is parsed as a->(b->c) and the compiler
+ * segfaults trying to look up the tag in "a" specified
+ * by the tree for "b->c".
+ */
 e0_3 :=
-	 e0_4 '.' e0_3
-	| e0_4 '->' e0_3
+	 e0_4 {'.' e0_4}
+	| e0_4 {'->' e0_4}
 	| e0_4
 
 e0_4 := ident '(' expr1, expr2, exprN ')'
