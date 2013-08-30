@@ -44,8 +44,8 @@ void compiler_fail_int(char *message, token_t *token,
 
 	/* check for specific line/chr override
 	 * (used for special cases like end of line) */
-	line = in_line ? in_line : token->from_line;
-	chr = in_line ? in_chr : token->from_char;
+	line = !token ? in_line : token->from_line;
+	chr = !token ? in_chr : token->from_char;
 
 	fflush(stdout);
 	fflush(stderr);
