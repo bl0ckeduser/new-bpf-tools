@@ -1104,30 +1104,22 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				 * hurr durr amirite */
 				objsiz = 4;
 			else if (typedat.ptr && typedat.arr) {
-				if (typedat.arr > 1)
-					codegen_fail("I can't do multidimensional arrays of struct"
-								 " pointers yet", findtok(dc));
-				/* array of pointers to struct */
+				/* N-dimensional array of pointers to struct -- 
+				 * each member is 4 bytes since any kind of pointer should 
+				 * be 4 bytes on 32-bit x86 */
 				array_base_type = typedat;
 				array_base_type.arr = 0;
 				sym_num = create_array(symty, dc,
-					type2siz(array_base_type), get_arr_dim(dc, 0) * 4);
+					type2siz(array_base_type), arr_dim_prod(typedat) * 4);
 				symtyp[sym_num] = typedat;
 				continue;
 			}
 			else if (typedat.arr) {
-				if (typedat.arr > 1)
-					codegen_fail("I can't do multidimensional arrays of struct yet",
-								findtok(dc));
+				/* N-dimensional array of struct */
 				array_base_type = typedat;
 				array_base_type.arr = 0;
-				#ifdef DEBUG
-					fprintf(stderr, "array of struct \n");
-					fprintf(stderr, "base size: %d bytes\n", struct_bytes);
-					fprintf(stderr, "whole size: %d bytes\n", get_arr_dim(dc, 0) * struct_bytes);
-				#endif
 				sym_num = create_array(symty, dc,
-					struct_bytes, get_arr_dim(dc, 0) * struct_bytes);
+					struct_bytes, arr_dim_prod(typedat) * struct_bytes);
 				symtyp[sym_num] = typedat;
 				continue;
 			}
