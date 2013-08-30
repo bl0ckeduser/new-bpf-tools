@@ -9,6 +9,7 @@ basic-type := 'int'
 
 /* e.g. int a, b, c; */
 decl := (basic-type | struct-decl) decl2 { ','  decl2 } 
+	| struct-decl
 
 /*
  * 	*foo
@@ -26,6 +27,7 @@ decl2 := { '*' } ident [ ('=' expr) | { ('[' integer ']') } ]
  * }
  */
 struct-decl := 'struct' ident '{' decl ';' { decl ';' } '}'
+		| 'struct' ident decl2 { ','  decl2 } ';'
 
 /* TODO stuff like "struct derp* foo;" */
 

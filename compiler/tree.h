@@ -59,6 +59,7 @@ enum {		/* head_type */
 	STRUCT_DECL,
 	STRUCT_MEMB,
 	DEREF_STRUCT_MEMB,
+	NAMED_STRUCT_DECL,
 	/* special */
 	NULL_TREE
 };
@@ -119,6 +120,7 @@ static char* tree_nam[] = {
 	"STRUCT_DECL",
 	"STRUCT_MEMB",
 	"DEREF_STRUCT_MEMB",
+	"NAMED_STRUCT_DECL",
 	"NULL_TREE"
 };
 
