@@ -1098,49 +1098,51 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				#endif
 			}
 
-			/* figure out the size of the object */
-			if (typedat.ptr && typedat.arr == 0)
+			/* 
+			 * XXX: if global structs / struct arrays / etc. 
+			 * were supported dispatches to the global symbol table
+			 * would be needed around here
+			 */
+
+			/* 
+			 * Figure out the size of the object
+			 * (if it's an array, this is the size of the base object)
+			 */
+			if (typedat.ptr)
 				/* pointers are always 4 bytes on 32-bit x86
 				 * hurr durr amirite */
 				objsiz = 4;
-			else if (typedat.ptr && typedat.arr) {
-				/* N-dimensional array of pointers to struct -- 
-				 * each member is 4 bytes since any kind of pointer should 
-				 * be 4 bytes on 32-bit x86 */
-				array_base_type = typedat;
-				array_base_type.arr = 0;
-				sym_num = create_array(symty, dc,
-					type2siz(array_base_type), arr_dim_prod(typedat) * 4);
-				symtyp[sym_num] = typedat;
-				continue;
-			}
-			else if (typedat.arr) {
-				/* N-dimensional array of struct */
-				array_base_type = typedat;
-				array_base_type.arr = 0;
-				sym_num = create_array(symty, dc,
-					struct_bytes, arr_dim_prod(typedat) * struct_bytes);
-				symtyp[sym_num] = typedat;
-				continue;
-			}
 			else
-				/* single variable: it's just the size of the struct */
+				/* not a pointer: it's just the size of the struct */
 				objsiz = struct_bytes;
 
-			/* add the variable name, size, and type to the symbol table */
-			/* XXX: if global structs were supported a dispatch
-		 	 * to the global symbol table would be needed here */
-			sym_num = sym_add(dc->child[0]->tok, objsiz);
-			symtyp[sym_num] = typedat;
-
-			#ifdef DEBUG
-				dump_td(typedat);
-			#endif
+			if (typedat.arr) {
+				/* 
+				 * N-dimensional array of struct (or of N-degree 
+				 * pointers to struct)
+				 */
+				array_base_type = typedat;
+				array_base_type.arr = 0;
+				sym_num = create_array(symty, dc,
+					type2siz(array_base_type), arr_dim_prod(typedat) * objsiz);
+				symtyp[sym_num] = typedat;
+			} else {
+				/*
+				 * It's just a non-arrayed variable (either a struct
+				 * or an N-degree pointer thereof); just add it to
+				 * the symbol table.
+				 */
+				sym_num = sym_add(dc->child[0]->tok, objsiz);
+				symtyp[sym_num] = typedat;
+			}
 		}
 
-		/* Copy initializers block to the tree pointer
-		 * so it'll get codegenerated during the main
-		 * codegeneration pass */
+		/* 
+		 * Copy the initializers code tree to the original
+		 * tree pointer, so it'll get codegenerated during
+		 * the main codegeneration pass which deals with
+		 * code rather than declarations 
+ 		 */
 		memcpy(tree, &inits, sizeof (exp_tree_t));
 
 		return;
