@@ -77,14 +77,20 @@ int type2siz(typedesc_t ty)
 	return ty.ptr || ty.arr ? 4 : decl2siz(ty.ty);
 }
 
+int arr_dim_prod(typedesc_t ty)
+{
+	int prod, i;
+	for (prod = 1, i = 0; i < ty.arr; ++i) {
+		prod *= ty.arr_dim[i];
+	}
+	return prod;
+}
+
 int type2offs(typedesc_t ty)
 {
 	int prod, i;
 	if (ty.arr >= 0 && ty.arr_dim) {
-		prod = 1;
-		for (i = 0; i < ty.arr; ++i) {
-			prod *= ty.arr_dim[i];
-		}
+		prod = arr_dim_prod(ty);
 		ty.arr = 0;
 		return type2siz(ty) * prod;
 	}

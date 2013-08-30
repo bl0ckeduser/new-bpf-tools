@@ -44,6 +44,7 @@ extern int get_arr_dim(exp_tree_t *decl, int n);
 void setup_symbols(exp_tree_t* tree, int glob);
 extern void discard_stars(exp_tree_t *dc);
 char* get_tok_str(token_t t);
+extern int arr_dim_prod(typedesc_t ty);
 
 /* ====================================================== */
 
