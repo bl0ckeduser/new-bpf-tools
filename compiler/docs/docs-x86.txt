@@ -351,6 +351,7 @@ elements are C syntax.
 			test/x86/struct-ptr-arr.c
 			test/x86/struct-ptr.c
 			test/x86/typedef.c
+			test/x86/struct-memb-lval.c
 
 	The C struct-access -> and . operators have also been implemented.
 	They might not codegen properly for more complicated cases yet,
