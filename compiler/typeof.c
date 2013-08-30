@@ -26,6 +26,7 @@ extern int decl2siz(int);
 extern typedesc_t func_ret_typ(char *func_nam);
 extern char* get_tok_str(token_t t);
 extern void fail(char *);
+extern struct_desc_t *find_named_struct_desc(char *s);
 
 /* hook to error printout code */
 void compiler_fail(char *message, token_t *token,
@@ -45,6 +46,7 @@ typedesc_t mk_typedesc(int bt, int ptr, int arr)
 	td.arr = arr;
 	td.arr_dim = NULL;
 	td.is_struct = 0;
+	td.is_struct_name_ref = 0;
 	return td;
 }
 
@@ -147,11 +149,17 @@ int check_array(exp_tree_t *decl)
  * a type descriptor structure
  */
 void parse_type(exp_tree_t *dc, typedesc_t *typedat,
-				typedesc_t *array_base_type, int *objsiz, int decl)
+				typedesc_t *array_base_type, int *objsiz, int decl,
+				exp_tree_t *father)
 {
 	int stars = 0;
 	int newlen = 0;
 	int i, j, k;
+
+	if (decl == STRUCT_DECL) {
+		compiler_fail("sorry I can't do structs in this context yet",
+					findtok(father), 0, 0);
+	}
 
 	/* count pointer stars */
 	count_stars(dc, &stars);
@@ -163,6 +171,12 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 		typedat->arr_dim[j] = get_arr_dim(dc, j); 
 	*array_base_type = *typedat;
 	array_base_type->arr = 0;
+
+	if (decl == NAMED_STRUCT_DECL) {
+		typedat->is_struct_name_ref = 1;
+		typedat->struct_name_ref = malloc(128);
+		strcpy(typedat->struct_name_ref, get_tok_str(*(father->tok)));
+	}
 
 	/* figure out size of the whole object in bytes */
 	*objsiz = type2offs(*typedat);
@@ -249,7 +263,7 @@ struct_pass_iter:
 		/* get information on the tag's type */
 		/* XXX: tags can't be structs themselves yet ! */
 		parse_type(dc, &tag_type, &array_base_type, &objsiz, 
-			tree->child[i]->head_type);
+			tree->child[i]->head_type, tree->child[i]);
 
 		if (!struct_pass && check_array(dc))
 			continue;
@@ -347,8 +361,29 @@ void dump_td_iter(typedesc_t td, int depth)
 	int i;
 	indent(stderr, depth);
 	fprintf(stderr, "==== dump_td ======\n");
-
-	if (td.is_struct) {
+	if (td.ptr) {
+		indent(stderr, depth);
+		fprintf(stderr, "ptr: %d\n", td.ptr);
+	}
+	if (td.arr) {
+		indent(stderr, depth);
+		fprintf(stderr, "arr: %d\n", td.arr);
+		indent(stderr, depth);
+		fprintf(stderr, "arr_dim: ");
+		if (td.arr_dim) {
+			indent(stderr, depth);
+			for (i = 0; i < td.arr; ++i) 
+				fprintf(stderr, "%d:%d ", i, td.arr_dim[i]);
+			fprintf(stderr, "\n");
+		}
+	}
+	if (td.ty == NAMED_STRUCT_DECL && td.is_struct_name_ref) {
+		indent(stderr, depth);
+		fprintf(stderr, "** named struct **\n");
+		indent(stderr, depth);
+		fprintf(stderr, "named struct ref: %s\n", td.struct_name_ref);
+	}
+	else if (td.is_struct) {
 		indent(stderr, depth);
 		fprintf(stderr, "** struct **\n");
 		indent(stderr, depth);
@@ -363,22 +398,6 @@ void dump_td_iter(typedesc_t td, int depth)
 	} else {
 		indent(stderr, depth);
 		fprintf(stderr, "ty: %s\n", tree_nam[td.ty]);
-		if (td.ptr) {
-			indent(stderr, depth);
-			fprintf(stderr, "ptr: %d\n", td.ptr);
-		}
-		if (td.arr) {
-			indent(stderr, depth);
-			fprintf(stderr, "arr: %d\n", td.arr);
-			indent(stderr, depth);
-			fprintf(stderr, "arr_dim: ");
-			if (td.arr_dim) {
-				indent(stderr, depth);
-				for (i = 0; i < td.arr; ++i) 
-					fprintf(stderr, "%d:%d ", i, td.arr_dim[i]);
-				fprintf(stderr, "\n");
-			}
-		}
 	}
 	indent(stderr, depth);
 	fprintf(stderr, "===================\n");
@@ -426,8 +445,18 @@ typedesc_t tree_typeof(exp_tree_t *tp)
 	td.arr = 0;
 	td.arr_dim = NULL;
 	td.is_struct = 0;
+	td.is_struct_name_ref = 0;
 
-	return tree_typeof_iter(td, tp);
+	td = tree_typeof_iter(td, tp);
+
+	if (td.ty == NAMED_STRUCT_DECL && td.is_struct_name_ref) {
+		td.is_struct = 1;
+		td.is_struct_name_ref = 0;
+		td.ty = STRUCT_DECL;
+		td.struct_desc = find_named_struct_desc(td.struct_name_ref);
+	}
+
+	return td;
 }
 
 /*

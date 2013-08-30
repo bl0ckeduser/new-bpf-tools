@@ -28,6 +28,9 @@ typedef struct {
 	int is_struct;
 	struct struct_desc_s *struct_desc;
 
+	int is_struct_name_ref;
+	char* struct_name_ref;
+
 	int ty;			/* e.g. INT_DECL for "int" */
 
 } typedesc_t;

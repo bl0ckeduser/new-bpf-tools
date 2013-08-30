@@ -43,6 +43,7 @@ extern void count_stars(exp_tree_t *dc, int *stars);
 extern int get_arr_dim(exp_tree_t *decl, int n);
 void setup_symbols(exp_tree_t* tree, int glob);
 extern void discard_stars(exp_tree_t *dc);
+char* get_tok_str(token_t t);
 
 /* ====================================================== */
 
@@ -95,6 +96,14 @@ struct {
 } func_desc[256];
 int funcdefs = 0;
 
+/* 
+ * Table used for tracking named structs
+ * (e.g. struct bob { ... }; then struct bob bob_variable;)
+ */
+struct_desc_t* named_struct[256];
+char named_struct_name[256][64];
+int named_structs = 0;
+
 /* Table of string-constant symbols */
 char str_const_tab[256][SYMLEN] = {""};
 int str_consts = 0;
@@ -125,6 +134,19 @@ int break_count = 0;
 int break_labels[256];
 
 /* ====================================================== */
+
+struct_desc_t *find_named_struct_desc(char *s)
+{
+	int i;
+	char err_buf[1024];
+	for (i = 0; i < named_structs; ++i)
+		if (!strcmp(named_struct_name[i], s))
+			return named_struct[i];
+
+
+	sprintf(err_buf, "unknown struct name `%s'", s);
+	fail(err_buf);
+}
 
 typedesc_t func_ret_typ(char *func_nam)
 {
@@ -994,6 +1016,13 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 
 		/* read the struct declaration parse tree */
 		struct_base = struct_tree_2_typedesc(tree, &struct_bytes, &sd);
+
+		/* register the struct's name (e.g. "bob" in "struct bob { ... };") */
+		named_struct[named_structs] = struct_base.struct_desc;
+		strcpy(named_struct_name[named_structs],
+			get_tok_str(*(tree->tok)));
+		++named_structs;
+		fprintf(stderr, "reg %s\n", get_tok_str(*(tree->tok)));
 
 		/* create initializers tree */
 		inits = new_exp_tree(BLOCK, NULL);
