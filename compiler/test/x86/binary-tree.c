@@ -4,13 +4,15 @@ typedef struct node {
 	int val;
 } node_t;
 
-/* XXX: below doesn't compile */
-/*
-	node_t *left_child(node_t *n)
-	{
-		return n->l;
-	}
-*/
+node_t *left_child(node_t *n)
+{
+	return n->l;
+}
+
+node_t *right_child(node_t *n)
+{
+	return n->r;
+}
 
 node_t *mknod(int val)
 {
@@ -34,8 +36,10 @@ main()
 
 	printf("%d\n", ptr->val);
 	printf("%d\n", ptr->l->val);
+	printf("%d\n", left_child(ptr)->val);
 	printf("%d\n", ptr->l->r->val);
 	printf("%d\n", ptr->l->r->l->val);
+	printf("%d\n", left_child(right_child(left_child(ptr)))->val);
 	printf("%d\n", ptr->r->val);
 	printf("%d\n", ptr->r->r->val);
 	printf("%d\n", ptr->r->r->l->val);

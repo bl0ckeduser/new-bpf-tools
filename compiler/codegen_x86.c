@@ -1008,14 +1008,6 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 	 */
 	if ((tree->head_type == STRUCT_DECL
 		|| tree->head_type == NAMED_STRUCT_DECL) && !first_pass) {
-
-		/* XXX: global structs unsupported */
-		/* XXX: this also prevents globally-scoped named
-		 * struct type definitions ! */
-		if (symty == SYMTYPE_GLOBALS)
-			codegen_fail("global structs are unsupported",
-				findtok(tree));
-
 		if (tree->head_type == STRUCT_DECL) {
 			/* read the struct declaration parse tree */
 			struct_base = struct_tree_2_typedesc(tree, &struct_bytes, &sd);
@@ -1037,6 +1029,11 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				find_named_struct_desc(get_tok_str(*(tree->tok)));
 			children_offs = 0;
 		}
+
+		/* XXX: global structs unsupported */
+		if (symty == SYMTYPE_GLOBALS && tree->child_count - children_offs > 0)
+			codegen_fail("global structs are unsupported",
+				findtok(tree));
 
 		/* discard the tree from further codegeneneration */
 		tree->head_type = NULL_TREE;

@@ -530,8 +530,14 @@ not_proc:
 		typedef_desc[typedefs] = copy_tree(subtree);
 		++typedefs;
 		need(TOK_SEMICOLON);
-		/* okay carry on with whatever */
-		return block();
+		/*
+		 * The left operand of the typedef must be coded
+		 * itself, in case it is a struct -- structs need
+		 * to be seen by the codegen so it can track struct
+		 * tag names as in e.g. struct FOO { ... }; where
+		 * FOO would be the tag name.
+		 */
+		return subtree;
 	}
 
 	/* empty block -- ';' */

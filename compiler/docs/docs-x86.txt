@@ -385,43 +385,11 @@ elements are C syntax.
 		  but I guess maybe you can use memcpy and pointers for now
 		- no struct literals of any kind are supported,
 		  so e.g. no constant struct initializers
-		- "struct X ..." syntax (even if it's for a pointer)
+		- "struct X ..." type declaration syntax
 		  isn't supported in function return value types and
 		  function argument types
-		- the compiler can currently track typedefs of structs
-		  made in global lexical scope, but not struct name tags
-		  hiding inside a typedef -- here's some sample code:
-	
-		---------------------------------------------------------
-
-		typedef struct node {
-			struct node* l;
-			struct node* r;
-			int val;
-		} node_t;
-	
-		main()
-		{
-			struct node2 {
-				struct node2 *l;
-				struct node2 *r;
-				int val;
-			};
-		
-			typedef struct node3 {
-				struct node3 *l;
-				struct node3 *r;
-				int val;
-			} node3_t;
-
-			struct node2 *ptr;	/* works */
-			struct node3 *ptr;	/* doesn't work yet */
-			node3_t *ptr;		/* works */
-			struct node *ptr;	/* doesn't work yet */
-			node_t *ptr = mknod(0);	/* works */
-		}
-
-		---------------------------------------------------------
+		- "struct { ... }" without a name tag after "struct" is
+		  currently unsupported
 
 20. typedefs
 
