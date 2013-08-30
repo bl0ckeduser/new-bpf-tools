@@ -577,6 +577,8 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 			td.ty = tp->child[0]->child[0]->child[0]->head_type;
 			td.arr = 0;
 			td.ptr = tp->child[0]->child_count - 1;
+			td.is_struct = 0;
+			td.is_struct_name_ref = 0;
 			if (td.ty == STRUCT_DECL) {
 				struct_tree_2_typedesc(tp->child[0]->child[0]->child[0], &bc,
 					&sd);

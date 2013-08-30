@@ -1687,6 +1687,8 @@ char* codegen(exp_tree_t* tree)
 				 * provided */
 				typedat.ty = INT_DECL;
 				typedat.ptr = typedat.arr = 0;
+				typedat.is_struct = 0;
+				typedat.is_struct_name_ref = 0;
 
 				/* offset = sizeof(int) * i */
 				offset = 4 * i;
