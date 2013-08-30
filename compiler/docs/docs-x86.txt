@@ -352,6 +352,7 @@ elements are C syntax.
 			test/x86/struct-ptr.c
 			test/x86/typedef.c
 			test/x86/struct-memb-lval.c
+			test/x86/named-struct.c
 
 	The C struct-access -> and . operators have also been implemented.
 	They might not codegen properly for more complicated cases yet,
@@ -360,18 +361,13 @@ elements are C syntax.
 
 	Current known pitfalls (as of writing) that I can remember:
 
+		- multiple operand uses of the "->" and "." operators,
+		  e.g. a->b->c, are not yet supported by the code generator.
+		  currently, it segfaults because it naively assumes the
+		  operands of -> to be variables. (in the case of a->b->c,
+		  the left operand of the outermost -> is a->b, which isn't
+		  a variable -- the -> operator is left-associative, etc.)
 		- you can't have a struct inside a struct yet
-		- struct names without typedefs are not supported. 
-		  by this I mean e.g.
-			struct foo {
-				int x;
-				int y;
-			};
-
-			struct foo bob;
-
-			bob.x = 123;
-
 		- structs cannot be used as function argument types
 		  or function return types. pointers to struct,
 		  arrays of pointers to struct, and pointers to pointers to

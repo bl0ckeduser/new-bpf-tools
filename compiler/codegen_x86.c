@@ -1001,28 +1001,46 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 	exp_tree_t inits;
 	exp_tree_t init_expr;
 	exp_tree_t *initializer_val;
+	int children_offs;
 
 	/*
 	 * Handle structs in the second pass
 	 */
-	if (tree->head_type == STRUCT_DECL && !first_pass) {
+	if ((tree->head_type == STRUCT_DECL
+		|| tree->head_type == NAMED_STRUCT_DECL) && !first_pass) {
+
 		/* XXX: global structs unsupported */
+		/* XXX: this also prevents globally-scoped named
+		 * struct type definitions ! */
 		if (symty == SYMTYPE_GLOBALS)
 			codegen_fail("global structs are unsupported",
 				findtok(tree));
 
+		if (tree->head_type == STRUCT_DECL) {
+			/* read the struct declaration parse tree */
+			struct_base = struct_tree_2_typedesc(tree, &struct_bytes, &sd);
+
+			/* register the struct's name (e.g. "bob" in 
+			 * "struct bob { ... };") */
+			named_struct[named_structs] = struct_base.struct_desc;
+			strcpy(named_struct_name[named_structs],
+				get_tok_str(*(tree->tok)));
+			++named_structs;
+			fprintf(stderr, "reg %s\n", get_tok_str(*(tree->tok)));
+			children_offs = sd->cc;
+		} else {
+			/* NAMED_STRUCT_DECL -- use existing named struct type */
+			struct_base.ty = 0;		
+			struct_base.arr = struct_base.ptr = 0;
+			struct_base.is_struct = 1;
+			struct_base.is_struct_name_ref = 0;
+			sd = struct_base.struct_desc = 
+				find_named_struct_desc(get_tok_str(*(tree->tok)));
+			children_offs = 0;
+		}
+
 		/* discard the tree from further codegeneneration */
 		tree->head_type = NULL_TREE;
-
-		/* read the struct declaration parse tree */
-		struct_base = struct_tree_2_typedesc(tree, &struct_bytes, &sd);
-
-		/* register the struct's name (e.g. "bob" in "struct bob { ... };") */
-		named_struct[named_structs] = struct_base.struct_desc;
-		strcpy(named_struct_name[named_structs],
-			get_tok_str(*(tree->tok)));
-		++named_structs;
-		fprintf(stderr, "reg %s\n", get_tok_str(*(tree->tok)));
 
 		/* create initializers tree */
 		inits = new_exp_tree(BLOCK, NULL);
@@ -1032,7 +1050,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		 * variables, with pointer/array modifiers and 
 		 * symbol name identifiers, after the "struct { ... } " part)
 		 */
-		for (i = sd->cc; i < tree->child_count; ++i) {
+		for (i = children_offs; i < tree->child_count; ++i) {
 			dc = tree->child[i];
 
 			/* 
@@ -1261,7 +1279,8 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		||	tree->child[i]->head_type == IF
 		||	tree->child[i]->head_type == WHILE
 		||	int_type_decl(tree->child[i]->head_type)
-		||  (!first_pass && tree->child[i]->head_type == STRUCT_DECL))
+		||  (!first_pass && tree->child[i]->head_type == STRUCT_DECL)
+		||  (!first_pass && tree->child[i]->head_type == NAMED_STRUCT_DECL))
 			setup_symbols_iter(tree->child[i], symty, first_pass);
 }
 
