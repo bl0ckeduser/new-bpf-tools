@@ -300,18 +300,23 @@ decl_decl2:
 }
 
 /*
- * struct-decl := 'struct' ident '{' decl ';' { decl ';' } '}'
- *				 | 'struct' ident decl2 { ','  decl2 } ';'
+ * struct-decl := 'struct' [ident] '{' decl ';' { decl ';' } '}'
+ *		 | 'struct' [ident] decl2 { ','  decl2 } ';'
  */
 exp_tree_t struct_decl()
 {
 	exp_tree_t tree, subtree;
 	token_t name;
 	int sav_indx;
+	token_t fake_anon_name = { TOK_IDENT, "<anonymous struct>", 0, 0, 0 };
 	if (peek().type == TOK_STRUCT) {
 		++indx;
-		name = need(TOK_IDENT);
-		/* 'struct' ident '{' decl ';' { decl ';' } '}' */
+		/* [ident] */
+		if ((name = peek()).type == TOK_IDENT)
+			++indx;
+		else
+			name = fake_anon_name;
+		/* 'struct' [ident] '{' decl ';' { decl ';' } '}' */
 		if (peek().type == TOK_LBRACE) {
 			++indx;
 			tree = new_exp_tree(STRUCT_DECL, &name);
@@ -327,7 +332,7 @@ exp_tree_t struct_decl()
 			}
 			need(TOK_RBRACE);
 			return tree;
-		/* 'struct' ident decl2 { ','  decl2 } ';' */
+		/* 'struct' [ident] decl2 { ','  decl2 } ';' */
 		} else if (valid_tree((subtree = decl2()))) {
 			tree = new_exp_tree(NAMED_STRUCT_DECL, &name);
 			add_child(&tree, alloc_exptree(subtree));

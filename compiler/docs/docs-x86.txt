@@ -378,8 +378,6 @@ elements are C syntax.
 		- "struct X ..." type declaration syntax
 		  isn't supported in function return value types and
 		  function argument types. typedefs work, though.
-		- "struct { ... }" without a name tag after "struct" is
-		  currently unsupported.
 
 20. typedefs
 
