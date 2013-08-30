@@ -367,6 +367,9 @@ elements are C syntax.
 		  operands of -> to be variables. (in the case of a->b->c,
 		  the left operand of the outermost -> is a->b, which isn't
 		  a variable -- the -> operator is left-associative, etc.)
+		  wait, upon further inspection I think it's actually the
+		  parser that's broken. it's parsing -> as right-associative,
+		  which is wrong D:
 		- you can't have a struct inside a struct yet
 		- structs cannot be used as function argument types
 		  or function return types. pointers to struct,
