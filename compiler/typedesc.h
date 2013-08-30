@@ -41,6 +41,7 @@ typedef struct struct_desc_s {
 	char *name[128];		/* tag names */
 	typedesc_t* typ[128];	/* tag types */
 	int offs[128];			/* tag byte offsets */
+	int bytes;				/* byte size of the whole thing */
 } struct_desc_t;
 
 extern typedesc_t tree_typeof(exp_tree_t *tp);

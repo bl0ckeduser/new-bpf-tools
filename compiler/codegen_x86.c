@@ -1011,6 +1011,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		if (tree->head_type == STRUCT_DECL) {
 			/* read the struct declaration parse tree */
 			struct_base = struct_tree_2_typedesc(tree, &struct_bytes, &sd);
+			struct_base.struct_desc->bytes = struct_bytes;
 
 			/* register the struct's name (e.g. "bob" in 
 			 * "struct bob { ... };") */
@@ -1028,6 +1029,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			sd = struct_base.struct_desc = 
 				find_named_struct_desc(get_tok_str(*(tree->tok)));
 			children_offs = 0;
+			struct_bytes = struct_base.struct_desc->bytes;
 		}
 
 		/* XXX: global structs unsupported */

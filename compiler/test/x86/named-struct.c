@@ -1,12 +1,10 @@
+struct bob {
+	int x;
+	int y;
+};
+
 main()
 {
-	/* XXX: compiler won't allow this in global lexical scope */
-	/* XXX: it doesn't work if it's also put inside a typedef */
-	struct bob {
-		int x;
-		int y;
-	};
-
 	struct bob foo;
 	struct bob *bar = malloc(256);
 	struct bob *herp[32];
