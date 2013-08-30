@@ -2489,8 +2489,7 @@ char* codegen(exp_tree_t* tree)
 				if (obj_siz != 1)
 					printf("imull $%d, %s\n", obj_siz, str);
 				printf("%s %s, %s\n", oper, str, sto);
-				if (stackstor)
-					free_temp_reg(str);
+				free_temp_reg(str);
 			} else if (tree->child[i]->head_type == NUMBER) {
 				str = registerize(sto);
 				printf("%s $%s, %s\n", 
