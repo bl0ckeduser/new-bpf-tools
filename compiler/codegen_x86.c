@@ -2381,6 +2381,26 @@ char* codegen(exp_tree_t* tree)
 		return codegen(alloc_exptree(fake_tree));
 	}
 
+	/* 
+	 * general-case post-increment, post-decrement,
+	 * (used for e.g. a.b++)
+	 * (some specific cases like a++ get handled before this)
+	 */
+	if (tree->head_type == POST_INC || tree->head_type == POST_DEC) {
+		/* cache old value */
+		sto = registerize(codegen(tree->child[0]));
+		/* code the bump by emitting a "X = X + 1" tree */
+		fake_tree = new_exp_tree(ASGN, NULL);
+		fake_tree_2 = new_exp_tree(tree->head_type == POST_INC ? ADD : SUB, NULL);
+		add_child(&fake_tree_2, tree->child[0]);
+		add_child(&fake_tree_2, alloc_exptree(one_tree));
+		add_child(&fake_tree, tree->child[0]);
+		add_child(&fake_tree, alloc_exptree(fake_tree_2));
+		free_temp_reg(codegen(alloc_exptree(fake_tree)));
+		/* give back the cached value */
+		return sto;
+	}
+
 	/* number */
 	if (tree->head_type == NUMBER) {
 		sto = get_temp_reg_siz(4);
