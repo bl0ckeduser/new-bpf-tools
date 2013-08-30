@@ -1098,7 +1098,7 @@ exp_tree_t e0()
 */
 exp_tree_t e0_2()
 {
-	exp_tree_t tree0, tree1, tree2, new_tree;
+	exp_tree_t tree0, tree1, tree2, addr, new_tree;
 
 	tree0 = e0_3();
 	if (!valid_tree(tree0))
@@ -1153,8 +1153,10 @@ multi_array_access:
 
 		/* a[b].c */
 		if (peek().type == TOK_DOT) {
-			new_tree = new_exp_tree(STRUCT_MEMB, NULL);
-			add_child(&new_tree, alloc_exptree(tree1));
+			new_tree = new_exp_tree(DEREF_STRUCT_MEMB, NULL);
+			addr = new_exp_tree(ADDR, NULL);
+			add_child(&addr, alloc_exptree(tree1));
+			add_child(&new_tree, alloc_exptree(addr));
 			++indx;
 			tree2 = e0_3();
 			if (!valid_tree(tree2))
@@ -1196,13 +1198,40 @@ int check_e0_3_op(char oper)
 {
 	return oper == TOK_DOT || oper == TOK_ARROW;
 }
+/*
+ * rewrite a.b as (&a)->b
+ *
+ * this was inspired by reading the sources
+ * for the V7 UNIX C compiler for fun
+ * (http://minnie.tuhs.org/Archive/PDP-11/Distributions/research/Henry_Spencer_v7/v7.tar.gz)
+ *
+ * v7/usr/src/cmd/c/c01.c, line 113 does exactly
+ * this transformation, but in only 8 lines of code !
+ */
+void e0_3_rewrite(exp_tree_t *tree)
+{
+	exp_tree_t fake_tree, fake_tree_2;
+	int i;
+	if (tree->head_type == STRUCT_MEMB) {
+		fake_tree = new_exp_tree(ADDR, NULL);
+		add_child(&fake_tree, tree->child[0]);
+		fake_tree_2 = new_exp_tree(DEREF_STRUCT_MEMB, NULL);
+		add_child(&fake_tree_2, alloc_exptree(fake_tree));
+		add_child(&fake_tree_2, tree->child[1]);
+		memcpy(tree, &fake_tree_2, sizeof(exp_tree_t));
+	}
+	for (i = 0; i < tree->child_count; ++i)
+		e0_3_rewrite(tree->child[i]);
+}
 exp_tree_t e0_3()
 {
-	return parse_left_assoc(
+	exp_tree_t et = parse_left_assoc(
 		&e0_4,
 		&check_e0_3_op,
 		&e0_3_dispatch,
 		0);
+	e0_3_rewrite(&et);
+	return et;
 }
 
 /*
