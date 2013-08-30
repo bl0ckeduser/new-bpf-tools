@@ -158,6 +158,19 @@ int check_array(exp_tree_t *decl)
 }
 
 /*
+ * Find out dimensions and dimension size-numbers from
+ * an array declaration parse tree
+ */
+void parse_array_info(typedesc_t *typedat, exp_tree_t *et)
+{
+	int i;
+	typedat->arr = check_array(et);
+	typedat->arr_dim = malloc(typedat->arr * sizeof(int));
+	for (i = 0; i < typedat->arr; ++i)
+		typedat->arr_dim[i] = get_arr_dim(et, i); 
+}
+
+/*
  * Parse a declarator syntax tree into
  * a type descriptor structure
  */
@@ -178,10 +191,8 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 	count_stars(dc, &stars);
 
 	/* build type description for the object */
-	*typedat = mk_typedesc(decl, stars, check_array(dc));
-	typedat->arr_dim = malloc(typedat->arr * sizeof(int));
-	for (j = 0; j < typedat->arr; ++j)
-		typedat->arr_dim[j] = get_arr_dim(dc, j); 
+	*typedat = mk_typedesc(decl, stars, 0);
+	parse_array_info(typedat, dc);
 	*array_base_type = *typedat;
 	array_base_type->arr = 0;
 

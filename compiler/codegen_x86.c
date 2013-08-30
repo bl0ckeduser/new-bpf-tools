@@ -45,6 +45,7 @@ void setup_symbols(exp_tree_t* tree, int glob);
 extern void discard_stars(exp_tree_t *dc);
 char* get_tok_str(token_t t);
 extern int arr_dim_prod(typedesc_t ty);
+extern void parse_array_info(typedesc_t *typedat, exp_tree_t *et);
 
 /* ====================================================== */
 
@@ -1059,7 +1060,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			 */
 
 			typedat = struct_base;
-			typedat.arr = check_array(dc);
+			parse_array_info(&typedat, dc);
 			count_stars(dc, &(typedat.ptr));
 
 			#ifdef DEBUG
