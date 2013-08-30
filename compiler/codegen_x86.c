@@ -641,7 +641,7 @@ char* arith_op(int ty)
  * Returns the symbol number.
  */
 int create_array(int symty, exp_tree_t *dc,
-	typedesc_t array_base_type, int objsiz)
+	int base_size, int objsiz)
 {
 	/* XXX: global arrays unsupported */
 	if (symty == SYMTYPE_GLOBALS)
@@ -653,10 +653,10 @@ int create_array(int symty, exp_tree_t *dc,
 
 	/* Make storage for all but the first entries 
 	 * (the whole array is objsiz bytes, while one entry
-	 * has type array_base_type)
+	 * has size base_size)
 	 */
-	symsiz[syms++] = objsiz - type2siz(array_base_type);
-	symbytes += objsiz - type2siz(array_base_type);
+	symsiz[syms++] = objsiz - base_size;
+	symbytes += objsiz - base_size;
 
 	/* Clear the symbol name tag for the symbol table
 	 * space taken over by the array entries -- otherwise
@@ -675,7 +675,7 @@ int create_array(int symty, exp_tree_t *dc,
 	 * because the x86 stack grows "backwards" and sym_add()
 	 * follows the growth of the stack.
 	 */
-	return sym_add(dc->child[0]->tok, type2siz(array_base_type));
+	return sym_add(dc->child[0]->tok, base_size);
 }
 
 /*
@@ -1109,14 +1109,26 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				array_base_type = typedat;
 				array_base_type.arr = 0;
 				sym_num = create_array(symty, dc,
-					array_base_type, get_arr_dim(dc, 0) * 4);
+					type2siz(array_base_type), get_arr_dim(dc, 0) * 4);
 				symtyp[sym_num] = typedat;
 				continue;
 			}
-			else if (typedat.arr)
-				/* XXX: TODO: arrays of struct: more messy calculations
-				 * and symbol table stack mapping subtleties */
-				codegen_fail("I can't do arrays of structs yet !", findtok(dc));
+			else if (typedat.arr) {
+				if (typedat.arr > 1)
+					codegen_fail("I can't do multidimensional arrays of struct yet",
+								findtok(dc));
+				array_base_type = typedat;
+				array_base_type.arr = 0;
+				#ifdef DEBUG
+					fprintf(stderr, "array of struct \n");
+					fprintf(stderr, "base size: %d bytes\n", struct_bytes);
+					fprintf(stderr, "whole size: %d bytes\n", get_arr_dim(dc, 0) * struct_bytes);
+				#endif
+				sym_num = create_array(symty, dc,
+					struct_bytes, get_arr_dim(dc, 0) * struct_bytes);
+				symtyp[sym_num] = typedat;
+				continue;
+			}
 			else
 				/* single variable: it's just the size of the struct */
 				objsiz = struct_bytes;
@@ -1180,7 +1192,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			if (check_array(dc) > 0) {
 				/* Create the memory and symbols */
 				sym_num = create_array(symty, dc,
-					array_base_type, objsiz);
+					type2siz(array_base_type), objsiz);
 
 				/* Discard the tree */
 				dc->head_type = NULL_TREE;

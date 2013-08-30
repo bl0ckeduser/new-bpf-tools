@@ -55,6 +55,13 @@ typedesc_t mk_typedesc(int bt, int ptr, int arr)
  */
 int type2siz(typedesc_t ty)
 {
+	/*
+	 * Struct alone, and not a pointer to it
+	 */
+	if (ty.ptr == 0 && ty.is_struct) {
+		return ty.struct_desc->bytes;
+	}
+
 	/* 
 	 * Special case for "Negative-depth" pointers in 
 	 * nincompoop situations like *3 
