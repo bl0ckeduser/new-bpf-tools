@@ -1378,6 +1378,7 @@ char* codegen(exp_tree_t* tree)
 
 		/* build pointer */
 		printf("movl %s, %s\n", sym_s, sto2);
+		free_temp_reg(sym_s);
 		printf("addl $%d, %s\n", offs, sto2);
 	
 		/* 
@@ -1463,7 +1464,6 @@ char* codegen(exp_tree_t* tree)
 		else
 			sym_s = sym_lookup(tree->child[0]->child[0]->tok);
 
-		sto = get_temp_reg();
 		sto2 = get_temp_reg();
 
 		/* build pointer */
@@ -1473,9 +1473,8 @@ char* codegen(exp_tree_t* tree)
 		sto3 = registerize(codegen(tree->child[1]));
 		printf("movl %s, (%s)\n", sto3, sto2);
 
-		free_temp_reg(sto3);
 		free_temp_reg(sto2);
-		return sto;
+		return sto3;
 	}
 
 	/*
@@ -1498,7 +1497,6 @@ char* codegen(exp_tree_t* tree)
 		else
 			sym_s = sym_lookup(tree->child[0]->child[0]->tok);
 
-		sto = get_temp_reg();
 		sto2 = get_temp_reg();
 
 		/* build pointer */
@@ -1508,10 +1506,8 @@ char* codegen(exp_tree_t* tree)
 	
 		sto3 = registerize(codegen(tree->child[1]));
 		printf("movl %s, (%s)\n", sto3, sto2);
-
-		free_temp_reg(sto3);
 		free_temp_reg(sto2);
-		return sto;
+		return sto3;
 	}
 
 	/* 
@@ -2370,6 +2366,21 @@ char* codegen(exp_tree_t* tree)
 		free_temp_reg(sto2);
 
 		return sto;
+	}
+
+	/* 
+	 * general-case pre-increment, pre-decrement,
+	 * (used for e.g. ++a->b)
+	 * (some specific cases like ++a get handled before this)
+	 */
+	if (tree->head_type == INC || tree->head_type == DEC) {
+		fake_tree = new_exp_tree(ASGN, NULL);
+		fake_tree_2 = new_exp_tree(tree->head_type == INC ? ADD : SUB, NULL);
+		add_child(&fake_tree_2, tree->child[0]);
+		add_child(&fake_tree_2, alloc_exptree(one_tree));
+		add_child(&fake_tree, tree->child[0]);
+		add_child(&fake_tree, alloc_exptree(fake_tree_2));
+		return codegen(alloc_exptree(fake_tree));
 	}
 
 	/* number */

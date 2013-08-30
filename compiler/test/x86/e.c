@@ -170,7 +170,7 @@ trunczeroes(bignum_t* a) {
 	*new = 0;
 	memcpy(new + 1, old, bignum_len(bn));
 	bn->dig = new;
-	bn->length += 1;
+	++bn->length;
 	//free(old);
 }
 
@@ -228,7 +228,7 @@ int bignum_len(bignum_t* a){
 				"add new digit during addition");
 		}
 		if (!(i < a->length)) {
-			a->length += 1;
+			++a->length;
 			a->dig[i] = 0;
 		}
 
@@ -257,7 +257,7 @@ int bignum_len(bignum_t* a){
 				"add new digit during addition");
 		}
 		a->dig[i] = n % 10;
-		a->length += 1;
+		++a->length;
 		n /= 10;
 	}
 	trunczeroes(a);
@@ -310,7 +310,7 @@ int bignum_cmp(bignum_t* a, bignum_t* b){
 				"add new digit during addition");
 		}
 		if (!(i < a->length)) {
-			a->length += 1;
+			++a->length;
 			a->dig[i] = 0;
 		}
 
@@ -344,7 +344,7 @@ int bignum_cmp(bignum_t* a, bignum_t* b){
 				"add new digit during addition");
 		}
 		if (!(i < a->length)) {
-			a->length += 1;
+			++a->length;
 			a->dig[i] = 0;
 		}
 
