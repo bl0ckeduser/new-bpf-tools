@@ -1973,11 +1973,9 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == BLOCK) {
 		/* codegen expressions in block */
 		for (i = 0; i < tree->child_count; i++) {
-			if (tree->child[i]->head_type == ASGN) {
-				/* clear temporary memory and registers */
-				new_temp_mem();
-				new_temp_reg();
-			}
+			/* clear temporary memory and registers */
+			new_temp_mem();
+			new_temp_reg();
 			codegen(tree->child[i]);
 		}
 		return NULL;
