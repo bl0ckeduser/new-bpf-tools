@@ -4,6 +4,14 @@ typedef struct node {
 	int val;
 } node_t;
 
+/* XXX: below doesn't compile */
+/*
+	node_t *left_child(node_t *n)
+	{
+		return n->l;
+	}
+*/
+
 node_t *mknod(int val)
 {
 	/* XXX: sizeof(node_t) */

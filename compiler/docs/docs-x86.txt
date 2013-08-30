@@ -342,7 +342,8 @@ elements are C syntax.
 
 19. Structs and related access operators (->, .)
 
-	Structs are a work-in-progress. Some relevant example code is:
+	Structs are really a work-in-progress. Only some struct features work.
+	Some relevant example code is:
 
 			test/x86/arrow.c
 			test/x86/basic-struct.c
@@ -355,7 +356,7 @@ elements are C syntax.
 			test/x86/named-struct.c
 			test/x86/binary-tree.c
 
-	The C struct-access -> and . operators have also been implemented.
+	The C struct-access -> and . operators have been implemented.
 	They might not codegen properly for more complicated cases yet,
 	however the parser has gotten pretty good at dealing with them.
 	In any event, they properly codegen for the existing tests.
@@ -374,7 +375,8 @@ elements are C syntax.
 					...
 				};
 		  where there is no "typedef" and no variable name declarations
-		  after the } isn't yet allowed in the global scope either.
+		  after the } isn't yet allowed in the global lexical 
+		  scope either.
 		- arrays of structs are unsupported, but you can still 
 		  use pointers to pointers to struct and a bunch of malloc()s,
 		  as demonstrated in "test/x86/struct-ptr-arr.c".
@@ -383,6 +385,43 @@ elements are C syntax.
 		  but I guess maybe you can use memcpy and pointers for now
 		- no struct literals of any kind are supported,
 		  so e.g. no constant struct initializers
+		- "struct X ..." syntax (even if it's for a pointer)
+		  isn't supported in function return value types and
+		  function argument types
+		- the compiler can currently track typedefs of structs
+		  made in global lexical scope, but not struct name tags
+		  hiding inside a typedef -- here's some sample code:
+	
+		---------------------------------------------------------
+
+		typedef struct node {
+			struct node* l;
+			struct node* r;
+			int val;
+		} node_t;
+	
+		main()
+		{
+			struct node2 {
+				struct node2 *l;
+				struct node2 *r;
+				int val;
+			};
+		
+			typedef struct node3 {
+				struct node3 *l;
+				struct node3 *r;
+				int val;
+			} node3_t;
+
+			struct node2 *ptr;	/* works */
+			struct node3 *ptr;	/* doesn't work yet */
+			node3_t *ptr;		/* works */
+			struct node *ptr;	/* doesn't work yet */
+			node_t *ptr = mknod(0);	/* works */
+		}
+
+		---------------------------------------------------------
 
 20. typedefs
 
@@ -411,6 +450,9 @@ From greatest to lowest precedence:
 All arithmetic operators (+ et al.) are left-associative.
 
 The logical connectives (&& and ||) are left-associative.
+
+The structure-access operators -> and . are left-associtiave
+(anyway, if they weren't, they wouldn't make any sense).
 
 Assignment (=) and compound-assignment operators (+= et al.) 
 are right-associative.
