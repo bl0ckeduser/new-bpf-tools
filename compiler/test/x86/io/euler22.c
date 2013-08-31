@@ -11,8 +11,7 @@ char** allocnames()
 	int i;
 	char** names;
 
-	/* XXX: 4 => sizeof (char *) */
-	if(!(names = malloc(20000 * 4)))
+	if(!(names = malloc(20000 * sizeof(char *))))
 		return 0;
 
 	for(i = 0; i < 20000; i++) 

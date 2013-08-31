@@ -16,8 +16,7 @@ node_t *right_child(node_t *n)
 
 node_t *mknod(int val)
 {
-	/* XXX: sizeof(node_t) */
-	node_t *n = malloc(256);
+	node_t *n = malloc(sizeof(node_t));
 	n->l = 0x0;	/* XXX: NULL */
 	n->r = 0x0;	/* XXX: NULL */
 	n->val = val;

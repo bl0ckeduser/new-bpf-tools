@@ -11,12 +11,10 @@ main()
 	stuff_datum_t **ptr;
 	stuff_datum_t sd;
 
-	/* XXX: use 10 * sizeof(stuff_datum_t *) */
-	ptr = malloc(10 * 32);
+	ptr = malloc(10 * sizeof(stuff_datum_t *));
 
-	/* XXX: use sizeof(stuff_datum_t) */
 	for (i = 0; i < 10; ++i)
-		ptr[i] = malloc(256);
+		ptr[i] = malloc(sizeof(stuff_datum_t));
 
 	for (i = 0; i < 10; ++i)
 		ptr[i]->a = i;

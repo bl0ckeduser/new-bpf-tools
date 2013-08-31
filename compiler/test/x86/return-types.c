@@ -45,13 +45,7 @@ char **collection_of_repeated_letters()
 	int i, j;
 	char **coll;
 	char *ptr;
-	coll = malloc(1000);	/* XXX: 10 * sizeof(char *) */
-				/* I'm using a very big number
-				 * in case the test-against compiler
-				 * is 64-bit (or X-bit...)
-				 * Otherwise it would be
-				 * 10 * 4 bytes = 40
-				 */
+	coll = malloc(10 * sizeof(char *));
 	for (i = 0; i < 10; ++i) {
 		coll[i] = malloc(11);	/* 10 chars + NULL terminator */
 		for (j = 0; j < 10; ++j)

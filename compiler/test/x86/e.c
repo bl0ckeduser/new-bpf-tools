@@ -43,8 +43,7 @@ typedef struct bignum {
 bignum_t* make_bignum()
 {
 	bignum_t* bn;
-	/* XXX: sizeof(bignum_t) */
-	require((bn = malloc(1024 * 1024)) != wannabe_null, 
+	require((bn = malloc(sizeof(bignum_t))) != wannabe_null, 
 		"bignum structure allocation");
 	require((bn->dig = malloc(1000)) != wannabe_null, 
 		"bignum dig allocation");

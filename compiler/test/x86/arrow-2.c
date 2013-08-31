@@ -6,7 +6,7 @@ typedef struct node {
 
 node_t *mknod(int val)
 {
-	node_t *n = malloc(256);
+	node_t *n = malloc(sizeof(node_t));
 	n->l = 0x0;
 	n->r = 0x0;
 	n->val = val;
