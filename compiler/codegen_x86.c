@@ -137,6 +137,11 @@ int break_labels[256];
 
 /* ====================================================== */
 
+/*
+ * Look up the struct description table
+ * for a struct name tag, e.g. "bob"
+ * from "struct bob { int x; int y}; "
+ */
 struct_desc_t *find_named_struct_desc(char *s)
 {
 	int i;
@@ -150,6 +155,10 @@ struct_desc_t *find_named_struct_desc(char *s)
 	fail(err_buf);
 }
 
+/*
+ * Look up the return type information
+ * for a function, starting from its name
+ */
 typedesc_t func_ret_typ(char *func_nam)
 {
 	int i;
@@ -919,9 +928,15 @@ void deal_with_procs(exp_tree_t *tree)
 	int i;
 
 	if (tree->head_type == PROC) {
+		/* Clear local symbols accounting */
 		syms = 0;
 		arg_syms = 0;
+
+		/* Code the arguments and body */
 		codegen(tree);
+
+		/* Discard the func def tree so the
+		 * main codegen loop doesn't see it */
 		(*tree).head_type = NULL_TREE;
 	}
 
@@ -939,11 +954,11 @@ void deal_with_procs(exp_tree_t *tree)
 char *decl2suffix(char ty)
 {
 	switch (ty) {
-		case INT_DECL:
+		case INT_DECL:		/* 4 bytes */
 			return "l";
-		case CHAR_DECL:
+		case CHAR_DECL:		/* 1 byte */
 			return "b";
-		default:
+		default:			/* ??? */
 			return "";
 	}
 }
@@ -1279,7 +1294,8 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			tree->head_type = BLOCK;
 	}
 
-	/* Child recursion */
+	/* Child recursion, with some special provisions
+	 * to ensure some things happen only in their assigned pass */
 	for (i = 0; i < tree->child_count; ++i)
 		if (tree->child[i]->head_type == BLOCK
 		||	tree->child[i]->head_type == IF
@@ -1400,11 +1416,15 @@ char* codegen(exp_tree_t* tree)
 			findtok(tree), 0, 0);		
 */
 
+	/* 
+	 * New statement (IF, etc) or compound statement (BLOCK);
+	 * clear temporary memory and registers used to evaluate
+	 * expressions
+	 */
 	if (tree->head_type == BLOCK
 		|| tree->head_type == IF
 		|| tree->head_type == WHILE
 		|| tree->head_type == BPF_INSTR) {
-		/* clear temporary memory and registers */
 		new_temp_mem();
 		new_temp_reg();
 	}
@@ -1498,15 +1518,16 @@ char* codegen(exp_tree_t* tree)
 		return codegen(tree->child[1]);
 	}
 
-	/* 
-	 * When arrays are evaluated, the result is a
-	 * pointer to their first element (see earlier
-	 * comments about the paper called 
-	 * "The Development of the C Language"
-	 * and what it says about this)
-	 */
+	/* array variable load */
 	if (tree->head_type == VARIABLE
 		&& sym_lookup_type(tree->tok).arr) {
+		/* When arrays are evaluated, the result is a
+		 * pointer to their first element (see earlier
+		 * comments about the paper called 
+		 * "The Development of the C Language"
+		 * and what it says about this)
+		 */
+
 		/* build pointer to first member of array */
 		sto = get_temp_reg_siz(4);
 		printf("leal %s, %s\n",
@@ -1515,7 +1536,7 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
-	/* "bob123" */
+	/* string constant, e.g. "bob123" */
 	if (tree->head_type == STR_CONST) {
 		sto = get_temp_reg_siz(4);
 		printf("movl $_str_const_%d, %s\n",
@@ -1524,7 +1545,7 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
-	/* &x */
+	/* address-of variable -- &x */
 	if (tree->head_type == ADDR
 		&& tree->child_count == 1
 		&& tree->child[0]->head_type == VARIABLE) {
@@ -1581,7 +1602,7 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
-	/* *(exp) */
+	/* dereference -- *(exp) */
 	if (tree->head_type == DEREF
 		&& tree->child_count == 1) {
 		/* 
@@ -2390,6 +2411,7 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* variable retrieval
+	 * (array variables get handled earlier as a special case)
 	 * -- converts char to int
 	 */
 	if (tree->head_type == VARIABLE) {
