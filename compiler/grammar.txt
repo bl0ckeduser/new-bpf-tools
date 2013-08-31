@@ -44,7 +44,8 @@ struct-decl := 'struct' [ident] '{' decl ';' { decl ';' } '}'
 cast := '(' cast-type ')' e0
 cast-type := basic-type {'*'}
 		| struct-decl
-		| <typedef-tag>
+		| <typedef-tag> {'*'}
+		| 'struct' ident {'*'}
 
 /* ====================================================== */
 

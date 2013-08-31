@@ -585,6 +585,14 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 				td.is_struct = 1;
 				td.struct_desc = sd;
 			}
+			if (td.ty == NAMED_STRUCT_DECL) {
+				td.is_struct = 1;
+				td.is_struct_name_ref = 0;
+				td.ty = STRUCT_DECL;
+				td.struct_desc = find_named_struct_desc(
+					get_tok_str(*(tp->child[0]->child[0]->child[0]->tok)));
+				return td;
+			}
 			return td;
 		}
 	}

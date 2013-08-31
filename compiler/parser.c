@@ -191,13 +191,27 @@ exp_tree_t cast()
 
 /*
  * cast-type := basic-type {'*'} | <typedef-tag> {'*'}
+ *				| 'struct' ident {'*'}
  */
 exp_tree_t cast_type()
 {
 	token_t bt;
 	exp_tree_t btt, btct, ct, star;
 	char *str = get_tok_str(peek());
-	int i;
+	int i, sav_indx;
+
+	/* 'struct' ident ... */
+	if (peek().type == TOK_STRUCT) {
+		sav_indx = adv() - 1;
+		bt = peek();
+		++indx;
+		if (bt.type != TOK_IDENT || peek().type == TOK_LBRACE) {
+			indx = sav_indx;
+		} else {
+			btct = new_exp_tree(NAMED_STRUCT_DECL, &bt);
+			goto cast_typedef;
+		}
+	}
 
 	for (i = 0; i < typedefs; ++i) {
 		if (!strcmp(typedef_tag[i], str)) {
@@ -459,12 +473,12 @@ exp_tree_t block()
 	exp_tree_t tree, subtree;
 	exp_tree_t subtree2, subtree3;
 	exp_tree_t subtree4;
-	exp_tree_t proctyp;
+	exp_tree_t proctyp, ct;
 	int typed_proc = 0;
 	token_t tok;
 	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
-	int sav_indx, ident_indx;
+	int sav_indx, ident_indx, arg_indx;
 
 	/* return-value type before a procedure */
 	sav_indx = indx;
@@ -488,7 +502,10 @@ exp_tree_t block()
 			goto not_proc;		
 		adv();
 		while (peek().type != TOK_RPAREN) {
-			if (is_basic_type(peek().type) || check_typedef(get_tok_str(peek())))
+			arg_indx = indx;
+			ct = cast_type();
+			indx = arg_indx;
+			if (valid_tree(ct))
 				goto is_proc;
 			if (peek().type != TOK_IDENT)
 				goto not_proc;

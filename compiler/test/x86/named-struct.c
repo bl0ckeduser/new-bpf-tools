@@ -3,10 +3,20 @@ struct bob {
 	int y;
 };
 
+print_bob(struct bob var) {
+	printf("%d %d\n",
+		var.x, var.y);
+}
+
+struct bob *bob_alloc()
+{
+	return malloc(256);
+}
+
 main()
 {
 	struct bob foo;
-	struct bob *bar = malloc(256);
+	struct bob *bar = bob_alloc();
 	struct bob *herp[32];
 	int i;
 
