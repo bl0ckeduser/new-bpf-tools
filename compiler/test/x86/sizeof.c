@@ -4,6 +4,12 @@ typedef struct herp_derp {
 	int y;
 } herp_derp_t;
 
+typedef int mystery_type;
+typedef mystery_type meta_typedef;
+
+/* XXX: typedef is not that smart */
+/* typedef meta_typedef* pointer; */
+
 main()
 {
 	int bob;
@@ -25,7 +31,23 @@ main()
 	printf("sizeof(arr2) / sizeof(struct herp_derp)) = %d\n",
 		sizeof(arr2) / sizeof(struct herp_derp));
 
-	/* XXX: sizeof(a typedef) is BROKEN */
-	/* printf("sizeof(arr2) / sizeof(herp_derp_t)) = %d\n",
-		sizeof(arr2) / sizeof(herp_derp_t)); */
+	printf("sizeof(arr2) / sizeof(herp_derp_t)) = %d\n",
+		sizeof(arr2) / sizeof(herp_derp_t));
+
+	printf("sizeof(struct herp_derp) / sizeof(herp_derp_t)) = %d\n",
+		sizeof(struct herp_derp) / sizeof(herp_derp_t));
+
+	printf("sizeof(struct herp_derp **) / sizeof(herp_derp_t **)) = %d\n",
+		sizeof(struct herp_derp **) / sizeof(herp_derp_t **));
+
+	printf("sizeof(mystery_type) / sizeof(int) = %d\n",
+		sizeof(mystery_type) / sizeof(int));
+
+	printf("sizeof(meta_typedef) / sizeof(int) = %d\n",
+		sizeof(meta_typedef) / sizeof(int));
+
+/*
+	printf("sizeof(pointer) / sizeof(int *)\n",
+		sizeof(pointer) / sizeof(int *));
+*/
 }

@@ -2411,9 +2411,16 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* sizeof */
-	/* XXX: might want something more optimal than this ! */
+	/* XXX: might want this to be pre-inlined to integer nodes */
 	if (tree->head_type == SIZEOF) {
 		sto = get_temp_reg_siz(4);
+		/* HACK to make sizeof struct typedefs work */
+		if (tree->child[0]->head_type == CAST_TYPE	
+			&& tree->child[0]->child[0]->child[0]->head_type == STRUCT_DECL) {
+			tree->child[0]->child[0]->child[0]->head_type = NAMED_STRUCT_DECL;
+			tree->child[0]->child[0]->child[0]->child_count = 0;
+		}
+		/* more hacks */
 		if (type2offs(tree_typeof(tree->child[0])) == 0)
 			printf("movl $%d, %s\n", 
 				type2offs(tree_typeof(tree)),
