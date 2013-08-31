@@ -65,14 +65,22 @@ exp_tree_t copy_tree(exp_tree_t src_a)
     return *alloc_exptree(et);
 }
 
+int indx_bound(int indx)
+{
+	if (indx > tok_count)
+		indx = tok_count;
+	return indx;
+}
+
+int adv()
+{
+	return indx_bound(++indx);
+}
+
 /* give the current token */
 token_t peek()
 {
-	token_t end = { TOK_NOMORETOKENSLEFT, "", 0, 0, 0 };
-	if (indx >= tok_count)
-		return end;
-	else
-		return tokens[indx];
+	return tokens[indx];
 }
 
 /* generate a pretty error when parsing fails.
@@ -107,7 +115,7 @@ void parse_fail(char *message)
 token_t need(char type)
 {
 	char buf[1024];
-	if (tokens[indx++].type != type) {
+	if (tokens[adv() - 1].type != type) {
 		fflush(stdout);
 		--indx;
 		sprintf(buf, "%s expected", tok_desc[type]);
@@ -122,12 +130,13 @@ exp_tree_t parse(token_t *t)
 	exp_tree_t program;
 	exp_tree_t *subtree;
 	program = new_exp_tree(BLOCK, NULL);
+	token_t end = { TOK_NOMORETOKENSLEFT, "", 0, 0, 0 };
 	int i;
 
 	/* count the tokens */
 	for (i = 0; t[i].start; ++i)
 		;
-	tok_count = i;
+	t[tok_count = i] = end;
 
 	/* the loop */
 	tokens = t;
@@ -164,7 +173,7 @@ exp_tree_t cast()
 	int restor;
 
 	if (peek().type == TOK_LPAREN) {
-		restor = indx++;	/* eat '(' */
+		restor = adv() - 1;	/* eat '(' */
 		if (valid_tree(ct = cast_type())) {
 			/* okay, it has to be a cast */
 			tree = new_exp_tree(CAST, NULL);
@@ -192,7 +201,7 @@ exp_tree_t cast_type()
 
 	for (i = 0; i < typedefs; ++i) {
 		if (!strcmp(typedef_tag[i], str)) {
-			++indx;
+			adv();
 			btct = copy_tree(typedef_desc[i]);
 			if (btct.head_type == CAST_TYPE) {
 				ct = btct;
@@ -203,7 +212,7 @@ exp_tree_t cast_type()
 	}
 
 	if (is_basic_type((bt = peek()).type)) {
-		++indx;			/* eat basic-type */
+		adv();			/* eat basic-type */
 		btct = new_exp_tree(decl_dispatch(bt.type), NULL);
 cast_typedef:
 		ct = new_exp_tree(CAST_TYPE, NULL);
@@ -213,7 +222,7 @@ cast_typedef:
 		star = new_exp_tree(DECL_STAR, NULL);
 cast_typedef_2:
 		while (peek().type == TOK_MUL)
-			++indx, add_child(&ct, alloc_exptree(star));
+			adv(), add_child(&ct, alloc_exptree(star));
 		return ct;
 	} else if(valid_tree((btt = struct_decl())))
 		return btt;
@@ -259,7 +268,7 @@ exp_tree_t decl()
   	 */
 	for (i = 0; i < typedefs; ++i) {
 		if (!strcmp(typedef_tag[i], str)) {
-			++indx;
+			adv();
 			tree = copy_tree(typedef_desc[i]);
 			if (is_basic_type(decl_dedispatch(tree.child[0]->child[0]->head_type))) {
 				id = tree.child[0]->child[0]->head_type;
@@ -275,7 +284,7 @@ exp_tree_t decl()
 		else
 			return tree;	/* named struct reference */
 	if(is_basic_type(tok.type)) {
-		++indx;	/* eat basic-type token */
+		adv();	/* eat basic-type token */
 		id = decl_dispatch(tok.type);
 int_decl:
 		tree = new_exp_tree(id, NULL);
@@ -292,7 +301,7 @@ decl_decl2:
 			if (peek().type != TOK_COMMA)
 				break;
 			else
-				++indx;
+				adv();
 		}
 		return tree;
 	}
@@ -310,15 +319,15 @@ exp_tree_t struct_decl()
 	int sav_indx;
 	token_t fake_anon_name = { TOK_IDENT, "<anonymous struct>", 0, 0, 0 };
 	if (peek().type == TOK_STRUCT) {
-		++indx;
+		adv();
 		/* [ident] */
 		if ((name = peek()).type == TOK_IDENT)
-			++indx;
+			adv();
 		else
 			name = fake_anon_name;
 		/* 'struct' [ident] '{' decl ';' { decl ';' } '}' */
 		if (peek().type == TOK_LBRACE) {
-			++indx;
+			adv();
 			tree = new_exp_tree(STRUCT_DECL, &name);
 			while (peek().type != TOK_RBRACE) {
 				subtree = decl();
@@ -326,7 +335,7 @@ exp_tree_t struct_decl()
 					parse_fail("member declaration expected in struct declaration");
 				add_child(&tree, alloc_exptree(subtree));
 				if (peek().type == TOK_SEMICOLON)
-					++indx;
+					adv();
 				else
 					break;
 			}
@@ -365,18 +374,18 @@ exp_tree_t decl2()
 	 * gcc-compiled output is possible.
 	 */
 	while (peek().type == TOK_MUL)
-		++indx, ++stars;
+		adv(), ++stars;
 	tok = need(TOK_IDENT);
 	subtree = new_exp_tree(VARIABLE, &tok);
 	add_child(&tree, alloc_exptree(subtree));
 	if (peek().type == TOK_ASGN) {
-		++indx;	/* eat = */
+		adv();	/* eat = */
 		if (!valid_tree(subtree2 = expr()))
 			parse_fail("expected expression after =");
 		add_child(&tree, alloc_exptree(subtree2));
 	} else if(peek().type == TOK_LBRACK) {
 multi_array_decl:
-		++indx;	/* eat [ */
+		adv();	/* eat [ */
 		tok = need(TOK_INTEGER);
 		need(TOK_RBRACK);
 		add_child(&tree, 
@@ -410,10 +419,10 @@ exp_tree_t lval()
 
 	/* parenthesized lvalue */
 	if (peek().type == TOK_LPAREN) {
-		sav_indx = indx++;
+		sav_indx = adv() - 1;
 		if (valid_tree((subtree = lval()))) {
 			if (peek().type == TOK_RPAREN) {
-				++indx;
+				adv();
 				return subtree;
 			}
 		}
@@ -422,7 +431,7 @@ exp_tree_t lval()
 
 	if (tok.type == TOK_IDENT) {
 		/* identifier alone -- variable */
-		++indx;	/* eat the identifier */
+		adv();	/* eat the identifier */
 		return new_exp_tree(VARIABLE, &tok);
 	}
 	
@@ -470,32 +479,32 @@ exp_tree_t block()
 		ident_indx = indx;
 		if (!typed_proc)
 			sav_indx = indx;
-		++indx;
+		adv();
 		/*
 		 * Check that it is actually a procedure
 		 * definition
 		 */
 		if (peek().type != TOK_LPAREN)
 			goto not_proc;		
-		++indx;
+		adv();
 		while (peek().type != TOK_RPAREN) {
 			if (is_basic_type(peek().type) || check_typedef(get_tok_str(peek())))
 				goto is_proc;
 			if (peek().type != TOK_IDENT)
 				goto not_proc;
-			++indx;
+			adv();
 			if (peek().type != TOK_RPAREN)
 				if (peek().type != TOK_COMMA) {
 					goto not_proc;
 				} else {
-					++indx;
+					adv();
 				}
 		}
-		++indx;
+		adv();
 		if (peek().type != TOK_LBRACE)
 			goto not_proc;
 is_proc:
-		indx = ident_indx + 1;			
+		indx = indx_bound(ident_indx + 1);			
 		tree = new_exp_tree(PROC, &tok);
 		/* optional return type */
 		if (typed_proc)
@@ -511,7 +520,7 @@ is_proc:
 			if (peek().type != TOK_RPAREN)
 				need(TOK_COMMA);
 		}
-		++indx;
+		adv();
 		add_child(&tree, alloc_exptree(subtree));
 		subtree = block();
 		if (!valid_tree(subtree))
@@ -526,7 +535,7 @@ not_proc:
 
 	/* typedef cast-type ident ';' */
 	if (peek().type == TOK_TYPEDEF) {
-		++indx;
+		adv();
 		subtree = cast_type();
 		if (!valid_tree(subtree))
 			parse_fail("expected a declarator after 'typedef'");
@@ -547,16 +556,16 @@ not_proc:
 
 	/* empty block -- ';' */
 	if (peek().type == TOK_SEMICOLON) {
-		++indx;	/* eat semicolon */
+		adv();	/* eat semicolon */
 		return new_exp_tree(BLOCK, NULL);
 	}
 	/* label -- ident ':' */
 	if (peek().type == TOK_IDENT) {
 		tok = peek();
 		tree = new_exp_tree(LABEL, &tok);
-		++indx;	/* eat label name */
+		adv();	/* eat label name */
 		if (peek().type == TOK_COLON) {
-			++indx;	/* eat : */
+			adv();	/* eat : */
 			return tree;
 		}
 		/* push back the identifier, this isn't
@@ -575,27 +584,27 @@ not_proc:
 	}
 	/* 'break' ';' */
 	if ((tok = peek()).type == TOK_BREAK) {
-		++indx;
+		adv();
 		need(TOK_SEMICOLON);
 		return new_exp_tree(BREAK, &tok);
 	}
 	/* if (expr) block1 [ else block2 ] */
 	if(peek().type == TOK_IF) {
-		++indx;	/* eat if */
+		adv();	/* eat if */
 		tree = new_exp_tree(IF, NULL);
 		need(TOK_LPAREN);
 		add_child(&tree, alloc_exptree(expr()));
 		need(TOK_RPAREN);
 		add_child(&tree, alloc_exptree(block()));
 		if (peek().type == TOK_ELSE) {
-			++indx;	/* eat else */
+			adv();	/* eat else */
 			add_child(&tree, alloc_exptree(block()));
 		}
 		return tree;
 	}
 	/* while (expr) block */
 	if(peek().type == TOK_WHILE) {
-		++indx;	/* eat while */
+		adv();	/* eat while */
 		tree = new_exp_tree(WHILE, NULL);
 		need(TOK_LPAREN);
 		add_child(&tree, alloc_exptree(expr()));
@@ -605,7 +614,7 @@ not_proc:
 	}
 	/* '{' block '}' */
 	if(peek().type == TOK_LBRACE) {
-		++indx;	/* eat { */
+		adv();	/* eat { */
 		tree = new_exp_tree(BLOCK, NULL);
 		while (valid_tree(subtree = block()))
 			add_child(&tree, alloc_exptree(subtree));
@@ -636,7 +645,7 @@ not_proc:
 			default:
 				parse_fail("illegal BPF instruction");
 		}
-		++indx;	/* eat instruction */
+		adv();	/* eat instruction */
 		need(TOK_LPAREN);
 		for (i = 0; i < args; i++) {
 			if (!valid_tree(subtree = expr()))
@@ -651,13 +660,13 @@ not_proc:
 	}
 	/* 'goto' ident */
 	if (peek().type == TOK_GOTO) {
-		++indx;	/* eat goto */
+		adv();	/* eat goto */
 		tok = need(TOK_IDENT);
 		return new_exp_tree(GOTO, &tok);
 	}
 	/* 'return' expr */
 	if (peek().type == TOK_RET) {
-		++indx;	/* eat 'return' */
+		adv();	/* eat 'return' */
 		tree = new_exp_tree(RET, NULL);
 		subtree = expr();
 		if (!valid_tree(subtree))
@@ -668,12 +677,12 @@ not_proc:
 	}
 	/* for '(' [expr] ';' [expr] ';' [expr] ')' block */
 	if (peek().type == TOK_FOR) {
-		++indx;	/* eat 'for' */
+		adv();	/* eat 'for' */
 		need(TOK_LPAREN);
 		tree = new_exp_tree(BLOCK, NULL);
 		/* part 1 : initializer ... */
 		if (peek().type == TOK_SEMICOLON)
-			++indx;	/* eat ';' -- no init */
+			adv();	/* eat ';' -- no init */
 		else {
 			subtree = expr();
 			if (!valid_tree(subtree))
@@ -685,7 +694,7 @@ not_proc:
 		/* part 2 : loop condition */
 		if (peek().type == TOK_SEMICOLON) {
 			/* empty conditional -- write 1 == 1 */
-			++indx; /* eat ';' */
+			adv(); /* eat ';' */
 			subtree2 = new_exp_tree(EQL, NULL);
 			for (i = 0; i < 2; ++i)
 				add_child(&subtree2, alloc_exptree(one_tree));
@@ -698,7 +707,7 @@ not_proc:
 		/* part 3: increment */
 		if (peek().type == TOK_RPAREN) {
 			subtree3 = null_tree;
-			++indx;	/* no increment, eat ')' */
+			adv();	/* no increment, eat ')' */
 		} else {
 			if (!valid_tree(subtree3 = expr()))
 				parse_fail("expression expected");
@@ -780,7 +789,7 @@ exp_tree_t expr()
 					parse_fail
 					 ("invalid assignment operator");
 			}
-			indx++;	/* eat asg-op */
+			adv() - 1;	/* eat asg-op */
 			if (!valid_tree(subtree3 = expr()))
 				parse_fail("expression expected");
 			if (oper.type == TOK_ASGN)
@@ -800,7 +809,7 @@ exp_tree_t expr()
 	}
 	/* "bob123" */
 	if ((tok = peek()).type == TOK_STR_CONST) {
-		++indx;
+		adv();
 		tree = new_exp_tree(STR_CONST, &tok);
 		return tree;
 	}
@@ -845,7 +854,7 @@ exp_tree_t parse_left_assoc(
 	tree_dispatch(oper.type, &tree);
 
 	prev = oper.type;
-	++indx;	/* eat C-op */
+	adv();	/* eat C-op */
 	tree_ptr = alloc_exptree(tree);
 	add_child(tree_ptr, child_ptr);
 
@@ -867,7 +876,7 @@ exp_tree_t parse_left_assoc(
 
 		tree_dispatch(oper.type, &new);
 
-		++indx;	/* eat C-op */
+		adv();	/* eat C-op */
 
 		new_ptr = alloc_exptree(new);
 		add_child(new_ptr, tree_ptr);
@@ -1014,25 +1023,25 @@ exp_tree_t e1()
 
 	/* ++ e1 */
 	if (tok.type == TOK_PLUSPLUS) {
-		++indx; /* eat ++ */
+		adv(); /* eat ++ */
 		tree = new_exp_tree(INC, NULL);
 		goto e1_prefix;
 	}
 	/* -- e1 */
 	if (tok.type == TOK_MINUSMINUS) {
-		++indx; /* eat -- */
+		adv(); /* eat -- */
 		tree = new_exp_tree(DEC, NULL);
 		goto e1_prefix;
 	}
 	/* - e1 */
 	if (tok.type == TOK_MINUS) {
-		++indx; /* eat - */
+		adv(); /* eat - */
 		tree = new_exp_tree(NEGATIVE, NULL);
 		goto e1_prefix;
 	}
 	/* ! e1 */
 	if (tok.type == TOK_CC_NOT) {
-		++indx; /* eat ! */
+		adv(); /* eat ! */
 		tree = new_exp_tree(CC_NOT, NULL);
 		goto e1_prefix;
 	}
@@ -1041,13 +1050,13 @@ exp_tree_t e1()
 		return tree;
 	/* * e1 */
 	if (tok.type == TOK_MUL) {
-		++indx;
+		adv();
 		tree = new_exp_tree(DEREF, NULL);
 		goto e1_prefix;
 	}
 	/* & e1 */
 	if (tok.type == TOK_ADDR) {
-		++indx;
+		adv();
 		tree = new_exp_tree(ADDR, NULL);
 		goto e1_prefix;
 	}
@@ -1080,7 +1089,7 @@ exp_tree_t e0()
 
 	/* post ++ */
 	if (peek().type == TOK_PLUSPLUS) {
-		++indx;
+		adv();
 		tree1 = new_exp_tree(POST_INC, NULL);
 		add_child(&tree1, alloc_exptree(tree0));
 		return tree1;
@@ -1088,7 +1097,7 @@ exp_tree_t e0()
 
 	/* post -- */
 	if (peek().type == TOK_MINUSMINUS) {
-		++indx;
+		adv();
 		tree1 = new_exp_tree(POST_DEC, NULL);
 		add_child(&tree1, alloc_exptree(tree0));
 		return tree1;
@@ -1115,14 +1124,14 @@ eval_e02:
 	if(peek().type == TOK_LBRACK) {
 		tree1 = new_exp_tree(ARRAY, NULL);
 		add_child(&tree1, alloc_exptree(tree0));
-		indx++;	/* eat [ */
+		adv() - 1;	/* eat [ */
 multi_array_access:
 		if (!valid_tree(tree2 = expr()))
 			parse_fail("expression expected");
 		add_child(&tree1, alloc_exptree(tree2));
 		need(TOK_RBRACK);
 		if (peek().type == TOK_LBRACK) {
-			++indx;
+			adv();
 			/*
 		 	 * Make a nested ARRAY node so that e.g. mat[i][j] parses to:
 			 * (ARRAY (ARRAY (VARIABLE:matrix) (VARIABLE:i)) (VARIABLE:j))
@@ -1143,7 +1152,7 @@ multi_array_access:
 		if (peek().type == TOK_ARROW) {
 			new_tree = new_exp_tree(DEREF_STRUCT_MEMB, NULL);
 			add_child(&new_tree, alloc_exptree(tree1));
-			++indx;
+			adv();
 			tree2 = e0_3();
 			if (!valid_tree(tree2))
 				parse_fail("expected unary expression after ->");
@@ -1162,7 +1171,7 @@ multi_array_access:
 			addr = new_exp_tree(ADDR, NULL);
 			add_child(&addr, alloc_exptree(tree1));
 			add_child(&new_tree, alloc_exptree(addr));
-			++indx;
+			adv();
 			tree2 = e0_3();
 			if (!valid_tree(tree2))
 				parse_fail("expected unary expression after .");
@@ -1264,9 +1273,9 @@ exp_tree_t e0_4()
 	 */
 	if (peek().type == TOK_IDENT) {
 		tok = peek();
-		++indx;
+		adv();
 		if (peek().type == TOK_LPAREN) {
-			++indx;	/* eat ( */
+			adv();	/* eat ( */
 			tree = new_exp_tree(PROC_CALL, &tok);
 			while (peek().type != TOK_RPAREN) {
 				subtree2 = expr();
@@ -1276,7 +1285,7 @@ exp_tree_t e0_4()
 				if (peek().type != TOK_RPAREN)
 					need(TOK_COMMA);
 			}
-			++indx;
+			adv();
 			return tree;
 		} else
 			--indx;
@@ -1286,7 +1295,7 @@ exp_tree_t e0_4()
 	 * Parenthesized expression
 	 */
 	if(peek().type == TOK_LPAREN) {
-		++indx;	/* eat ( */
+		adv();	/* eat ( */
 		tree = expr();
 		need(TOK_RPAREN);
 		return tree;
@@ -1312,7 +1321,7 @@ exp_tree_t e0_4()
 		fake_int.from_line = 0;
 		fake_int.from_line = 1;
 		tree = new_exp_tree(NUMBER, &fake_int);
-		++indx;	/* eat number */
+		adv();	/* eat number */
 		return tree;
 	}
 	if (tok.type == TOK_HEX_INTEGER) {
@@ -1326,7 +1335,7 @@ exp_tree_t e0_4()
 		fake_int.from_line = 0;
 		fake_int.from_line = 1;
 		tree = new_exp_tree(NUMBER, &fake_int);
-		++indx;	/* eat number */
+		adv();	/* eat number */
 		return tree;
 	}
 	if (tok.type == TOK_CHAR_CONST) {
@@ -1339,12 +1348,12 @@ exp_tree_t e0_4()
 		fake_int.from_line = 0;
 		fake_int.from_line = 1;
 		tree = new_exp_tree(NUMBER, &fake_int);
-		++indx;	/* eat number */
+		adv();	/* eat number */
 		return tree;
 	}
 	if (tok.type == TOK_INTEGER) {
 		tree = new_exp_tree(NUMBER, &tok);
-		++indx;	/* eat number */
+		adv();	/* eat number */
 		return tree;
 	}
 
