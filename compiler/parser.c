@@ -1266,7 +1266,10 @@ exp_tree_t e0_3()
 }
 
 /*
-	e0_4 := ident '(' expr1, expr2, exprN ')'
+	e0_4 := 
+		'sizeof' '(' cast-type ')'
+		| 'sizeof' expr
+		| ident '(' expr1, expr2, exprN ')'
 		| '(' expr ')'
 		| lvalue
 		| integer
@@ -1283,6 +1286,32 @@ exp_tree_t e0_4()
 	char *buff;
 	int val;
 	int neg = 0;
+	int paren;
+
+	/*
+	 * sizeof expr
+	 */
+	if (peek().type == TOK_SIZEOF) {
+		/* 
+		 * Try cast-type before expression,
+		 * because otherwise sizeof(foo_t) where foo_t
+		 * is a typedef tag may be misinterpreted
+		 * as sizeof an non-existent variable "foo_t"
+		 */
+		++indx;
+		tree = new_exp_tree(SIZEOF, NULL);
+		if (peek().type == TOK_LPAREN) {
+			++indx;
+			paren = 1;
+		} else paren = 0;
+		if (valid_tree((subtree = cast_type())))
+			add_child(&tree, alloc_exptree(subtree));
+		else if (valid_tree((subtree = expr())))
+			add_child(&tree, alloc_exptree(subtree));
+		if (paren)
+			need(TOK_RPAREN);
+		return tree;
+	}
 
 	/* 
 	 * ident ( expr1, expr2, exprN )

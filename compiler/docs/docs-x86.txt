@@ -388,11 +388,19 @@ elements are C syntax.
 			    and associativity
 			-------------------------
 
+21. sizeof operator
+
+	sizeof() can be applied on a type or a variable.
+
+	It doensn't work for typedef tags yet !
+
+	Example code: test/x86/sizeof.c
+
 From greatest to lowest precedence:
 
 	[]	->	.
 	* (dereference)
-	- (sign), ( ), ++, --, procedure calls, & (address-of), !
+	- (sign), ( ), ++, --, procedure calls, sizeof, & (address-of), !
 	(...)  (cast)
 	* (multiplication) / %
 	+ -

@@ -116,7 +116,9 @@ e0_3 :=
 	| e0_4 {'->' e0_4}
 	| e0_4
 
-e0_4 := ident '(' expr1, expr2, exprN ')'
+e0_4 := 'sizeof' cast-type
+	'sizeof' expr
+	ident '(' expr1, expr2, exprN ')'
 	| '(' expr ')'
 	| lvalue
 	| integer

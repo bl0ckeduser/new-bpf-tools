@@ -2410,6 +2410,21 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
+	/* sizeof */
+	/* XXX: might want something more optimal than this ! */
+	if (tree->head_type == SIZEOF) {
+		sto = get_temp_reg_siz(4);
+		if (type2offs(tree_typeof(tree->child[0])) == 0)
+			printf("movl $%d, %s\n", 
+				type2offs(tree_typeof(tree)),
+				sto);
+		else
+			printf("movl $%d, %s\n", 
+				type2offs(tree_typeof(tree->child[0])),
+				sto);
+		return sto;
+	}
+
 	/* variable retrieval
 	 * (array variables get handled earlier as a special case)
 	 * -- converts char to int
