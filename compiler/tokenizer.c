@@ -4,6 +4,11 @@
  * The tokenization is always "greedy".
  * It works using my "wannabe-regex" 
  * NFA pseudo-regex compiler/matcher.
+ * 
+ * On Aug. 31, 2013, the tokenization was
+ * heavily modified: now it is always deterministic,
+ * and consequently the matching code is cleaner
+ * and faster.
  *
  * Bl0ckeduser, December 2012 - updated August 2013
  */
@@ -49,12 +54,10 @@ typedef struct nfa_struct {
 	/* character edges */
 	struct nfa_struct* map[256];
 
-	/* epsilon edges */
-	struct nfa_struct** link;
-	int links;
-	int link_alloc;
+	/* epsilon edge */
+	struct nfa_struct* link;
 
-	/* accept state, if any */
+	/* accept state, if any (0 otherwise) */
 	int valid_token;
 } nfa;
 
@@ -62,34 +65,16 @@ typedef struct nfa_struct {
 
 /* "nfa" structure routines */
 
-void nfa_add_link(nfa* from, nfa* to)
-{
-	if (++from->links > from->link_alloc)
-		from->link = realloc(from->link, 
-			(from->link_alloc += 5) * sizeof(nfa *));
-
-	if (!from->link)
-		fail("link array allocation");
-
-	from->link[from->links - 1] = to;
-}
-
 nfa* new_nfa()
 {
 	nfa* t = malloc(sizeof(nfa));
 	int i;
 	if (!t)
 		fail("nfa allocation");
-	t->link = malloc(10 * sizeof(nfa*));
-	if (!t->link)
-		fail("nfa links");
-	t->links = 0;
-	t->link_alloc = 10;
-	for (i = 0; i < 10; i++)
-		t->link[i] = NULL;
-	t->valid_token = 0;
 	for(i = 0; i < 256; i++)
 		t->map[i] = NULL;
+	t->link = NULL;
+	t->valid_token = 0;
 	return t;
 }
 
@@ -164,53 +149,47 @@ void add_token(nfa* t, char* tok, int key)
 				 * go straight to this node, via
 				 * an epsilon link.
 				 */
-				nfa_add_link(hist[n - 1], t);
+				hist[n - 1]->link = t;
 				break;
-			case '+':	/* character can repeat
-					   any number of times */
+			case '*':		/* 0 or more reps of a char */
+			case '+':		/* 1 or more reps of a char */
 				sanity_requires(n > 0);
 
 				/* 
-				 * Make a "buffer" node to keep things
+				 * Make a new "buffer" node to keep things
 				 * cleanly separated and avoid
 				 * surprises when matching e.g.
 				 * 'a+b+'. Epsilon-link to it.
 				 */
-				nfa_add_link(t, hist[++n] = new_nfa());
+				t->link = hist[++n] = new_nfa();
 				t = hist[n];
 
 				/* 
-				 * Next, we epsilon-link the buffer node
-				 * all the way back to the node '+' compilation
-				 * started with, to allow repetition.
+				 * Repeat all the character edges from
+				 * the node previous to the last character read,
+				 * but this time make them go from the "buffer"
+				 * node back to the node that came after the
+				 * last character read.
 				 */
-				nfa_add_link(t, hist[n - 2]);
+				for (j = 0; j < 256; ++j)
+					if (hist[n - 2]->map[j] == hist[n - 1])
+						t->map[j] = hist[n - 1];
 
 				/* 
-				 * And finally we make a clean
+				 * And finally make a clean
 				 * new node for further work,
 				 * and epsilon-link to it.
 				 */
-				nfa_add_link(t, hist[++n] = new_nfa());
+				t->link = hist[++n] = new_nfa();
 				t = hist[n];
-				break;
-			case '*':	/* optional character
-					   with repetition allowed */
-				sanity_requires(n > 0);
 
-				/* same as +, except that the
- 				 * second part makes a mutual link */
-
-				nfa_add_link(t, hist[++n] = new_nfa());
-				t = hist[n];
-				
-				/* mutual link */
-				nfa_add_link(t, hist[n - 2]);
-				nfa_add_link(hist[n - 2], t);
-
-				nfa_add_link(t, hist[++n] = new_nfa());
-				t = hist[n];
-				break;
+				if (c == '+')
+					break;
+				else {
+					/* make epsilon for the 0-repetitions case in '*' */
+					hist[n-3]->link = t;
+					break;
+				}
 			case 'Q':		/* quotable chars */
 				next = new_nfa();
 				for(j = 0; j < 256; j++)
@@ -272,138 +251,44 @@ match_t match_algo(nfa* t, char* full_tok, char* tok, int frk,
 	nfa* led, int ledi)
 {
 	int i = 0;
-	int j;
 	char c;
+	match_t m;
 
-	/* greedy choice registers */
-	int record;		/* longest match */
-	match_t m;		/* match register */
-	match_t ml[10];		/* match list */
-	int mc = 0;		/* match count */
-	match_t* choice;	/* final choice */	
-
-	int len = strlen(tok) + 1;
-
-	int last_inc;
-
-	i = 0; do
-	{
-		last_inc = 0;
+	/* 
+	 * Iterate the matching loop as long as there are
+	 * characters left
+	 */
+	while (i <= strlen(tok)) {
+		/* 
+		 * Syntax sugar for "current character"
+		 */
 		c = tok[i];
 
 		/* 
-		 * Check if multiple epsilon edges exist
-		 * and if we are not already in a fork
-		 */ 
-		if (t->links && !frk)
-		{
-			/* 
-			 * Fork for each possibility
-			 * and collect results in an array
-			 */
-
-			/* character edge: frk = 1 */
-			if (t->map[c])
-				if ((m = match_algo(t, full_tok, tok + i, 1,
-					led, ledi)).success)
-					ml[mc++] = m;
-
-			/* epsilon edge(s): frk = 2 + link number */
-			for (j = 0; j < t->links; j++)
-				if ((m = match_algo(t, full_tok, tok + i, 
-					j + 2, led, ledi)).success)
-					ml[mc++] = m;
-
-			/* 
-			 * If there are multiple matches, be "greedy",
-			 * i.e. choose the longest match.
-			 */
-			if (mc > 1) {
-				record = 0;
-				choice = NULL;
-				for (j = 0; j < mc; j++)
-					if (ml[j].pos - full_tok >= record) {
-						choice = &ml[j];
-						record = ml[j].pos - full_tok;
-					}
-				if (!choice) fail("greedy choice");
-				return *choice;
-			}
-			else if (mc == 1) /* only one match */
-				return *ml;
-			else	/* no match, return blank as-is */
-				return m;
-		}
-
-		/* 
-		 * If we are not in an explicit 
-		 * epsilon-edge-following fork
-		 * and the character edge exists,
+		 * If a character edge for the
+		 * current character exists,
 		 * follow it. 
 		 */
-		if (frk <= 1 && t->map[c]) {
+		if (t->map[c]) {
 			t = t->map[c];
-
-			last_inc = 1;
-
-			/* Break loop if in matching state */
-			if (t->valid_token)
-				break;
-			
 			++i;
-			goto valid;
 		}
-		else if (frk > 1) {
-			/* 
-			 * This prevents infinite loops: if the
-			 * epsilon chosen in this fork brings us back
-			 * to the last epsilon followed prior to a fork
-			 * and the character index has not increased
-			 * since we followed this last epsilon, do not
-			 * follow it. 
-			 */
-			if (!(led && t->link[frk - 2] == led
-			    && (int)(&tok[i] - full_tok) == ledi)) {
-
-				/*
-				 * If t->links == 1, then there is
-				 * no epsilon-choice ambiguity, and
-			 	 * therefore no forking is going
-				 * to happen, so the whole infinite
-				 * loops hack doesn't apply.
-				 */
-				if (t->links > 1) {
-					/* last epsilon departure node */
-					led = t;
-					/* last epsilon departure index */
-					ledi = (int)(&tok[i] - full_tok);
-				}
-
-				/* 
-				 * Okay the crazy part is done,
-				 * now just follow the epsilon
-				 * specified by the fork number
-				 */
-				t = t->link[frk - 2];
-					
-				goto valid;
-			}
-		}
-
-		break;
-
-valid:	
 		/* 
-		 * Clear the fork path number (if any) after
-		 * the first iteration of the loop --
-	 	 * all it determines is the choice in the
-		 * first iteration of the loop, not anything
-		 * else.
+		 * Otherwise, check for an epsilon edge
+		 * and follow it if it exists 
 		 */
-		if (frk)
-			frk = 0;
+		else if (t->link) {
+			t = t->link;
+		/* 
+		 * Otherwise: no epsilon, no character, no match;
+		 * stop the loop
+		 */
+		} else
+			break;
 
-	} while (i < len && t);
+		if (t->valid_token)
+			break;
+	}
 
 	/* 
 	 * Set up the result-report structure
@@ -411,7 +296,7 @@ valid:
 	if (t && t->valid_token) {
 		/* Match succeeded */
 		m.success = t->valid_token;
-		m.pos = tok + i + last_inc;
+		m.pos = tok + i;
 	} else {
 		/* No match */
 		m.success = 0;
