@@ -6,7 +6,8 @@
  * NFA pseudo-regex compiler/matcher.
  * 
  * On Aug. 31, 2013, the tokenization was
- * heavily modified: now it is always deterministic,
+ * heavily modified: now the NFAs themselves
+ * are always deterministic,
  * and consequently the matching code is cleaner
  * and faster.
  *
@@ -493,69 +494,85 @@ void setup_tokenizer()
 {
 	int i = 0;
 
-	for (i = 0; i < 100; i++)
+	tc = 2;
+	for (i = 0; i < 3; ++i)
 		t[i] = new_nfa();
 
+	/* 
+	 * there are two NFAs: t[0] and t[1].
+	 * this separation is required because
+	 * the NFA compiler and matcher can't
+	 * deal with ambiguities such as '&'
+	 * vs. '&&', so e.g. '&' would go t[0]
+	 * and '&&' in t[1], and then the main
+	 * matching loop would choose the longest
+	 * match between t[0] and t[1].
+	 * Ideally, I should come up with some kind
+	 * of automatic way of solving this kind of thing.
+	 * Anyway, this like 10x faster than one NFA
+	 * per token !
+	 */ 
+
 	/* D: any digit; B: letter or digit */
-	add_token(t[tc++], "0D+", TOK_OCTAL_INTEGER);
-	add_token(t[tc++], "0xB+", TOK_HEX_INTEGER);
-	add_token(t[tc++], "0XB+", TOK_HEX_INTEGER);
-	add_token(t[tc++], "D+", TOK_INTEGER);
+	add_token(t[0], "0D+", TOK_OCTAL_INTEGER);
+	add_token(t[1], "0xB+", TOK_HEX_INTEGER);
+	add_token(t[1], "0XB+", TOK_HEX_INTEGER);
+	add_token(t[0], "D+", TOK_INTEGER);
 
 	/* W: any whitespace character */
-	add_token(t[tc++], "W+", TOK_WHITESPACE);
+	add_token(t[0], "W+", TOK_WHITESPACE);
 
 	/* A: letter; B: letter or digit */
-	add_token(t[tc++], "AB*", TOK_IDENT);
+	add_token(t[0], "AB*", TOK_IDENT);
 
 	/* operators */
-	add_token(t[tc++], "\\+", TOK_PLUS);
-	add_token(t[tc++], "-", TOK_MINUS);
-	add_token(t[tc++], "/", TOK_DIV);
-	add_token(t[tc++], "\\*", TOK_MUL);
-	add_token(t[tc++], "=", TOK_ASGN);
-	add_token(t[tc++], "==", TOK_EQ);
-	add_token(t[tc++], ">", TOK_GT);
-	add_token(t[tc++], "<", TOK_LT);
-	add_token(t[tc++], ">=", TOK_GTE);
-	add_token(t[tc++], "<=", TOK_LTE);
-	add_token(t[tc++], "!=", TOK_NEQ);
-	add_token(t[tc++], "\\+=", TOK_PLUSEQ);
-	add_token(t[tc++], "-=", TOK_MINUSEQ);
-	add_token(t[tc++], "/=", TOK_DIVEQ);
-	add_token(t[tc++], "\\*=", TOK_MULEQ);
-	add_token(t[tc++], "\\+\\+", TOK_PLUSPLUS);
-	add_token(t[tc++], "--", TOK_MINUSMINUS);
-	add_token(t[tc++], "&", TOK_ADDR);
-	add_token(t[tc++], "%", TOK_MOD);
-	add_token(t[tc++], "%=", TOK_MODEQ);
-	add_token(t[tc++], "||", TOK_CC_OR);
-	add_token(t[tc++], "&&", TOK_CC_AND);
-	add_token(t[tc++], "!", TOK_CC_NOT);
-	add_token(t[tc++], "\\.", TOK_DOT);
-	add_token(t[tc++], "->", TOK_ARROW);
+	add_token(t[0], "\\+", TOK_PLUS);
+	add_token(t[0], "-", TOK_MINUS);
+	add_token(t[0], "/", TOK_DIV);
+	add_token(t[0], "\\*", TOK_MUL);
+	add_token(t[0], "=", TOK_ASGN);
+	add_token(t[1], "==", TOK_EQ);
+	add_token(t[0], ">", TOK_GT);
+	add_token(t[0], "<", TOK_LT);
+	add_token(t[1], ">=", TOK_GTE);
+	add_token(t[1], "<=", TOK_LTE);
+	add_token(t[1], "!=", TOK_NEQ);
+	add_token(t[1], "\\+=", TOK_PLUSEQ);
+	add_token(t[1], "-=", TOK_MINUSEQ);
+	add_token(t[1], "/=", TOK_DIVEQ);
+	add_token(t[1], "\\*=", TOK_MULEQ);
+	add_token(t[1], "\\+\\+", TOK_PLUSPLUS);
+	add_token(t[1], "--", TOK_MINUSMINUS);
+	add_token(t[0], "&", TOK_ADDR);
+	add_token(t[0], "%", TOK_MOD);
+	add_token(t[1], "%=", TOK_MODEQ);
+	add_token(t[0], "||", TOK_CC_OR);
+	add_token(t[1], "&&", TOK_CC_AND);
+	add_token(t[0], "!", TOK_CC_NOT);
+	add_token(t[0], "\\.", TOK_DOT);
+	add_token(t[1], "->", TOK_ARROW);
 
 	/* special characters */
-	add_token(t[tc++], "{", TOK_LBRACE);
-	add_token(t[tc++], "}", TOK_RBRACE);
-	add_token(t[tc++], "(", TOK_LPAREN);
-	add_token(t[tc++], ")", TOK_RPAREN);
-	add_token(t[tc++], ";", TOK_SEMICOLON);
-	add_token(t[tc++], ",", TOK_COMMA);
-	add_token(t[tc++], "\n", TOK_NEWLINE);
-	add_token(t[tc++], ":", TOK_COLON);
-	add_token(t[tc++], "[", TOK_LBRACK);
-	add_token(t[tc++], "]", TOK_RBRACK);
+	add_token(t[0], "{", TOK_LBRACE);
+	add_token(t[0], "}", TOK_RBRACE);
+	add_token(t[0], "(", TOK_LPAREN);
+	add_token(t[0], ")", TOK_RPAREN);
+	add_token(t[0], ";", TOK_SEMICOLON);
+	add_token(t[0], ",", TOK_COMMA);
+	add_token(t[0], "\n", TOK_NEWLINE);
+	add_token(t[0], ":", TOK_COLON);
+	add_token(t[0], "[", TOK_LBRACK);
+	add_token(t[0], "]", TOK_RBRACK);
 
 	/* comments */
-	add_token(t[tc++], "/\\*", C_CMNT_OPEN);
-	add_token(t[tc++], "\\*/", C_CMNT_CLOSE);
-	add_token(t[tc++], "//", CPP_CMNT);
+	add_token(t[1], "/\\*", C_CMNT_OPEN);
+	add_token(t[1], "\\*/", C_CMNT_CLOSE);
+	add_token(t[1], "//", CPP_CMNT);
 
 	/* string constants */
-	add_token(t[tc++], "\"Q*\"", TOK_STR_CONST);
+	add_token(t[0], "\"Q*\"", TOK_STR_CONST);
 
 	/* character constants */
-	add_token(t[tc++], "'.'", TOK_CHAR_CONST);
+	add_token(t[0], "'.'", TOK_CHAR_CONST);
 }
 
