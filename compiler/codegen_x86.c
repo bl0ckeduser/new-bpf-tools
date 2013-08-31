@@ -1383,7 +1383,7 @@ char* codegen(exp_tree_t* tree)
 	char *proc_args[32];
 	char my_ts_used[TEMP_REGISTERS];
 	char *buf;
-	char sbuf[64];
+	char sbuf[256];
 	int i;
 	char *sym_s;
 	char *oper;
