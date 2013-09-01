@@ -42,6 +42,11 @@ void compiler_fail_int(char *message, token_t *token,
 	int chr;
 	int i;
 
+	#ifdef SELF_COMPILATION_HACK
+		if (mode != CF_ERROR)
+			return;
+	#endif
+
 	/* check for specific line/chr override
 	 * (used for special cases like end of line) */
 	line = !token ? in_line : token->from_line;

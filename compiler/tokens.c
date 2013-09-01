@@ -5,12 +5,12 @@
 #include <stdio.h>
 
 /* Print out a token's raw string */
-void tok_display(FILE *f, token_t t)
+void tok_display(token_t t)
 {
 	char buf[1024];
 	strncpy(buf, t.start, t.len);
 	buf[t.len] = 0;
-	fprintf(f, "%s", buf);
+	fprintf(stderr, "%s", buf);
 }
 
 int is_add_op(char type)

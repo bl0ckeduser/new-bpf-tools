@@ -71,7 +71,7 @@ void printout_tree(exp_tree_t et)
 	fprintf(stderr, "(%s", tree_nam[et.head_type]);
 	if (et.tok && et.tok->start) {
 		fprintf(stderr, ":");
-		tok_display(stderr, *et.tok);
+		tok_display(*et.tok);
 	}
 	for (i = 0; i < et.child_count; i++) {
 		fprintf(stderr, " ");
