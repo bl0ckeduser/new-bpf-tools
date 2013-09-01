@@ -20,7 +20,7 @@ do
 	for cas in `ls mac_nix_data/senior/S5/*.in`
 	do
 		chkfile=`echo $cas | sed 's/in/out/'`
-		out=`cat $cas | (timeout -k 1 1 ./compile-run-x86.sh ccc2012-s5.c 2>/dev/null) | sum`
+		out=`cat $cas | (./compile-run-x86.sh ccc2012-s5.c 2>/dev/null) | sum`
 		chk=`cat $chkfile | sum`
 		if [ "$chk" = "$out" ]
 		then
