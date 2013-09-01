@@ -66,12 +66,15 @@ block := expr ';'
 arg := [cast-type] ident
 
 expr := e1 asg-op expr 
-	| ccor_expr
+	| ternary-expr
 	| str-const
 
 lvalue := ident
           | '(' cast-type ') lvalue
 	  | '(' lvalue ')'
+
+ternary-expr := ccor_expr
+		| ccor_expr '?' ccor_expr ':' ccor_expr
 
 ccor_expr := ccand_expr ['||' ccand_expr]
 

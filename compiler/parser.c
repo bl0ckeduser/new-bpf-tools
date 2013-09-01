@@ -22,6 +22,7 @@ exp_tree_t block();
 exp_tree_t expr();
 exp_tree_t sum_expr();
 exp_tree_t mul_expr();
+exp_tree_t ternary_expr();
 exp_tree_t ccor_expr();
 exp_tree_t ccand_expr();
 exp_tree_t comp_expr();
@@ -204,7 +205,7 @@ exp_tree_t cast_type()
 	if (peek().type == TOK_STRUCT) {
 		sav_indx = adv() - 1;
 		bt = peek();
-		++indx;
+		adv();
 		if (bt.type != TOK_IDENT || peek().type == TOK_LBRACE) {
 			indx = sav_indx;
 		} else {
@@ -771,7 +772,7 @@ exp_tree_t arg()
 
 /*
 	expr := e1 asg-op expr 
-		| ccor_expr
+		| ternary_expr
 		| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
 		| str-const
 */
@@ -826,8 +827,8 @@ exp_tree_t expr()
 		} else
 			indx = save;
 	}
-	/* ccor_expr */
-	if (valid_tree(tree = ccor_expr())) {
+	/* ternary_expr */
+	if (valid_tree(tree = ternary_expr())) {
 		return tree;
 	}
 	/* "bob123" */
@@ -907,6 +908,32 @@ exp_tree_t parse_left_assoc(
 	}
 
 	return *tree_ptr;
+}
+
+/*
+	ternary-expr := ccor_expr 
+	                | ccor_expr '?' ccor_expr ':' ccor_expr
+*/
+exp_tree_t ternary_expr()
+{
+	exp_tree_t tree0, tree1, tree2, full;
+	tree0 = ccor_expr();
+	if (!valid_tree(tree0))
+		return null_tree;
+	if (peek().type ==  TOK_QMARK) {
+		adv();
+		full = new_exp_tree(TERNARY, NULL);
+		if (!valid_tree(tree1 = ccor_expr()))
+			parse_fail("expression expected after ternary `?'");
+		need(TOK_COLON);
+		if (!valid_tree(tree2 = ccor_expr()))
+			parse_fail("expression expected after ternary `:'");
+		add_child(&full, alloc_exptree(tree0));
+		add_child(&full, alloc_exptree(tree1));
+		add_child(&full, alloc_exptree(tree2));
+		return full;
+	} else
+		return tree0;
 }
 
 /* ccor_expr := ccand_expr ['||' ccand_expr] */
@@ -1304,10 +1331,10 @@ exp_tree_t e0_4()
 		 * is a typedef tag may be misinterpreted
 		 * as sizeof an non-existent variable "foo_t"
 		 */
-		++indx;
+		adv();
 		tree = new_exp_tree(SIZEOF, NULL);
 		if (peek().type == TOK_LPAREN) {
-			++indx;
+			adv();
 			paren = 1;
 		} else paren = 0;
 		if (valid_tree((subtree = cast_type())))

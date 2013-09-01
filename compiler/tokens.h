@@ -76,7 +76,8 @@ enum {
 	TOK_TYPEDEF,
 	TOK_ARROW,
 	TOK_SIZEOF,
-	TOK_LONG
+	TOK_LONG,
+	TOK_QMARK
 };
 
 static char* tok_nam[] = {
@@ -148,7 +149,8 @@ static char* tok_nam[] = {
 	"TOK_TYPEDEF",
 	"TOK_ARROW",
 	"TOK_SIZEOF",
-	"TOK_LONG"
+	"TOK_LONG",
+	"TOK_QMARK"
 };
 
 static char* tok_desc[] = {
@@ -218,7 +220,8 @@ static char* tok_desc[] = {
 	"struct",
 	"->",
 	"sizeof",
-	"long"
+	"long",
+	"?"
 };
 
 /* keywords */

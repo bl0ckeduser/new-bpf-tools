@@ -551,6 +551,7 @@ void setup_tokenizer()
 	add_token(t[0], "!", TOK_CC_NOT);
 	add_token(t[0], "\\.", TOK_DOT);
 	add_token(t[1], "->", TOK_ARROW);
+	add_token(t[0], "\\?", TOK_QMARK);
 
 	/* special characters */
 	add_token(t[0], "{", TOK_LBRACE);
