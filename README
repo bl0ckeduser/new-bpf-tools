@@ -1,22 +1,23 @@
-This project is a personal exercise in compiler programming. It is a 
-work-in-progress. It consists mainly in a compiler for a subset of C.
-It targets 32-bit x86 (via GNU assembler).
+This project is a personal programming exercise. It consists mainly in 
+a compiler for a subset of C, targeting 32-bit x86 (via GNU assembler).
 
-This 32-bit x86 compiler is tested on FreeBSD, Linux, and Windows (via MinGW).
-
-[Sometimes the output code segfaults for reasons that remain unclear to me.
-And some of the precedences in the parser are wrong. And some syntaxes are
-not supported at all. This is a wannabe compiler. At least it has failed less
-awfully than my earlier wannabe compilers which didn't even have any stacks
-or grammars and were written in dark ingorance of any compiler theory].
+This 32-bit x86 compiler is tested on FreeBSD, GNU / Linux, and Windows 
+(via the MinGW toolchain).
 
 Please go in the "compiler" directory and read "compiler/docs/docs-x86.txt" 
-for more info.
+for info about the supported C features, how to build the program, etc.
 
 The test programs "compiler/test/x86/*.c" should give an idea of the subset
-of C accepted at this point. There are still bugs, especially in stuff not
-shown in the tests. Some expressions may not compile properly yet, or compile
-at all, for that matter.
+of C accepted at this point. Highlights include: pointers and multi-dimensional 
+arrays of structs, ints, and chars; structs with self-referential pointers;
+support for several libc calls (e.g. printf); custom procedures with 
+recursion allowed; for-loops; typedefs; string constants.
+
+There are still bugs, probably especially in constructs not yet tried in 
+the test programs. Some expressions may not compile properly yet, or compile
+at all, for that matter. This is a work-in-progress. Big real serious 
+professional or academic compilers likely use more sophisitcated techniques; 
+I'm doing this project to learn because I still have a lot to learn.
 
 -------------------------------------------------------------------------
 
