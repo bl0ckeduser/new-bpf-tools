@@ -352,14 +352,14 @@ int struct_tag_offs(typedesc_t stru, char *tag_name)
 
 /* 
  * INT_DECL => 4 because "int" is 4 bytes, etc.
- * (this program compiles code specifically 
- * for 32-bit x86, so I can say that 
- * "int" is 4 bytes with no fear of being 
- * crucified by pedants).
+ * 
+ * XXX: this is x86-specific ! maybe move this
+ * to "x86-types.c" or something like that
  */
 int decl2siz(int bt)
 {
 	switch (bt) {
+		case LONG_DECL:
 		case INT_DECL:
 			return 4;
 		case CHAR_DECL:

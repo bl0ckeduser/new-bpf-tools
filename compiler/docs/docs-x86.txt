@@ -54,8 +54,9 @@ elements are C syntax.
 
 	The supported base types are:	
 
-		int
-		char
+		long		(4 bytes)
+		int		(4 bytes)
+		char		(1 byte)
 
 	(and also structs, to some extent, see lower down the
 	paragraph on structs)
@@ -72,16 +73,10 @@ elements are C syntax.
 		char c;
 		char *buf;
 		char *strings[32];
-
-	And now a formal description of what is parsed:
-
-		Declarations start with either "int" or "char".
-		Then there is a sequence of sub-declarations separated by 
-		commas. Each sub-declaration first contains 0 or more pointer 
-		stars, then it contains the name of the variable, then it 
-		may optionally contain either an initialization assignment 
-		or any number of array-dimension integers-in-brackets 
-		(e.g. [123]). 2d, 3d, ... arrays are supported.
+		struct foo {
+			int x;
+			char *y;
+		} *bar[12][34];
 
 3. Control flow
 	i. if statement

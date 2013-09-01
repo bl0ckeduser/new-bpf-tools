@@ -47,7 +47,8 @@ int is_comp_op(char type)
 int is_basic_type(char type)
 {
 	return type == TOK_INT
-			|| type == TOK_CHAR;
+			|| type == TOK_CHAR
+			|| type == TOK_LONG;
 }
 
 int is_instr(char type)

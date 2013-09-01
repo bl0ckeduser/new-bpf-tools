@@ -197,7 +197,7 @@ int arith_depth(exp_tree_t *t)
  */
 int is_plain_int(typedesc_t td)
 {
-	return td.ty == INT_DECL
+	return (td.ty == INT_DECL || td.ty == LONG_DECL)
 		&& td.ptr == 0 
 		&& td.arr == 0;
 }
@@ -954,6 +954,8 @@ void deal_with_procs(exp_tree_t *tree)
 char *decl2suffix(char ty)
 {
 	switch (ty) {
+		case LONG_DECL:		/* 4 bytes */
+			return "l";
 		case INT_DECL:		/* 4 bytes */
 			return "l";
 		case CHAR_DECL:		/* 1 byte */
@@ -984,7 +986,7 @@ char *siz2suffix(char siz)
  */
 int int_type_decl(char ty)
 {
-	return ty == CHAR_DECL || ty == INT_DECL;
+	return ty == CHAR_DECL || ty == INT_DECL || ty == LONG_DECL;
 }
 
 void setup_symbols(exp_tree_t *tree, int symty)

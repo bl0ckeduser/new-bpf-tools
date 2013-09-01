@@ -253,6 +253,9 @@ int decl_dispatch(char type)
 		case TOK_INT:
 			return INT_DECL;
 		break;
+		case TOK_LONG:
+			return LONG_DECL;
+		break;
 		case TOK_CHAR:
 			return CHAR_DECL;
 		break;
@@ -263,6 +266,9 @@ int decl_dedispatch(char type)
 	switch (type) {
 		case INT_DECL:
 			return TOK_INT;
+		break;
+		case LONG_DECL:
+			return TOK_LONG;
 		break;
 		case CHAR_DECL:
 			return TOK_CHAR;
