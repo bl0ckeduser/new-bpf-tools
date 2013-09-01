@@ -1065,11 +1065,6 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			struct_bytes = struct_base.struct_desc->bytes;
 		}
 
-		/* XXX: global structs unsupported */
-		if (symty == SYMTYPE_GLOBALS && tree->child_count - children_offs > 0)
-			codegen_fail("global structs are unsupported",
-				findtok(tree));
-
 		/* discard the tree from further codegeneneration */
 		tree->head_type = NULL_TREE;
 
@@ -1156,16 +1151,28 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				array_base_type.arr = 0;
 				sym_num = create_array(symty, dc,
 					type2siz(array_base_type), arr_dim_prod(typedat) * objsiz);
-				symtyp[sym_num] = typedat;
 			} else {
 				/*
 				 * It's just a non-arrayed variable (either a struct
 				 * or an N-degree pointer thereof); just add it to
-				 * the symbol table.
+				 * the appropriate symbol table.
 				 */
-				sym_num = sym_add(dc->child[0]->tok, objsiz);
-				symtyp[sym_num] = typedat;
+				if (symty == SYMTYPE_GLOBALS) {
+					printf(".comm %s,%d,32\n",
+						get_tok_str(*(dc->child[0]->tok)), objsiz);
+					sym_num = glob_add(dc->child[0]->tok);
+				}
+				else
+					sym_num = sym_add(dc->child[0]->tok, objsiz);
 			}
+
+			/* 
+			 * Add type data to appropriate symbol table
+			 */
+			if (symty == SYMTYPE_GLOBALS)
+				globtyp[sym_num] = typedat;
+			else
+				symtyp[sym_num] = typedat;
 		}
 
 		/* 

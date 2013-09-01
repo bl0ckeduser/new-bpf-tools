@@ -351,6 +351,7 @@ elements are C syntax.
 			test/x86/struct-ptr-arr.c
 			test/x86/struct-ptr.c
 			test/x86/typedef.c
+			test/x86/globals.c
 
 	The C struct-access -> and . operators have been implemented.
 	They might not codegen properly for more complicated cases yet,
@@ -365,8 +366,6 @@ elements are C syntax.
 		  to struct, arrays of pointers to struct, pointers 
 		  to pointers to struct, etc. -- anything that is a pointer
 		  should work, though.
-		- global struct variables or struct-derived variables
-		  (e.g. global pointers to struct) are unsupported.
 		- struct assignments (e.g. a = b) are unsupported,
 		  but I guess maybe you can use memcpy and pointers for now
 		- no struct literals of any kind are supported,
