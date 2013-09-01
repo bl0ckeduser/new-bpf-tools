@@ -654,10 +654,24 @@ char* arith_op(int ty)
 int create_array(int symty, exp_tree_t *dc,
 	int base_size, int objsiz)
 {
-	/* XXX: global arrays unsupported */
-	if (symty == SYMTYPE_GLOBALS)
-		codegen_fail("global arrays are currently unsupported",
-			dc->child[0]->tok);
+	/* 
+	 * First, try global symbol mode.
+	 * Otherwise, it's a stack local.
+	 */
+
+	if (symty == SYMTYPE_GLOBALS) {
+		/* check name not already taken */	
+		glob_check(dc->child[0]->tok);
+
+		/* do a magic assembler instruction */
+		printf(".comm %s,%d,32\n", 
+			get_tok_str(*(dc->child[0]->tok)),
+			objsiz);
+		
+		/* add symbol to the global symbol table
+		 * and return table index */
+		return glob_add(dc->child[0]->tok);
+	}
 
 	/* Check that the array's variable name is not already taken */
 	sym_check(dc->child[0]->tok);
