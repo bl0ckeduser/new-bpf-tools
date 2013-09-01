@@ -1432,6 +1432,7 @@ char* codegen(exp_tree_t* tree)
 	int custom_return_type;
 	int ptr_diff;
 	int do_deref;
+	int tlab;
 
 /*
 	if (findtok(tree))
@@ -1450,6 +1451,25 @@ char* codegen(exp_tree_t* tree)
 		|| tree->head_type == BPF_INSTR) {
 		new_temp_mem();
 		new_temp_reg();
+	}
+
+	/* ? : */
+	if (tree->head_type == TERNARY) {
+		tlab = ++intl_label;
+		intl_label++;
+		intl_label++;
+		intl_label++;
+		sto = registerize_siz(codegen(tree->child[0]), 4);
+		printf("cmpl $0, %s\n", sto);
+		free_temp_reg(sto);
+		printf("je IL%d\n", tlab);
+		sto = registerize_siz(codegen(tree->child[1]), 4);
+		printf("jmp IL%d\n", tlab + 1);
+		printf("IL%d:\n", tlab);
+		free_temp_reg(sto);
+		sto = registerize_siz(codegen(tree->child[2]), 4);
+		printf("IL%d:\n", tlab + 1);
+		return(sto);
 	}
 
 	/* 

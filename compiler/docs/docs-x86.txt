@@ -377,16 +377,25 @@ elements are C syntax.
 	`typedef' might not work with more subtle cases that I haven't
 	thought of / tested yet.
 
-			-------------------------
-			   Operator precedence
-			    and associativity
-			-------------------------
-
 21. sizeof operator
 
 	sizeof() can be applied on a type or a variable.
 
 	Example code: test/x86/sizeof.c
+
+
+22. ternary operator
+
+	Copied from C, as with all else here.
+
+		a ? b : c
+	
+	evaluates to `b' if `a' is true, and to `c' otherwise.	
+
+			-------------------------
+			   Operator precedence
+			    and associativity
+			-------------------------
 
 From greatest to lowest precedence:
 
@@ -399,6 +408,7 @@ From greatest to lowest precedence:
 	> >= < <= == !=
 	&&
 	||
+	?:
 	= += -= *= /=
 
 All arithmetic operators (+ et al.) are left-associative.
