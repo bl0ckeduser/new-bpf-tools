@@ -2213,6 +2213,9 @@ char* codegen(exp_tree_t* tree)
 		/* 
 		 * XXX: might not handle some complicated cases
 		 * properly yet
+		 * Note: there is no optimized code for variables
+		 * because there are special rules for array variables,
+		 * so might as well let the general case cover it all
 		 */
 		if (tree->child[1]->head_type == NUMBER) {
 			/*
@@ -2225,25 +2228,10 @@ char* codegen(exp_tree_t* tree)
 			printf(" $%s, %s\n",
 				get_tok_str(*(tree->child[1]->tok)), sym_s);
 			return sym_s;
-		} else if (tree->child[1]->head_type == VARIABLE
-			&& type2siz(tree_typeof(tree->child[1])) 
-				== type2siz(tree_typeof(tree->child[0]))) {
-			/* optimized code for two operands of same size */
-			membsiz = type2siz(tree_typeof(tree->child[0]));
-			sto = sym_lookup(tree->child[1]->tok);
-			sto2 = get_temp_reg_siz(membsiz);
-			printf("mov%s %s, %s\n", 
-				siz2suffix(membsiz),
-				fixreg(sto, membsiz), 
-				fixreg(sto2, membsiz));
-			printf("mov%s %s, %s\n", 
-				siz2suffix(membsiz),
-				fixreg(sto2, membsiz), 
-				sym_s);
-			free_temp_reg(sto2);
-			return sym_s;
 		} else if (type2siz(tree_typeof(tree->child[0])) == 4) {
-			/* general case for 4-byte destination */
+			/* 
+			 * general case for 4-byte destination
+			 */
 			membsiz = type2siz(tree_typeof(tree->child[1]));
 			/* n.b. codegen() converts stuff to int */
 			sto = registerize_siz(codegen(tree->child[1]), membsiz);
@@ -2255,7 +2243,9 @@ char* codegen(exp_tree_t* tree)
 			free_temp_reg(sto2);
 			return sym_s;
 		} else if (type2siz(tree_typeof(tree->child[0])) == 1) {
-			/* general case for 1-byte destination */
+			/* 
+			 * general case for 1-byte destination
+			 */
 			sto = codegen(tree->child[1]);	/* converts stuff to int */
 			sto2 = registerize_siz(sto, 1);
 			printf("movb %s, %s\n", fixreg(sto2, 1), sym_s);
