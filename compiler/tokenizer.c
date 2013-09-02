@@ -584,7 +584,10 @@ void setup_tokenizer()
 	/* string constants */
 	add_token(t[0], "\"Q*\"", TOK_STR_CONST);
 
-	/* character constants */
-	add_token(t[0], "'.'", TOK_CHAR_CONST);
+	/* character constant with an escape in it */
+	add_token(t[0], "'\\\\.'", TOK_CHAR_CONST_ESC);
+
+	/* character constant */
+	add_token(t[1], "'.'", TOK_CHAR_CONST);
 }
 

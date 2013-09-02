@@ -8,6 +8,8 @@
 #include "tree.h"
 #include <string.h>
 
+extern int escape_code(char c);
+
 token_t *tokens;
 int indx;
 int tok_count;
@@ -1418,10 +1420,21 @@ exp_tree_t e0_4()
 		return tree;
 	}
 	if (tok.type == TOK_CHAR_CONST) {
-		/* XXX: doesn't handle escapes like \n */
 		fake_int.type = TOK_INTEGER;
 		buff = malloc(8);
 		sprintf(buff, "%d", *(tok.start + 1));
+		fake_int.start = buff;
+		fake_int.len = strlen(buff);
+		fake_int.from_line = 0;
+		fake_int.from_line = 1;
+		tree = new_exp_tree(NUMBER, &fake_int);
+		adv();	/* eat number */
+		return tree;
+	}
+	if (tok.type == TOK_CHAR_CONST_ESC) {
+		fake_int.type = TOK_INTEGER;
+		buff = malloc(8);
+		sprintf(buff, "%d", escape_code(*(tok.start + 2)));
 		fake_int.start = buff;
 		fake_int.len = strlen(buff);
 		fake_int.from_line = 0;
