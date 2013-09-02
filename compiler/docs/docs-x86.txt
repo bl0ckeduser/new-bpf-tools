@@ -260,8 +260,8 @@ elements are C syntax.
 
 		Example use: printf("hello\n");
 
-		NOTE: escapes (like \n) are not handled yet,
-		however printf() et al. seem to implement them themselves
+		Escapes (like \n) are handled, and this is actually
+		because the GNU assembler does them
 
 	II. Character constants
 

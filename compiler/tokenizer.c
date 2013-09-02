@@ -249,6 +249,7 @@ match_t match_algo(nfa* t, char* full_tok, char* tok)
 	int i = 0;
 	char c;
 	match_t m;
+	int str_const = 0;
 
 	/* 
 	 * Iterate the matching loop as long as there are
@@ -259,6 +260,16 @@ match_t match_algo(nfa* t, char* full_tok, char* tok)
 		 * Syntax sugar for "current character"
 		 */
 		c = tok[i];
+
+		/*
+		 * HACK to deal with \" in string constants
+		 */
+		if (c == '"')
+			str_const = 1;
+		if (c == '\\' && str_const) {
+			i += 2;
+			continue;
+		}
 
 		/* 
 		 * If a character edge for the
