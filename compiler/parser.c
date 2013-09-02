@@ -39,6 +39,7 @@ exp_tree_t e0();
 exp_tree_t e0_2();
 exp_tree_t e0_3();
 exp_tree_t e0_4();
+exp_tree_t initializer();
 int decl_dispatch(char type);
 
 void printout(exp_tree_t et);
@@ -377,14 +378,15 @@ exp_tree_t struct_decl()
 }
 
 /*
- * decl2 := { '*' } ident [ ('=' expr) | { ('[' integer ']') } ]
+ * decl2 := { '*' } ident [ { ('[' [integer] ']') } ] ['=' initializer]
  */
 exp_tree_t decl2()
 {
 	token_t tok = peek();
 	exp_tree_t tree, subtree, subtree2;
 	int stars = 0;
-	int i;	
+	int i;
+	token_t zero = { TOK_INTEGER, "0", 1, 0, 0 };
 
 	tree = new_exp_tree(DECL_CHILD, NULL);
 
@@ -401,15 +403,13 @@ exp_tree_t decl2()
 	tok = need(TOK_IDENT);
 	subtree = new_exp_tree(VARIABLE, &tok);
 	add_child(&tree, alloc_exptree(subtree));
-	if (peek().type == TOK_ASGN) {
-		adv();	/* eat = */
-		if (!valid_tree(subtree2 = expr()))
-			parse_fail("expected expression after =");
-		add_child(&tree, alloc_exptree(subtree2));
-	} else if(peek().type == TOK_LBRACK) {
+	if(peek().type == TOK_LBRACK) {
 multi_array_decl:
 		adv();	/* eat [ */
-		tok = need(TOK_INTEGER);
+		if (peek().type == TOK_INTEGER)
+			tok = need(TOK_INTEGER);
+		else
+			tok = zero;
 		need(TOK_RBRACK);
 		add_child(&tree, 
 			alloc_exptree(new_exp_tree(ARRAY_DIM, &tok)));
@@ -417,6 +417,14 @@ multi_array_decl:
 			goto multi_array_decl;
 	}
 	
+	/* initializer */
+	if (peek().type == TOK_ASGN) {
+		adv();	/* eat = */
+		if (!valid_tree(subtree2 = initializer()))
+			parse_fail("expected expression after =");
+		add_child(&tree, alloc_exptree(subtree2));
+	}
+
 	/* add the pointer-stars */
 	if (stars) {
 		subtree = new_exp_tree(DECL_STAR, NULL);
@@ -426,6 +434,39 @@ multi_array_decl:
 	}
 
 	return tree;
+}
+
+/*
+ * initializer := expr
+ *               | '{' {'{'} expr {'}'} [ {',' {'{'} expr {'}'}}] '}'
+ */
+exp_tree_t initializer()
+{
+	exp_tree_t tree, child;
+	if (valid_tree((tree = expr())))
+		return tree;
+	/* '{' {'{'} expr {'}'} [ {',' {'{'} expr {'}'}}] '}' */
+	if (peek().type == TOK_LBRACE) {
+		tree = new_exp_tree(COMPLICATED_INITIALIZER, NULL);
+		adv();
+		while (1) {
+			/* {'{'} */
+			while (peek().type == TOK_LBRACE)
+				adv();
+			child = expr();
+			if (!valid_tree(child))
+				parse_fail("expression expected in array or struct initializer");
+			add_child(&tree, alloc_exptree(child));
+			/* {'}'} */
+			while (peek().type == TOK_RBRACE)
+				adv();
+			if (peek().type != TOK_COMMA)
+				break;
+			else
+				adv();
+		}
+		return tree;
+	}
 }
 
 /*

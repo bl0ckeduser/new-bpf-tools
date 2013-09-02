@@ -17,7 +17,10 @@ decl := (basic-type | struct-decl) decl2 { ','  decl2 }
  *	foo[12]
  *	*foo[12]
  */	
-decl2 := { '*' } ident [ ('=' expr) | { ('[' integer ']') } ]
+decl2 := { '*' } ident [ { ('[' [integer] ']') } ] ['=' initializer]
+
+initializer := expr
+		| '{' {'{'} expr {'}'} [ {',' {'{'} expr {'}'}}] '}'
 
 /*
  * struct foo {
