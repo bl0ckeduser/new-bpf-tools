@@ -24,7 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-char *code_lines[1024];
+char **code_lines;
+int cl_alloc = 0;
 extern void fail(char* mesg);
 extern void sanity_requires(int exp);
 extern void compiler_fail(char *message, token_t *token,
@@ -329,11 +330,13 @@ token_t* tokenize(char *buf)
 	int i;
 	int line = 1;
 	char *line_start = buf;
-
 	token_t *toks = malloc(4096 * sizeof(token_t));
 	int tok_alloc = 64;
 	int tok_count = 0;
 	int comstat = NOT_INSIDE_A_COMMENT;
+
+	cl_alloc = 64;
+	code_lines = malloc(cl_alloc * sizeof(char *));
 
 	*code_lines = buf;
 
@@ -474,6 +477,10 @@ advance:
 			if (c.success == TOK_NEWLINE) {
 				code_lines[line] = line_start;
 				++line;
+				if (line >= cl_alloc) {
+					cl_alloc += 64;
+					code_lines = realloc(code_lines, cl_alloc * sizeof(char *));
+				}
 				line_start = p;
 			}
 		}
