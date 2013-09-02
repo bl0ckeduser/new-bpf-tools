@@ -1466,6 +1466,7 @@ char* codegen(exp_tree_t* tree)
 	int ptr_diff;
 	int do_deref;
 	int tlab;
+	int entries, fill;
 
 /*
 	if (findtok(tree))
@@ -1498,8 +1499,21 @@ char* codegen(exp_tree_t* tree)
 			printout_tree(*tree);
 			fprintf(stderr, "\n");
 		#endif
-		if (tree_typeof(tree->child[0]).arr) {		
-			for (i = 0; i < tree->child[1]->child_count; ++i) {
+		if (tree_typeof(tree->child[0]).arr == 1) {
+			if (tree_typeof(tree->child[0]).arr_dim[0] > 1
+				&& tree->child[1]->child_count == 1) {
+				/* fill -- e.g. int arr3[10] = {0}; */
+				#ifdef DEBUG
+					fprintf(stderr, "fill initializer\n");
+				#endif
+				fill = 1;
+				entries = tree_typeof(tree->child[0]).arr_dim[0];
+			}
+			else {
+				fill = 0;
+				entries = tree->child[1]->child_count;
+			}
+			for (i = 0; i < entries; ++i) {
 				/* (ASGN (ARRAY (VARIABLE:arr) (NUMBER:i)) XXX) */	
 				sprintf(sbuf, "%d", i);
 				fakenum.start = &sbuf[0];
@@ -1510,7 +1524,10 @@ char* codegen(exp_tree_t* tree)
 				add_child(&fake_tree_2, tree->child[0]);
 				add_child(&fake_tree_2, alloc_exptree(fake_tree_3));
 				add_child(&fake_tree, alloc_exptree(fake_tree_2));
-				add_child(&fake_tree, tree->child[1]->child[i]);
+				if (fill)
+					add_child(&fake_tree, tree->child[1]->child[0]);
+				else
+					add_child(&fake_tree, tree->child[1]->child[i]);	
 				#ifdef DEBUG
 					printout_tree(fake_tree);
 					fprintf(stderr, "\n");

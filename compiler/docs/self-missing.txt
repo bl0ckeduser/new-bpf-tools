@@ -16,6 +16,7 @@ Features used but not compiled by the x86 compiler
   e.g. bob[] = {"a", "b", "c"}
   e.g. exp_tree_t null_tree = { 58, 0x0, 0, 0, 0x0 };
   e.g. char symtab[256][256] = {""};
+  UPDATE: array initializers are a work-in-progress
 - "unsigned" qualifier
 - function prototypes
   e.g. typedesc_t tree_typeof_iter(typedesc_t, exp_tree_t*);
