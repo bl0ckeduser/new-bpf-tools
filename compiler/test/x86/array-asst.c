@@ -25,8 +25,7 @@ main()
 			buf[i] = 'a' + (i % 7);
 			derp[i] = buf[i];
 		}
-	derp[i] = buf[i] = 0;	// null-termination
-				/* XXX: '\0' parsing not available yet */
+	derp[i] = buf[i] = '\0';	// null-termination
 
 	/* test the char array writing */
 	puts(buf);

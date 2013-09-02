@@ -91,6 +91,5 @@ main()
 			nod = root;
 		}
 	}
-	/* XXX: putchar('\n'); */
-	printf("\n");
+	putchar('\n');
 }

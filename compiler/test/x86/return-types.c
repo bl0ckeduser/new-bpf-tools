@@ -50,7 +50,7 @@ char **collection_of_repeated_letters()
 		coll[i] = malloc(11);	/* 10 chars + NULL terminator */
 		for (j = 0; j < 10; ++j)
 			coll[i][j] = letter_of_the_alphabet(i, 1);
-		coll[i][j] = 0;		/* XXX: '\0' */
+		coll[i][j] = '\0';
 	}
 	return coll;
 }
