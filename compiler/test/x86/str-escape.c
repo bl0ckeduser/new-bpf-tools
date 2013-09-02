@@ -11,4 +11,5 @@ main()
 	putchar('\t');
 	putchar('\f');
 	putchar('\r');
+	putchar('\\');
 }

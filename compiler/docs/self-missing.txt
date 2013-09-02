@@ -1,7 +1,6 @@
 Features used but not compiled by the x86 compiler
 ==================================================
 
-- '\\' escape sequence for character constant
 - string initializers: char fail_msg[1024] = "";
 - function pointers (used in parser.c)
 - "return;"

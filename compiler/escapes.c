@@ -12,6 +12,7 @@ int escape_code(char c)
 		case 'f':	return 0x0c;
 		case 'n':	return 0x0a;
 		case 'r':	return 0x0d;
+		case 92:	return 92;	/* \\ */
 	}
 
 	fail("invalid escape sequence");
