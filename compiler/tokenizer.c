@@ -496,7 +496,7 @@ advance:
 			 * Line accounting (useful for
 		 	 * pretty parse-fail diagnostics)
 			 */
-			if (c.success == TOK_NEWLINE) {
+			if (c.success == TOK_NEWLINE || c.success == TOK_CPP) {
 				code_lines[line] = line_start;
 				++line;
 				if (line >= cl_alloc) {
