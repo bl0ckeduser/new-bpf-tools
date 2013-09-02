@@ -1,0 +1,27 @@
+Features used but not compiled by the x86 compiler
+==================================================
+
+- '\\' escape sequence for character constant
+- string initializers: char fail_msg[1024] = "";
+- string constant as ternary operand
+  e.g. tree->child_count > 1 ? "s" : ""
+- function pointers (used in parser.c)
+- "return;"
+- multiple files
+- preprocessor: #define #else #endif #ifdef #ifndef #include
+- external variables: stderr stdin
+- external constants: NULL
+- "static" qualifier
+- enumerations
+  e.g. enum { A = 0, B, C, ..., Z};
+- struct and array initializers
+  e.g. bob[] = {"a", "b", "c"}
+  e.g. exp_tree_t null_tree = { 58, 0x0, 0, 0, 0x0 };
+  e.g. char symtab[256][256] = {""};
+- "unsigned" qualifier
+- function prototypes
+  e.g. typedesc_t tree_typeof_iter(typedesc_t, exp_tree_t*);
+- "void" type
+- comma (sequencing) operator
+- switch/case/break
+- adjacent string concatenation
