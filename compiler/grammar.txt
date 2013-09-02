@@ -74,7 +74,7 @@ lvalue := ident
 	  | '(' lvalue ')'
 
 ternary-expr := ccor_expr
-		| ccor_expr '?' ccor_expr ':' ccor_expr
+		| ccor_expr '?' expr ':' expr
 
 ccor_expr := ccand_expr ['||' ccand_expr]
 

@@ -3,6 +3,8 @@ main()
 	int arr[5], i;
 	printf("%d\n", 1 ? 123 : 456);
 	printf("%d\n", 0 ? 123 : 456);
+	printf("%s\n", 1 ? "foo" : "bar");
+	printf("%s\n", 0 ? "foo" : "bar");
 	arr[0] = arr[1] = arr[2] = arr[3] = 0;
 	while (!arr[3]) {
 		printf("%d ? %d : %d ", arr[0], arr[1], arr[2]);
