@@ -17,6 +17,8 @@
  * some tweaking before it actually works.
  */
 
+#include <stdio.h>
+
 typedef struct node {
 	struct node* l;
 	struct node* r;
@@ -46,13 +48,11 @@ main()
 	node_t *root = new_node();
 	node_t *nod;
 
-	/* XXX: fgets(buf, 1024, stdin); */
-	gets(buf);
+	fgets(buf, 1024, stdin);
 	sscanf(buf, "%d", &n);
 
 	for (i = 0; i < n; ++i) {
-		/* XXX: fgets(buf, 1024, stdin); */
-		gets(buf);
+		fgets(buf, 1024, stdin);
 		sscanf(buf, "%c %s", &c, patt);
 		/* XXX: for (p = patt, nod = root; *p; ++p) { */
 		p = patt;
@@ -71,8 +71,7 @@ main()
 		nod->val = c;
 	}
 
-	/* XXX: fgets(patt, 1024, stdin); */
-	gets(patt);
+	fgets(patt, 1024, stdin);
 	p = patt;
 	for (nod = root; *p; ++p) {
 	/* XXX: for (p = patt, nod = root; *p; ++p) { */

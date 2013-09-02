@@ -78,7 +78,8 @@ enum {
 	TOK_ARROW,
 	TOK_SIZEOF,
 	TOK_LONG,
-	TOK_QMARK
+	TOK_QMARK,
+	TOK_CPP
 };
 
 static char* tok_nam[] = {
@@ -152,7 +153,8 @@ static char* tok_nam[] = {
 	"TOK_ARROW",
 	"TOK_SIZEOF",
 	"TOK_LONG",
-	"TOK_QMARK"
+	"TOK_QMARK",
+	"TOK_CPP"
 };
 
 static char* tok_desc[] = {
@@ -224,7 +226,8 @@ static char* tok_desc[] = {
 	"->",
 	"sizeof",
 	"long",
-	"?"
+	"?",
+	"preprocessor directive"
 };
 
 /* keywords */

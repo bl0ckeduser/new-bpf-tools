@@ -21,6 +21,9 @@
  * some tweaking before it actually works.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+
 // mishmash of linked list and table
 // with memoization (derp it's gotta be fast)
 
@@ -141,8 +144,7 @@ main()
 			memo_tab[i][j] = 0;
 	}
 	
-	/* XXX: fgets(buf, 1024, stdin); */
-	gets(buf);
+	fgets(buf, 1024, stdin);
 	sscanf(buf, "%d %d", &people, &comps);
 	
 	lists = malloc((people+1) * sizeof(derp_t *));
@@ -156,16 +158,14 @@ main()
 	
 	// set up the list from known info
 	for (i = 0; i < comps; ++i) {
-		/* XXX: fgets(buf, 1024, stdin); */
-		gets(buf);
+		fgets(buf, 1024, stdin);
 		sscanf(buf, "%d %d", &a, &b);
 		//printf("k so %d is taller than %d kthxbye\n", a, b);
 		add_child(a, b);
 	}
 	
 	// now solve the mystery lololol
-	/* XXX: fgets(buf, 1024, stdin); */
-	gets(buf);
+	fgets(buf, 1024, stdin);
 	sscanf(buf, "%d %d", &ma, &mb);
 	if (look_for(ma, mb))
 		printf("yes\n");

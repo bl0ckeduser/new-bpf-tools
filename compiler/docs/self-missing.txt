@@ -9,7 +9,8 @@ Features used but not compiled by the x86 compiler
 - "return;"
 - multiple files
 - preprocessor: #define #else #endif #ifdef #ifndef #include
-- external variables: stderr stdin
+  well it just ignores it for now. it mostly works for #include,
+  but not for others
 - external constants: NULL
 - "static" qualifier
 - enumerations

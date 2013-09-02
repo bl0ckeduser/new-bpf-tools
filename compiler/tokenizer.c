@@ -30,6 +30,8 @@ extern void fail(char* mesg);
 extern void sanity_requires(int exp);
 extern void compiler_fail(char *message, token_t *token,
 	int in_line, int in_chr);
+extern void compiler_warn(char *message, token_t *token,
+	int in_line, int in_chr);
 
 enum {
 	NOT_INSIDE_A_COMMENT,
@@ -200,10 +202,17 @@ void add_token(nfa* t, char* tok, int key)
 				t = next;
 				++n;
 				break;
-			case '.':		/* all chars */
+			case '.':		/* all chars (well, except \n) */
 				next = new_nfa();
 				for(j = 0; j < 256; j++)
-					t->map[j] = next;
+					if (j != '\n')
+						t->map[j] = next;
+				t = next;
+				++n;
+				break;
+			case 'N':		/* \n */
+				next = new_nfa();
+				t->map['\n'] = next;
 				t = next;
 				++n;
 				break;
@@ -447,7 +456,7 @@ token_t* tokenize(char *buf)
 					if (!toks)
 						fail("resize tokens array");
 				}
-			
+
 				/* 
 				 * Build the token pointer stuff,
 				 * and also add a bunch of debug tracing
@@ -459,6 +468,19 @@ token_t* tokenize(char *buf)
 				toks[tok_count - 1].from_line = line;
 				toks[tok_count - 1].from_char = p - 
 					line_start + 1;
+
+				/*
+				 * Ignore preprocessor directives,
+				 * like http://bellard.org/otcc/ does
+				 * in order to have "stdout" and "stderr"
+				 * and still fake C compatibility
+				 */
+				if (c.success == TOK_CPP) {
+					code_lines[line] = line_start;
+					compiler_warn("preprocessor directive consumed and ignored",
+						&toks[tok_count - 1], 0, 0);
+					--tok_count;
+				}
 			}
 
 advance:
@@ -539,6 +561,15 @@ void setup_tokenizer()
 
 	/* W: any whitespace character */
 	add_token(t[0], "W+", TOK_WHITESPACE);
+
+	/* 
+	 * Preprocessor directive.
+	 * Maybe I could instead have a pattern
+	 * for each directive or whatever,
+	 * e.g. maybe something like
+	 * "#defineW*AB*W*.*N" for defines
+	 */
+	add_token(t[1], "#.*N", TOK_CPP);
 
 	/* A: letter; B: letter or digit */
 	add_token(t[0], "AB*", TOK_IDENT);

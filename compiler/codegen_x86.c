@@ -561,8 +561,23 @@ char* sym_lookup(token_t* tok)
 		if (!strcmp(globtab[i], s))
 			return globtab[i];
 
+	/*
+	 * If it isn't anywhere, just assume
+	 * it's an external symbol. The mini
+	 * compiler otcc (http://bellard.org/otcc/)
+	 * seems to behave this way in order
+	 * to allow the use of "stderr" 
+	 * without a working preprocessor.
+	 * Perhaps it would be nice to pop up a
+	 * warning.
+	 */
+	compiler_warn("assuming symbol is external", tok, 0, 0);
+	return s;
+
+/*
 	sprintf(buf, "unknown symbol `%s'", s);
 	compiler_fail(buf, tok, 0, 0);
+*/
 }
 
 /* 
@@ -593,8 +608,13 @@ typedesc_t sym_lookup_type(token_t* tok)
 		if (!strcmp(globtab[i], s))
 			return globtyp[i];
 
+	/* assume it's an external int */
+	return mk_typedesc(INT_DECL, 0, 0);
+
+/*
 	sprintf(buf, "unknown symbol `%s'", s);
 	compiler_fail(buf, tok, 0, 0);
+*/
 }
 
 /* 
