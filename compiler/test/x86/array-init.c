@@ -8,6 +8,8 @@ main()
 	     bob[1024] = "hahaha",
 	     bob2[1024] = "";
 
+	char *arr5[3] = {"a", "b", "c"};
+
 	/* XXX: wrong behaviour ? */
 	/* char *arr4[5] = {"ha"}; */
 
@@ -26,6 +28,10 @@ main()
 
 	for (i = 0; i < sizeof(arr3) / sizeof(int); ++i)
 		printf("%d ", arr3[i]);
+	printf("\n");
+
+	for (i = 0; i < sizeof(arr5) / sizeof(char *); ++i)
+		printf("%s ", arr5[i]);
 	printf("\n");
 
 /*
