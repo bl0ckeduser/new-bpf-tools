@@ -18,7 +18,7 @@
 
 int main(int argc, char** argv)
 {
-	char* buf;
+	char* buf, *nbuf;
 	token_t* tokens;
 	exp_tree_t tree;
 	extern void optimize(exp_tree_t *et);
@@ -26,23 +26,28 @@ int main(int argc, char** argv)
 	extern void push_line(char *lin);
 	extern void print_code(void);
 	extern void fail(char*);
-
-	/* Read in at most 1KB of code from stdin */
-	if (!(buf = malloc(1024 * 1024)))
-		fail("alloc program buffer");
-#ifdef SELF_COMPILATION_HACK
 	int i, c;
-	for (i = 0; i < 1024 * 1024; ++i) {
+	int alloc = 1024;
+
+	/* Read code from stdin */
+	if (!(buf = malloc(alloc)))
+		fail("alloc program buffer");
+	for (i = 0 ;; ++i) {
 		c = getchar();
 		if (c < 0) {
 			buf[i] = 0;
 			break;
 		}
+		if (i >= alloc) {
+			alloc += 1024;
+			nbuf = realloc(buf, alloc);
+			if (!nbuf)
+				fail("realloc failed");
+			else
+				buf = nbuf;
+		}
 		buf[i] = c;
 	}
-#else
-	fread(buf, sizeof(char), 1024 * 1024, stdin);
-#endif
 
 	setup_tokenizer();
 	tokens = tokenize(buf);
