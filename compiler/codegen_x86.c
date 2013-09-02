@@ -1248,8 +1248,18 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				sym_num = create_array(symty, dc,
 					type2siz(array_base_type), objsiz);
 
-				/* Discard the tree */
-				dc->head_type = NULL_TREE;
+				/* Discard the tree if it has no initializer */
+				if (dc->child_count - 1 - check_array(dc) == 0)
+					dc->head_type = NULL_TREE;
+				else {
+					/* Otherwise make the initializer into an assignment node */
+					initializer_val = alloc_exptree(
+						new_exp_tree(COMPLICATED_INITIALIZATION, NULL));
+					for (j = 0; j < dc->child_count; ++j)
+						if (dc->child[j]->head_type != ARRAY_DIM)
+							add_child(initializer_val, dc->child[j]);
+					memcpy(dc, initializer_val, sizeof(exp_tree_t));
+				}
 			} else {
 				/*
 				 * Set up symbols and stack storage
@@ -1432,9 +1442,12 @@ char* codegen(exp_tree_t* tree)
 	char *oper;
 	char *arith;
 	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
+	token_t fakenum = { TOK_INTEGER, "0", 1, 0, 0 };
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	exp_tree_t fake_tree;
 	exp_tree_t fake_tree_2;
+	exp_tree_t fake_tree_3;
+	exp_tree_t fake_tree_4;
 	extern char* cheap_relational(exp_tree_t* tree, char *oppcheck);
 	extern char* optimized_if(exp_tree_t* tree, char *oppcheck);
 	extern char* optimized_while(exp_tree_t* tree, char *oppcheck);
@@ -1471,6 +1484,41 @@ char* codegen(exp_tree_t* tree)
 		|| tree->head_type == BPF_INSTR) {
 		new_temp_mem();
 		new_temp_reg();
+	}
+
+	/* 
+	 * 	int arr[] = {1, 2, 3};
+	 *
+	 * (COMPLICATED_INITIALIZATION 
+	 *	(VARIABLE:arr) 
+	 *	(COMPLICATED_INITIALIZER (NUMBER:1) (NUMBER:2) (NUMBER:3)))
+	 */
+	if (tree->head_type == COMPLICATED_INITIALIZATION) {
+		#ifdef DEBUG
+			printout_tree(*tree);
+			fprintf(stderr, "\n");
+		#endif
+		if (tree_typeof(tree->child[0]).arr) {		
+			for (i = 0; i < tree->child[1]->child_count; ++i) {
+				/* (ASGN (ARRAY (VARIABLE:arr) (NUMBER:i)) XXX) */	
+				sprintf(sbuf, "%d", i);
+				fakenum.start = &sbuf[0];
+				fakenum.len = strlen(sbuf);
+				fake_tree_3 = new_exp_tree(NUMBER, &fakenum);
+				fake_tree = new_exp_tree(ASGN, NULL);
+				fake_tree_2 = new_exp_tree(ARRAY, NULL);
+				add_child(&fake_tree_2, tree->child[0]);
+				add_child(&fake_tree_2, alloc_exptree(fake_tree_3));
+				add_child(&fake_tree, alloc_exptree(fake_tree_2));
+				add_child(&fake_tree, tree->child[1]->child[i]);
+				#ifdef DEBUG
+					printout_tree(fake_tree);
+					fprintf(stderr, "\n");
+				#endif
+				codegen(&fake_tree);
+			}
+			return NULL;
+		}
 	}
 
 	/* ? : */

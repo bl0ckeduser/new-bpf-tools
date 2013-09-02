@@ -64,6 +64,7 @@ enum {		/* head_type */
 	LONG_DECL,
 	TERNARY,
 	COMPLICATED_INITIALIZER,
+	COMPLICATED_INITIALIZATION,
 	/* special */
 	NULL_TREE
 };
@@ -129,6 +130,7 @@ static char* tree_nam[] = {
 	"LONG_DECL",
 	"TERNARY",
 	"COMPLICATED_INITIALIZER",
+	"COMPLICATED_INITIALIZATION",
 	"NULL_TREE"
 };
 

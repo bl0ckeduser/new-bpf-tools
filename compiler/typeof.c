@@ -196,6 +196,48 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 	*array_base_type = *typedat;
 	array_base_type->arr = 0;
 
+	/*
+	 * Check if there is more than one
+	 * empty array initializer, or if
+	 * there is an empty array initializer
+	 * anywhere else than the last array dimension entry,
+	 * or if there is
+	 * If so, complain and halt.
+	 */
+	if (typedat->arr) {
+		for (j = 0, k = 0; j < typedat->arr; ++j)
+			if (typedat->arr_dim[j] == 0)
+				if (k++ || j != typedat->arr - 1)
+					compiler_fail("incoherent array declaration",
+						findtok(dc), 0, 0);
+	}
+
+	/* 
+	 * Deal with initializer-implied array sizes,
+	 * as in e.g int arr[] = {1, 2, 3}
+	 */ 
+	if (typedat->arr && typedat->arr_dim[typedat->arr - 1] == 0) {
+		#ifdef DEBUG
+			fprintf(stderr, "got an array declaration with empty size: \n");
+			printout_tree(*dc);
+			fprintf(stderr, "\n");
+		#endif
+		/* find the initializer */
+		for (j = 0; j < dc->child_count; ++j) {
+			if (dc->child[j]->head_type == COMPLICATED_INITIALIZER)
+				break;
+		}
+		if (j < dc->child_count) {
+			#ifdef DEBUG
+				fprintf(stderr, "it has an initializaiton-implied size: %d\n",
+					 dc->child[j]->child_count);
+			#endif
+			typedat->arr_dim[typedat->arr - 1] = dc->child[j]->child_count;
+		} else {
+			compiler_fail("initializer expected", findtok(dc), 0, 0);
+		}
+	}
+
 	if (decl == NAMED_STRUCT_DECL) {
 		typedat->is_struct_name_ref = 1;
 		typedat->struct_name_ref = malloc(128);

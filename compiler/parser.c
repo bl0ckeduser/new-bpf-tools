@@ -467,6 +467,7 @@ exp_tree_t initializer()
 		}
 		return tree;
 	}
+	return null_tree;
 }
 
 /*
