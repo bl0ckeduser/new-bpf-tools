@@ -41,11 +41,11 @@ char *my_realloc(char *ptr, int len)
 {
         char *new_ptr = malloc(len);
         int i;
-		if (ptr) {
+	if (ptr) {
 	        for (i = 0; i < len; ++i)
 	                new_ptr[i] = ptr[i];
 	        free(ptr);
-		}
+	}
         return new_ptr;
 }
 
