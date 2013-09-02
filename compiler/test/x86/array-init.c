@@ -7,9 +7,17 @@ main()
 	char *arr2[] = {"hello", "world", "hahah", "what", "a", "strange",
 			"day"};
 
+	char bob[1024] = "hahaha";
+	char bob2[1024] = "";
+
 	int arr3[10] = {0};
 	/* XXX: wrong behaviour ? */
 	/* char *arr4[5] = {"ha"}; */
+
+	puts(bob);
+	puts(bob2);
+	strcpy(bob2, "djadjsdjasda");
+	puts(bob2);
 
 	for (i = 0; i < sizeof(arr) / sizeof(int); ++i)
 		printf("%d ", arr[i]);

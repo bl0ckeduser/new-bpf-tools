@@ -1436,13 +1436,14 @@ char* codegen(exp_tree_t* tree)
 	char *proc_args[32];
 	char my_ts_used[TEMP_REGISTERS];
 	char *buf;
-	char sbuf[256];
+	char sbuf[256], sbuf2[256];
 	int i;
 	char *sym_s;
 	char *oper;
 	char *arith;
 	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
 	token_t fakenum = { TOK_INTEGER, "0", 1, 0, 0 };
+	token_t fakenum2 = { TOK_INTEGER, "0", 1, 0, 0 };
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	exp_tree_t fake_tree;
 	exp_tree_t fake_tree_2;
@@ -1487,19 +1488,52 @@ char* codegen(exp_tree_t* tree)
 		new_temp_reg();
 	}
 
-	/* 
-	 * 	int arr[] = {1, 2, 3};
-	 *
-	 * (COMPLICATED_INITIALIZATION 
-	 *	(VARIABLE:arr) 
-	 *	(COMPLICATED_INITIALIZER (NUMBER:1) (NUMBER:2) (NUMBER:3)))
-	 */
+	/* code complicated initializations */
 	if (tree->head_type == COMPLICATED_INITIALIZATION) {
 		#ifdef DEBUG
 			printout_tree(*tree);
 			fprintf(stderr, "\n");
 		#endif
-		if (tree_typeof(tree->child[0]).arr == 1) {
+		/* 
+		 * string constant initializer
+		 * 
+	 	 * e.g. char bob[1024] = "hahaha";
+		 * (COMPLICATED_INITIALIZATION (VARIABLE:bob) (STR_CONST:"hahaha"))
+		 */
+		if (tree->child[1]->head_type == STR_CONST
+			&& tree_typeof(tree->child[0]).arr == 1) {
+			for (i = 0; i < tree->child[1]->tok->len - 2; ++i) {
+				sprintf(sbuf, "%d", i);
+				fakenum.start = &sbuf[0];
+				fakenum.len = strlen(sbuf);
+				sprintf(sbuf2, "%d", tree->child[1]->tok->start[i + 1]);
+				fakenum2.start = &sbuf2[0];
+				fakenum2.len = strlen(sbuf2);
+				fake_tree_3 = new_exp_tree(NUMBER, &fakenum);
+				fake_tree_4 = new_exp_tree(NUMBER, &fakenum2);
+				fake_tree = new_exp_tree(ASGN, NULL);
+				fake_tree_2 = new_exp_tree(ARRAY, NULL);
+				add_child(&fake_tree_2, tree->child[0]);
+				add_child(&fake_tree_2, alloc_exptree(fake_tree_3));
+				add_child(&fake_tree, alloc_exptree(fake_tree_2));
+				add_child(&fake_tree, alloc_exptree(fake_tree_4));
+				#ifdef DEBUG
+					printout_tree(fake_tree);
+					fprintf(stderr, "\n");
+				#endif
+				codegen(&fake_tree);
+			}
+			return NULL;
+		}
+		/*
+		 * array initializer
+		 * 
+		 * e.g. int arr[] = {1, 2, 3};
+		 * (COMPLICATED_INITIALIZATION 
+		 *	(VARIABLE:arr) 
+		 *	(COMPLICATED_INITIALIZER (NUMBER:1) (NUMBER:2) (NUMBER:3)))
+		 */
+		else if (tree_typeof(tree->child[0]).arr == 1) {
 			if (tree_typeof(tree->child[0]).arr_dim[0] > 1
 				&& tree->child[1]->child_count == 1) {
 				/* fill -- e.g. int arr3[10] = {0}; */
