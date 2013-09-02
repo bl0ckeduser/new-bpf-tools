@@ -62,7 +62,7 @@ block := expr ';'
 	| ident ':'
 	| goto ident ';'
 	| [cast-type] ident '(' arg { ',' arg } ')' block
-	| 'return' expr ';'
+	| 'return' [expr] ';'
 	| 'break' ';'
 	| 'typedef' cast-type ident ';'
 

@@ -2,7 +2,6 @@ Features used but not compiled by the x86 compiler
 ==================================================
 
 - function pointers (used in parser.c)
-- "return;"
 - multiple files
 - preprocessor: #define #else #endif #ifdef #ifndef #include
   well it just ignores it for now. it mostly works for #include,

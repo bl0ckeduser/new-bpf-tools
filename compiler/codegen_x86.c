@@ -2047,6 +2047,7 @@ char* codegen(exp_tree_t* tree)
 
 	/* TCO return ? */
 	if (tree->head_type == RET
+	&& tree->child_count
 	&& tree->child[0]->head_type == PROC_CALL
 	&& !strcmp(get_tok_str(*(tree->child[0]->tok)),
 		current_proc)) {
@@ -2076,15 +2077,16 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == RET) {
 		new_temp_reg();
 		new_temp_mem();
-		/* code the return expression */
-		sto = codegen(tree->child[0]);
+		/* code the return expression (if there is one) */
+		if (tree->child_count)
+			sto = codegen(tree->child[0]);
 		/* 
 		 * Put the return expression's value
 		 * in EAX and jump to the end of the
 		 * routine
 		 */
 		printf("# return value\n");
-		if (strcmp(sto, "%eax"))
+		if (tree->child_count && strcmp(sto, "%eax"))
 			/* 
 			 * XXX: this assumes an int return value
 			 * (which is the default, anyway) 

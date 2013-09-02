@@ -518,7 +518,7 @@ exp_tree_t lval()
 		| ident ':'
 		| goto ident ';'
 		| [cast-type] ident '(' arg { ',' arg } ')' block
-		| 'return' expr ';'
+		| 'return' [expr] ';'
 		| 'break' ';'
 		| 'typedef' cast-type ident ';'
 */
@@ -736,14 +736,16 @@ not_proc:
 		tok = need(TOK_IDENT);
 		return new_exp_tree(GOTO, &tok);
 	}
-	/* 'return' expr */
+	/* 'return' [expr] */
 	if (peek().type == TOK_RET) {
 		adv();	/* eat 'return' */
 		tree = new_exp_tree(RET, NULL);
-		subtree = expr();
-		if (!valid_tree(subtree))
-			parse_fail("expression expected");
-		add_child(&tree, alloc_exptree(subtree));
+		if (peek().type != TOK_SEMICOLON) {
+			subtree = expr();
+			if (!valid_tree(subtree))
+				parse_fail("expression expected");
+			add_child(&tree, alloc_exptree(subtree));
+		}
 		need(TOK_SEMICOLON);
 		return tree;
 	}
