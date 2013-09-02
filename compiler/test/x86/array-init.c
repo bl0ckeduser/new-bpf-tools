@@ -1,16 +1,13 @@
 main()
 {
-	int arr[] = {1, 2, 3, 3 + 1, 3 + 2, 3 + 3};
-	int i, j;
-	/* XXX: parser messes up if the decls above are sequenced */
+	int arr[] = {1, 2, 3, 3 + 1, 3 + 2, 3 + 3}, i, j,
+	    arr3[10] = {0};
 
 	char *arr2[] = {"hello", "world", "hahah", "what", "a", "strange",
-			"day"};
+			"day"},
+	     bob[1024] = "hahaha",
+	     bob2[1024] = "";
 
-	char bob[1024] = "hahaha";
-	char bob2[1024] = "";
-
-	int arr3[10] = {0};
 	/* XXX: wrong behaviour ? */
 	/* char *arr4[5] = {"ha"}; */
 

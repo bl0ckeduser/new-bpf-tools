@@ -443,6 +443,7 @@ multi_array_decl:
 exp_tree_t initializer()
 {
 	exp_tree_t tree, child;
+	int depth;
 	if (valid_tree((tree = expr())))
 		return tree;
 	/* '{' {'{'} expr {'}'} [ {',' {'{'} expr {'}'}}] '}' */
@@ -451,15 +452,18 @@ exp_tree_t initializer()
 		adv();
 		while (1) {
 			/* {'{'} */
+			depth = 1;
 			while (peek().type == TOK_LBRACE)
-				adv();
+				++depth, adv();
 			child = expr();
 			if (!valid_tree(child))
 				parse_fail("expression expected in array or struct initializer");
 			add_child(&tree, alloc_exptree(child));
 			/* {'}'} */
 			while (peek().type == TOK_RBRACE)
-				adv();
+				--depth, adv();
+			if (depth == 0)
+				break;
 			if (peek().type != TOK_COMMA)
 				break;
 			else
