@@ -269,7 +269,7 @@ elements are C syntax.
 
 		The following escapes are handled:
 
-			\0 \a \b \t \f \n \r \\
+			\0 \a \b \t \f \n \r \\ \'
 
 		Multi-digit octal isn't handled yet.
 
