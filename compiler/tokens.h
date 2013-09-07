@@ -237,7 +237,7 @@ struct bpf_kw {
 	char tok;
 };
 
-#define KW_COUNT 22
+#define KW_COUNT 21
 
 static struct bpf_kw kw_tab[] = 
 {
@@ -256,7 +256,6 @@ static struct bpf_kw kw_tab[] =
 	{ "outputdraw", TOK_OD },
 	{ "else", TOK_ELSE },
 	{ "goto", TOK_GOTO },
-	{ "proc", TOK_PROC },
 	{ "return", TOK_RET },
 	{ "for", TOK_FOR },
 	{ "struct", TOK_STRUCT },
