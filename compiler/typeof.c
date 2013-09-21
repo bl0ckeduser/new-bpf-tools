@@ -561,8 +561,8 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 			struct_typ = deref_typeof(struct_typ);
 
 		if (struct_typ.arr || struct_typ.ptr)
-			compiler_fail("you can't apply the `.' operator on a"
-						 " non-structure...",
+			compiler_fail("you can't apply the `.' (or ->) operator on a"
+						 " non-structure (or non-pointer-to-structure)...",
 				findtok(tp->child[0]), 0, 0);
 
 		#if 0
