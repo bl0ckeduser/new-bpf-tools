@@ -2726,6 +2726,8 @@ char* codegen(exp_tree_t* tree)
 		str = codegen(tree->child[0]);
 		/* put the 32-bit dividend in EAX */
 		printf("movl %s, %%eax\n", str);
+		free_temp_reg(str);
+		free_temp_mem(str);
 		/* clear EDX (higher 32 bits of 64-bit dividend) */
 		printf("xor %%edx, %%edx\n");
 		/* extend EAX sign to EDX */
