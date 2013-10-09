@@ -1,8 +1,8 @@
 /*
  * Project Euler, Problem 21
  *
- * This is based on the solution I wrote in C at some point
- * in 2010, at which point I was a greater noob than now.
+ * This is closely based on the solution I wrote in C
+ * on Sept. 11, 2010, at which point I was a greater noob than now.
  */
 
 sumDivisors(i)
