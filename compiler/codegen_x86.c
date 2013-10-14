@@ -1488,6 +1488,18 @@ char* codegen(exp_tree_t* tree)
 		new_temp_reg();
 	}
 
+	/* sequence */
+	if (tree->head_type == SEQ) {
+		for (i = 0; i < tree->child_count; ++i) {
+			sto = codegen(tree->child[i]);
+			if (i < tree->child_count - 1) {
+				free_temp_reg(sto);
+				free_temp_mem(sto);
+			}
+		}
+		return sto;
+	}
+
 	/* code complicated initializations */
 	if (tree->head_type == COMPLICATED_INITIALIZATION) {
 		#ifdef DEBUG

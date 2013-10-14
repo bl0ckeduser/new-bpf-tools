@@ -19,6 +19,5 @@ Features used but not compiled by the x86 compiler
 - function prototypes
   e.g. typedesc_t tree_typeof_iter(typedesc_t, exp_tree_t*);
 - "void" type
-- comma (sequencing) operator
 - switch/case/break
 - adjacent string concatenation

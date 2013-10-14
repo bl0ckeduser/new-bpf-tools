@@ -19,8 +19,9 @@ decl := (basic-type | struct-decl) decl2 { ','  decl2 }
  */	
 decl2 := { '*' } ident [ { ('[' [integer] ']') } ] ['=' initializer]
 
-initializer := expr
-		| '{' {'{'} expr {'}'} [ {',' {'{'} expr {'}'}}] '}'
+/* must use expr0 here to avoid conflict with ',' in expr */
+initializer := expr0
+		| '{' {'{'} expr0 {'}'} [ {',' {'{'} expr0 {'}'}}] '}'
 
 /*
  * struct foo {
@@ -68,7 +69,9 @@ block := expr ';'
 
 arg := [cast-type] ident
 
-expr := e1 asg-op expr 
+expr := expr0 [, expr0]
+
+expr0 := e1 asg-op expr 
 	| ternary-expr
 	| str-const
 

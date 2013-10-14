@@ -334,6 +334,7 @@ codegen_t codegen(exp_tree_t* tree)
 	exp_tree_t fake_tree;
 	exp_tree_t fake_tree_2;
 	extern int adr_microcode(int sto, int read, int set);
+	codegen_t seq;
 
 	/* 
 	 * BPF integer comparisons / bool system...
@@ -383,6 +384,17 @@ codegen_t codegen(exp_tree_t* tree)
 		|| tree->head_type == BPF_INSTR) {
 		/* clear expression stack */
 		new_temp_storage();
+	}
+
+	/* comma-separated sequence (e.g. a = 1, b = 2, c = 3) */
+	if (tree->head_type == SEQ) {
+		for (i = 0; i < tree->child_count; ++i) {
+			seq = codegen(tree->child[i]);
+			bytesize += seq.bytes;
+			/* comma returns the value of the last element */
+			sym = seq.adr;
+		}
+		return (codegen_t){ sym, bytesize };
 	}
 	
 	/* block */

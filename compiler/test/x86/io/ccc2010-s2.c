@@ -54,9 +54,7 @@ main()
 	for (i = 0; i < n; ++i) {
 		fgets(buf, 1024, stdin);
 		sscanf(buf, "%c %s", &c, patt);
-		/* XXX: for (p = patt, nod = root; *p; ++p) { */
-		p = patt;
-		for (nod = root; *p; ++p) {
+		for (p = patt, nod = root; *p; ++p) {
 			if (*p == '0') {
 				if (!nod->l)
 					nod->l = new_node();
@@ -72,9 +70,7 @@ main()
 	}
 
 	fgets(patt, 1024, stdin);
-	p = patt;
-	for (nod = root; *p; ++p) {
-	/* XXX: for (p = patt, nod = root; *p; ++p) { */
+	for (p = patt, nod = root; *p; ++p) {
 		if (*p == '0') {
 			if (nod->l)
 				nod = nod->l;

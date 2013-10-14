@@ -22,6 +22,7 @@ extern char* get_tok_str(token_t t);
 
 exp_tree_t block();
 exp_tree_t expr();
+exp_tree_t expr0();
 exp_tree_t sum_expr();
 exp_tree_t mul_expr();
 exp_tree_t ternary_expr();
@@ -437,16 +438,16 @@ multi_array_decl:
 }
 
 /*
- * initializer := expr
- *               | '{' {'{'} expr {'}'} [ {',' {'{'} expr {'}'}}] '}'
+ * initializer := expr0
+ *               | '{' {'{'} expr0 {'}'} [ {',' {'{'} expr0 {'}'}}] '}'
  */
 exp_tree_t initializer()
 {
 	exp_tree_t tree, child;
 	int depth, depth2;
-	if (valid_tree((tree = expr())))
+	if (valid_tree((tree = expr0())))
 		return tree;
-	/* '{' {'{'} expr {'}'} [ {',' {'{'} expr {'}'}}] '}' */
+	/* '{' {'{'} expr0 {'}'} [ {',' {'{'} expr {'}'}}] '}' */
 	if (peek().type == TOK_LBRACE) {
 		tree = new_exp_tree(COMPLICATED_INITIALIZER, NULL);
 		adv();
@@ -455,7 +456,7 @@ exp_tree_t initializer()
 			/* {'{'} */
 			while (peek().type == TOK_LBRACE)
 				++depth2, adv();
-			child = expr();
+			child = expr0();
 			if (!valid_tree(child))
 				parse_fail("expression expected in array or struct initializer");
 			add_child(&tree, alloc_exptree(child));
@@ -826,22 +827,51 @@ exp_tree_t arg()
 }
 
 /*
-	expr := e1 asg-op expr 
+	expr := expr0 [, expr0]
+*/
+exp_tree_t expr()
+{
+	exp_tree_t seq = new_exp_tree(SEQ, NULL);
+	exp_tree_t ex;
+	int len = 0;
+
+	if (valid_tree(ex = expr0())) {
+		for (;;) {
+			++len;
+			add_child(&seq, alloc_exptree(ex));
+			if (peek().type == TOK_COMMA) {
+				adv();
+				ex = expr0();
+			}
+			else
+				break;
+		}
+		if (len == 1)
+			return *(seq.child[0]);
+		else
+			return seq;
+	} else
+		return null_tree;
+}
+
+/*
+	expr0 := e1 asg-op expr0
 		| ternary_expr
 		| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
 		| str-const
 */
-exp_tree_t expr()
+exp_tree_t expr0()
 {
 	exp_tree_t tree, subtree, subtree2;
 	exp_tree_t subtree3;
 	exp_tree_t lv;
 	token_t oper;
 	token_t tok;
+	exp_tree_t seq;
 	int save = indx;
 
 	if (valid_tree(lv = e1())) {
-		/* "lvalue asg-op expr" pattern */
+		/* "lvalue asg-op expr0" pattern */
 		if(is_asg_op(peek().type)) {
 			tree = new_exp_tree(ASGN, NULL);
 			add_child(&tree, alloc_exptree(lv));
@@ -869,7 +899,8 @@ exp_tree_t expr()
 					 ("invalid assignment operator");
 			}
 			adv() - 1;	/* eat asg-op */
-			if (!valid_tree(subtree3 = expr()))
+			/* again, expr0 to avoid the comma conflict */
+			if (!valid_tree(subtree3 = expr0()))
 				parse_fail("expression expected");
 			if (oper.type == TOK_ASGN)
 				add_child(&tree, alloc_exptree(subtree3));
@@ -1412,7 +1443,11 @@ exp_tree_t e0_4()
 			adv();	/* eat ( */
 			tree = new_exp_tree(PROC_CALL, &tok);
 			while (peek().type != TOK_RPAREN) {
-				subtree2 = expr();
+				/* 
+				 * (Use expr0 to avoid conflict with ','
+				 * in expr)
+				 */
+				subtree2 = expr0();
 				if (!valid_tree(subtree2))
 					parse_fail("expression expected");
 				add_child(&tree, alloc_exptree(subtree2));

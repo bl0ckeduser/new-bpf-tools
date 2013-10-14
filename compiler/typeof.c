@@ -538,6 +538,13 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	char tag_name[128];
 	struct_desc_t *sd;
 	int bc;
+	
+	/*
+	 * Sequence: return type of last child
+	 */
+	if (tp->head_type == SEQ) {
+		return tree_typeof_iter(td, tp->child[tp->child_count - 1]);
+	}	
 
 	/* 
 	 * If a block has one child, find the type of that,

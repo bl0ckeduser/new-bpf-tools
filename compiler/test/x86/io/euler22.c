@@ -107,10 +107,7 @@ int main(int argc, char** argv)
 
 	sortnames(names, sorted);
 	for(i = 0; *sorted[i]; i++) {
-		/* XXX: comma operator */
-		/* for(j = 0, score = 0; */
-		score = 0;
-		for(j = 0; sorted[i][j]; j++)
+		for(j = 0, score = 0; sorted[i][j]; j++)
 			score += sorted[i][j] - 'A' + 1;
 		score *= i+1;
 		printf("%s: %d\n", sorted[i], score);
