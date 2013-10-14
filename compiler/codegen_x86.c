@@ -1020,7 +1020,8 @@ char *siz2suffix(char siz)
  */
 int int_type_decl(char ty)
 {
-	return ty == CHAR_DECL || ty == INT_DECL || ty == LONG_DECL;
+	return ty == CHAR_DECL || ty == INT_DECL || ty == LONG_DECL
+		|| ty == VOID_DECL;
 }
 
 void setup_symbols(exp_tree_t *tree, int symty)
