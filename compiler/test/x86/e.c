@@ -161,7 +161,7 @@ trunczeroes(bignum_t* a) {
 }
 
 /* multiply by ten */
- bignum_shift(bignum_t* bn)
+void bignum_shift(bignum_t* bn)
 {
 	char* new = malloc(bignum_len(bn) + 1);
 	char* old = bn->dig;
@@ -243,7 +243,7 @@ void bignum_nmul(bignum_t* a, int n){
 }
 
 /* convert natural int to bignum */
- bignum_nset(bignum_t* a, int n){
+void bignum_nset(bignum_t* a, int n){
 	int i;
 	for (i = 0; n; i++) {
 		if (!(i < a->alloc)) {
