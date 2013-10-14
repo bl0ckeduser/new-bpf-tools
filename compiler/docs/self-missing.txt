@@ -18,6 +18,5 @@ Features used but not compiled by the x86 compiler
 - "unsigned" qualifier
 - function prototypes
   e.g. typedesc_t tree_typeof_iter(typedesc_t, exp_tree_t*);
-- "void" type
 - switch/case/break
 - adjacent string concatenation

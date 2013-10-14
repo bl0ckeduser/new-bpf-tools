@@ -79,7 +79,8 @@ enum {
 	TOK_SIZEOF,
 	TOK_LONG,
 	TOK_QMARK,
-	TOK_CPP
+	TOK_CPP,
+	TOK_VOID
 };
 
 static char* tok_nam[] = {
@@ -154,7 +155,8 @@ static char* tok_nam[] = {
 	"TOK_SIZEOF",
 	"TOK_LONG",
 	"TOK_QMARK",
-	"TOK_CPP"
+	"TOK_CPP",
+	"TOK_VOID"
 };
 
 static char* tok_desc[] = {
@@ -227,7 +229,8 @@ static char* tok_desc[] = {
 	"sizeof",
 	"long",
 	"?",
-	"preprocessor directive"
+	"preprocessor directive",
+	"void type"
 };
 
 /* keywords */
@@ -237,7 +240,7 @@ struct bpf_kw {
 	char tok;
 };
 
-#define KW_COUNT 21
+#define KW_COUNT 22
 
 static struct bpf_kw kw_tab[] = 
 {
@@ -245,6 +248,7 @@ static struct bpf_kw kw_tab[] =
 	{ "while", TOK_WHILE },
 	{ "break", TOK_BREAK },
 	{ "int", TOK_INT },
+	{ "void", TOK_VOID },
 	{ "char", TOK_CHAR },
 	{ "echo", TOK_ECHO },
 	{ "draw", TOK_DRAW },

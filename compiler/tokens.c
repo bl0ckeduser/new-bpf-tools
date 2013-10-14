@@ -48,7 +48,8 @@ int is_basic_type(char type)
 {
 	return type == TOK_INT
 			|| type == TOK_CHAR
-			|| type == TOK_LONG;
+			|| type == TOK_LONG
+			|| type == TOK_VOID;
 }
 
 int is_instr(char type)

@@ -66,6 +66,7 @@ enum {		/* head_type */
 	COMPLICATED_INITIALIZER,
 	COMPLICATED_INITIALIZATION,
 	SEQ,
+	VOID_DECL,
 	/* special */
 	NULL_TREE
 };
@@ -133,6 +134,7 @@ static char* tree_nam[] = {
 	"COMPLICATED_INITIALIZER",
 	"COMPLICATED_INITIALIZATION",
 	"SEQ",
+	"VOID_DECL",
 	"NULL_TREE"
 };
 

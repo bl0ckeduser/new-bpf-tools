@@ -173,13 +173,11 @@ trunczeroes(bignum_t* a) {
 	//free(old);
 }
 
-/* XXX: this would be void-typed */
- bignum_free(bignum_t* bn)
+void bignum_free(bignum_t* bn)
 {
 }
 
-/* XXX: this would be void-typed */
- bignum_copy(bignum_t* dest, bignum_t* src)
+void bignum_copy(bignum_t* dest, bignum_t* src)
 {
 	if (src->alloc > dest->alloc) {
 		dest->dig = my_realloc(dest->dig, src->alloc);
@@ -190,8 +188,7 @@ trunczeroes(bignum_t* a) {
 	dest->length = src->length;
 }
 
-/* XXX: this would be void-typed */
- bignum_put(bignum_t* a){
+void bignum_put(bignum_t* a){
 	int i;
 
 	for (i = a->length - 1; i >= 0; i--)
@@ -212,8 +209,7 @@ int bignum_len(bignum_t* a){
  * number that fits in an int. learnt this
  * trick from a discussion on comp.lang.c 
  * on computing factorials */
-/* XXX: this would be void-typed */
- bignum_nmul(bignum_t* a, int n){
+void bignum_nmul(bignum_t* a, int n){
 	int max_len = a->length;
 	int i, j;
 	 int carry = 0;
@@ -282,8 +278,7 @@ int bignum_cmp(bignum_t* a, bignum_t* b){
 	return 0;
 }
 
-/* XXX: this would be void-typed */
- bignum_sub(bignum_t* a, bignum_t* b){
+void bignum_sub(bignum_t* a, bignum_t* b){
 	int max_len = max(a->length, b->length);
 	int i, j;
 	 int borrow = 0;
@@ -329,8 +324,7 @@ int bignum_cmp(bignum_t* a, bignum_t* b){
 	trunczeroes(a);
 }
 
-/* XXX: this would be void-typed */
- bignum_add(bignum_t* a, bignum_t* b){
+void bignum_add(bignum_t* a, bignum_t* b){
 	int max_len = max(a->length, b->length);
 	int i, j;
 	 int carry = 0;

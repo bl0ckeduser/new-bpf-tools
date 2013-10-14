@@ -25,8 +25,7 @@ char** allocnames()
 	return names;
 }
 
-/* XXX: void typing */
-/*void*/ freenames(char** names)
+void freenames(char** names)
 {
 	int i;
 	for(i = 0; i < 20000; i++)
@@ -57,8 +56,7 @@ int readnames(char** names)
 	return i;
 }
 
-/* XXX: void typing */
-/*void*/ sortnames(char** names, char** sorted)
+void sortnames(char** names, char** sorted)
 {
 	/* XXX: neanderthal notation for pointers */
 	/* char dummy[] = */

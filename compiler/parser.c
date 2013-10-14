@@ -255,6 +255,9 @@ cast_typedef_2:
 int decl_dispatch(char type)
 {
 	switch (type) {
+		case TOK_VOID:
+			return VOID_DECL;
+		break;
 		case TOK_INT:
 			return INT_DECL;
 		break;
@@ -269,6 +272,9 @@ int decl_dispatch(char type)
 int decl_dedispatch(char type)
 {
 	switch (type) {
+		case VOID_DECL:
+			return TOK_VOID;
+		break;
 		case INT_DECL:
 			return TOK_INT;
 		break;

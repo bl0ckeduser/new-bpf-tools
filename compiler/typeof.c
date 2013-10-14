@@ -406,6 +406,8 @@ int decl2siz(int bt)
 			return 4;
 		case CHAR_DECL:
 			return 1;
+		case VOID_DECL:
+			return 0;
 		default:
 			return 0;
 	}

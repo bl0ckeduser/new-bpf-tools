@@ -107,14 +107,14 @@ int check_child(int father, int child)
 	return 0; // no !
 }
 
-/* XXX: void */ add_child(int dest, int child)
+void add_child(int dest, int child)
 {
 	if (++(lists[dest]->cnt) >= lists[dest]->alloc)
 		expand(dest, lists[dest]->cnt);
 	lists[dest]->tt[lists[dest]->cnt - 1] = child;
 }
 
-/* XXX: void */ expand(int d, int siz)
+void expand(int d, int siz)
 {
 	while (lists[d]->alloc < siz)
 		lists[d]->alloc += 16;
