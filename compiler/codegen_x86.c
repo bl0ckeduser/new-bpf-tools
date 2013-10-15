@@ -666,6 +666,17 @@ char* arith_op(int ty)
 	}
 }
 
+int checknode(exp_tree_t *t, int nodety)
+{
+	int i;
+	if (t->head_type == nodety)
+		return 1;
+	for (i = 0; i < t->child_count; ++i)
+		if (checknode(t->child[i], nodety))
+			return 1;
+	return 0;
+}
+
 /*
  * Set up symbols and stack storage
  * for an (N-dimensional) array.
@@ -687,7 +698,14 @@ int create_array(int symty, exp_tree_t *dc,
 		printf(".comm %s,%d,32\n", 
 			get_tok_str(*(dc->child[0]->tok)),
 			objsiz);
-		
+
+		/* XXX: can't do e.g. "int foo[] = {1, 2, 3}" declarations
+		 * for globals */
+		if (checknode(dc, COMPLICATED_INITIALIZER))
+			compiler_fail("global complicated"
+				      " array-initializations unsupported",
+				      findtok(dc), 0, 0);
+
 		/* add symbol to the global symbol table
 		 * and return table index */
 		return glob_add(dc->child[0]->tok);
