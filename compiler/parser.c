@@ -28,6 +28,9 @@ exp_tree_t mul_expr();
 exp_tree_t ternary_expr();
 exp_tree_t ccor_expr();
 exp_tree_t ccand_expr();
+exp_tree_t bor_expr();
+exp_tree_t bxor_expr();
+exp_tree_t band_expr();
 exp_tree_t comp_expr();
 exp_tree_t decl();
 exp_tree_t decl2();
@@ -1049,7 +1052,7 @@ exp_tree_t ccor_expr()
 		0);
 }
 
-/* ccand_expr := comp_expr ['&&' comp_expr] */
+/* ccand_expr := bor_expr ['&&' bor_expr] */
 void ccand_dispatch(char oper, exp_tree_t *dest)
 {
 	switch (oper) {
@@ -1064,9 +1067,72 @@ int is_ccand_op(char ty) {
 exp_tree_t ccand_expr()
 {
 	return parse_left_assoc(
-		&comp_expr,
+		&bor_expr,
 		&is_ccand_op,
 		&ccand_dispatch,
+		0);
+}
+
+/* token: TOK_PIPE, node : BOR */
+/* bor_expr := bxor_expr ['|' bxor_expr] */
+void bor_dispatch(char oper, exp_tree_t *dest)
+{
+	switch (oper) {
+		case TOK_PIPE:
+			*dest = new_exp_tree(BOR, NULL);
+	}
+}
+int is_bor_op(char ty) {
+	return ty == TOK_PIPE;
+}
+exp_tree_t bor_expr()
+{
+	return parse_left_assoc(
+		&bxor_expr,
+		&is_bor_op,
+		&bor_dispatch,
+		0);
+}
+
+/* token: TOK_CARET, node: BXOR */
+/* bxor_expr := band_expr ['^' band_expr] */
+void bxor_dispatch(char oper, exp_tree_t *dest)
+{
+	switch (oper) {
+		case TOK_CARET:
+			*dest = new_exp_tree(BXOR, NULL);
+	}
+}
+int is_bxor_op(char ty) {
+	return ty == TOK_CARET;
+}
+exp_tree_t bxor_expr()
+{
+	return parse_left_assoc(
+		&band_expr,
+		&is_bxor_op,
+		&bxor_dispatch,
+		0);
+}
+
+/* token: TOK_ADDR, node: BAND */
+/* band_expr = comp_expr ['&' comp_expr] */
+void band_dispatch(char oper, exp_tree_t *dest)
+{
+	switch (oper) {
+		case TOK_ADDR:
+			*dest = new_exp_tree(BAND, NULL);
+	}
+}
+int is_band_op(char ty) {
+	return ty == TOK_ADDR;
+}
+exp_tree_t band_expr()
+{
+	return parse_left_assoc(
+		&comp_expr,
+		&is_band_op,
+		&band_dispatch,
 		0);
 }
 

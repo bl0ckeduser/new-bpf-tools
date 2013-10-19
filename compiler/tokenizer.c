@@ -596,11 +596,13 @@ void setup_tokenizer()
 	add_token(t[0], "%", TOK_MOD);
 	add_token(t[1], "%=", TOK_MODEQ);
 	add_token(t[0], "||", TOK_CC_OR);
+	add_token(t[1], "|", TOK_PIPE);
 	add_token(t[1], "&&", TOK_CC_AND);
 	add_token(t[0], "!", TOK_CC_NOT);
 	add_token(t[0], "\\.", TOK_DOT);
 	add_token(t[1], "->", TOK_ARROW);
 	add_token(t[0], "\\?", TOK_QMARK);
+	add_token(t[0], "\\^", TOK_CARET);
 
 	/* special characters */
 	add_token(t[0], "{", TOK_LBRACE);

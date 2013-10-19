@@ -80,6 +80,8 @@ enum {
 	TOK_LONG,
 	TOK_QMARK,
 	TOK_CPP,
+	TOK_CARET,
+	TOK_PIPE,
 	TOK_VOID
 };
 
@@ -156,6 +158,8 @@ static char* tok_nam[] = {
 	"TOK_LONG",
 	"TOK_QMARK",
 	"TOK_CPP",
+	"TOK_CARET",
+	"TOK_PIPE",
 	"TOK_VOID"
 };
 
@@ -230,6 +234,8 @@ static char* tok_desc[] = {
 	"long",
 	"?",
 	"preprocessor directive",
+	"^",
+	"|",
 	"void type"
 };
 

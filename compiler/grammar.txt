@@ -84,7 +84,16 @@ ternary-expr := ccor_expr
 
 ccor_expr := ccand_expr ['||' ccand_expr]
 
-ccand_expr := comp_expr ['&&' comp_expr]
+ccand_expr := bor_expr ['&&' bor_expr]
+
+/* token: TOK_PIPE, node : BOR */
+bor_expr := bxor_expr ['|' bxor_expr]
+
+/* token: TOK_CARET, node: BXOR */
+bxor_expr := band_expr ['^' band_expr]
+
+/* token: TOK_ADDR, node: BAND */
+band_expr = comp_expr ['&' comp_expr]
 
 comp_expr := sum_expr [comp-op sum_expr]
 
