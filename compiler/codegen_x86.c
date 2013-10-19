@@ -135,6 +135,12 @@ char buf[1024];
 int break_count = 0;
 int break_labels[256];
 
+/* 
+ * Tree currently being coded.
+ * used for error-message purposes.
+ */
+exp_tree_t *codegen_current_tree = NULL;
+
 /* ====================================================== */
 
 /*
@@ -267,7 +273,9 @@ char *move_conv_to_long(int membsiz)
 		case 4:
 			return "movl";
 		default:
-			fail("type conversion codegen fail");
+			compiler_fail("data size mismatch -- something"
+				      " doesn't fit into something else",
+				findtok(codegen_current_tree), 0, 0);
 	}
 }
 
@@ -1498,6 +1506,13 @@ char* codegen(exp_tree_t* tree)
 	int do_deref;
 	int tlab;
 	int entries, fill;
+
+	/*
+	 * Track the tree currently
+	 * being coded for error-message
+	 * purposes
+	 */
+	codegen_current_tree = tree;
 
 /*
 	if (findtok(tree))
