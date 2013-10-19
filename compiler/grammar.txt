@@ -1,3 +1,9 @@
+/* 
+ * NOTE: the file "11_precedence.c" from the TCC
+ * test suite (http://bellard.org/tcc/)
+ * tests precedence.  useful !
+ */
+
 /* types */
 /* TODO: structs and whatever else */
 

@@ -661,6 +661,17 @@ char* arith_op(int ty)
 			return "subl";
 		case MULT:
 			return "imull";
+		/* 
+		 * Note: bitwise ops &, ^, | are implemented
+		 * using the same code as general arithmetic
+		 * ops because it's simpler that way
+		 */
+		case BOR:
+			return "orl";
+		case BAND:
+			return "andl";
+		case BXOR:
+			return "xorl";
 		default:
 			return 0;
 	}

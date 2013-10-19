@@ -497,7 +497,15 @@ int is_arith_op(char ty)
 		|| ty == MULT
 		|| ty == SUB
 		|| ty == DIV
-		|| ty == MOD;
+		|| ty == MOD
+		/* 
+		 * Note: bitwise ops &, ^, | are implemented
+		 * using the same code as general arithmetic
+		 * ops because it's simpler that way
+		 */
+		|| ty == BAND
+		|| ty == BXOR
+		|| ty == BOR;
 }
 
 /*
