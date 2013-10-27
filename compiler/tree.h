@@ -70,6 +70,8 @@ enum {		/* head_type */
 	BOR,
 	BXOR,
 	BAND,
+	BSL,
+	BSR,
 	/* special */
 	NULL_TREE
 };
@@ -141,6 +143,8 @@ static char* tree_nam[] = {
 	"BOR",
 	"BXOR",
 	"BAND",
+	"BSL",
+	"BSR",
 	"NULL_TREE"
 };
 

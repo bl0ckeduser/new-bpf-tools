@@ -82,6 +82,8 @@ enum {
 	TOK_CPP,
 	TOK_CARET,
 	TOK_PIPE,
+	TOK_LSHIFT,
+	TOK_RSHIFT,
 	TOK_VOID
 };
 
@@ -160,6 +162,8 @@ static char* tok_nam[] = {
 	"TOK_CPP",
 	"TOK_CARET",
 	"TOK_PIPE",
+	"TOK_LSHIFT",
+	"TOK_RSHIFT",
 	"TOK_VOID"
 };
 
@@ -236,6 +240,8 @@ static char* tok_desc[] = {
 	"preprocessor directive",
 	"^",
 	"|",
+	"<<",
+	">>",
 	"void type"
 };
 
@@ -280,6 +286,7 @@ extern int is_add_op(char type);
 extern int is_asg_op(char type);
 extern int is_mul_op(char type);
 extern int is_comp_op(char type);
+extern int is_shift_op(char type);
 extern int is_basic_type(char type);
 extern int is_instr(char type);
 extern void tok_display(token_t t);

@@ -534,7 +534,7 @@ void setup_tokenizer()
 {
 	int i = 0;
 
-	tc = 2;
+	tc = 3;
 	for (i = 0; i < 3; ++i)
 		t[i] = new_nfa();
 
@@ -551,7 +551,9 @@ void setup_tokenizer()
 	 * of automatic way of solving this kind of thing.
 	 * Anyway, this like 10x faster than one NFA
 	 * per token !
-	 */ 
+	 *
+	 * Update Oct 2013: now there's three of them
+	 */
 
 	/* D: any digit; B: letter or digit */
 	add_token(t[0], "0D+", TOK_OCTAL_INTEGER);
@@ -585,6 +587,8 @@ void setup_tokenizer()
 	add_token(t[0], "<", TOK_LT);
 	add_token(t[1], ">=", TOK_GTE);
 	add_token(t[1], "<=", TOK_LTE);
+	add_token(t[2], "<<", TOK_LSHIFT);
+	add_token(t[2], ">>", TOK_RSHIFT);
 	add_token(t[1], "!=", TOK_NEQ);
 	add_token(t[1], "\\+=", TOK_PLUSEQ);
 	add_token(t[1], "-=", TOK_MINUSEQ);

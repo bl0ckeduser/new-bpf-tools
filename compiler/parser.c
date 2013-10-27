@@ -24,6 +24,7 @@ exp_tree_t block();
 exp_tree_t expr();
 exp_tree_t expr0();
 exp_tree_t sum_expr();
+exp_tree_t shift_expr();
 exp_tree_t mul_expr();
 exp_tree_t ternary_expr();
 exp_tree_t ccor_expr();
@@ -1163,9 +1164,30 @@ void comp_dispatch(char oper, exp_tree_t *dest)
 exp_tree_t comp_expr()
 {
 	return parse_left_assoc(
-		&sum_expr,
+		&shift_expr,
 		&is_comp_op,
 		&comp_dispatch,
+		1);
+}
+
+/* shift_expr := sum_expr [shift-op sum_expr] */
+void shift_dispatch(char oper, exp_tree_t *dest)
+{
+	switch (oper) {
+		case TOK_LSHIFT:
+			*dest = new_exp_tree(BSL, NULL);
+			break;
+		case TOK_RSHIFT:
+			*dest = new_exp_tree(BSR, NULL);
+			break;
+	}
+}
+exp_tree_t shift_expr()
+{
+	return parse_left_assoc(
+		&sum_expr,
+		&is_shift_op,
+		&shift_dispatch,
 		1);
 }
 

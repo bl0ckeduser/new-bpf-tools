@@ -101,7 +101,9 @@ bxor_expr := band_expr ['^' band_expr]
 /* token: TOK_ADDR, node: BAND */
 band_expr = comp_expr ['&' comp_expr]
 
-comp_expr := sum_expr [comp-op sum_expr]
+comp_expr := shift_expr [comp-op shift_expr]
+
+shift_expr := sum_expr [shift-op sum_expr]
 
 sum_expr := mul_expr { add-op mul_expr }
 

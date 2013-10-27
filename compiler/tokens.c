@@ -44,6 +44,12 @@ int is_comp_op(char type)
 		|| type == TOK_EQ;
 }
 
+int is_shift_op(char type)
+{
+	return type == TOK_LSHIFT
+		|| type == TOK_RSHIFT;
+}
+
 int is_basic_type(char type)
 {
 	return type == TOK_INT
