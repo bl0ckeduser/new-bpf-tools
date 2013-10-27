@@ -173,8 +173,7 @@ main()
 			start_offs[i] = 0;
 	}
 
-	/* XXX: sizeof(int) -> 4 */
-	prime_list = malloc(2000000 * 4);
+	prime_list = malloc(2000000 * sizeof(int));
 
 	if (!sieve) {
 		printf("malloc fail\n");
