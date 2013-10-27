@@ -902,6 +902,15 @@ exp_tree_t expr0()
 				case TOK_MODEQ:
 					subtree = new_exp_tree(MOD, NULL);
 					break;
+				case TOK_BAND_EQ:
+					subtree = new_exp_tree(BAND, NULL);
+					break;
+				case TOK_BOR_EQ:
+					subtree = new_exp_tree(BOR, NULL);
+					break;
+				case TOK_BXOR_EQ:
+					subtree = new_exp_tree(BXOR, NULL);
+					break;
 				case TOK_ASGN:
 					break;
 				default:

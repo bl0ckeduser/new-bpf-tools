@@ -84,6 +84,9 @@ enum {
 	TOK_PIPE,
 	TOK_LSHIFT,
 	TOK_RSHIFT,
+	TOK_BAND_EQ,
+	TOK_BOR_EQ,
+	TOK_BXOR_EQ,
 	TOK_VOID
 };
 
@@ -164,6 +167,9 @@ static char* tok_nam[] = {
 	"TOK_PIPE",
 	"TOK_LSHIFT",
 	"TOK_RSHIFT",
+	"TOK_BAND_EQ",
+	"TOK_BOR_EQ",
+	"TOK_BXOR_EQ",
 	"TOK_VOID"
 };
 

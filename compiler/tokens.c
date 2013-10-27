@@ -25,7 +25,10 @@ int is_asg_op(char type)
 		|| type == TOK_DIVEQ
 		|| type == TOK_MULEQ
 		|| type == TOK_MODEQ
-		|| type == TOK_ASGN;
+		|| type == TOK_ASGN
+		|| type == TOK_BOR_EQ
+		|| type == TOK_BAND_EQ
+		|| type == TOK_BXOR_EQ;
 }
 
 int is_mul_op(char type)
