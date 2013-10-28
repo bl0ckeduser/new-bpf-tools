@@ -1,10 +1,7 @@
 /*
  * Solution to ProjectEuler problem 22
- * (Originally written in real C, probably
- * in June 2012 but i might eventually uncover
- * the exact timestamp by sifting through
- * backups because i have an irrational
- * obsession with timestamps)
+ * (Originally written in real C on June 25, 2012)
+ *
  * You need to pipe the input file into it.
  * The input file is available at:
  * http://projecteuler.net/project/names.txt
