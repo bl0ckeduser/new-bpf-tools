@@ -15,7 +15,6 @@
 
   Bugs in wannabe-compiler highlighted in the changes (XXX: ) made here:
 	- no preprocessor, so no NULL
-	- ternary operator has a strange bug
 	- no unary +
 
   Here is the problem statement:
@@ -414,14 +413,9 @@ int bignum_cmp(bignum_t* a, bignum_t* b){
 }
 
 void bignum_sub(bignum_t* a, bignum_t* b){
-	/* XXX: int max_len = a->length > b->length ? a->length : b->length; */
-	int max_len = a->length;
+	int max_len = a->length > b->length ? a->length : b->length;
 	int i, j;
 	long borrow = 0;
-
-	/* XXX: modified version of max_len setup to fix ternary bug */
-	if (a->length < b->length)
-		max_len = b->length;
 
 	/* negative ? */
 	if (bignum_cmp(a, b) == /* XXX:+ */1) {
@@ -465,14 +459,9 @@ void bignum_sub(bignum_t* a, bignum_t* b){
 }
 
 void bignum_add(bignum_t* a, bignum_t* b){
-	/* XXX: int max_len = a->length > b->length ? a->length : b->length; */
-	int max_len = a->length;
+	int max_len = a->length > b->length ? a->length : b->length;
 	int i, j;
 	long carry = 0;
-
-	/* XXX: modified version of max_len setup to fix ternary bug */
-	if (a->length < b->length)
-		max_len = b->length;
 
 	for(i = 0; i < max_len || carry; i++) {
 		/* make space for new digits if necessary */

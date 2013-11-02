@@ -556,6 +556,14 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 		return tree_typeof_iter(td, tp->child[tp->child_count - 1]);
 	}	
 
+	/*
+	 * Ternary: give type of "true" case expression, I guess...
+	 * XXX: maybe the standard says it should be something else,
+	 */
+	if (tp->head_type == TERNARY) {
+		return tree_typeof_iter(td, tp->child[1]);
+	}
+
 	/* 
 	 * If a block has one child, find the type of that,
 	 * otherwise fail.
