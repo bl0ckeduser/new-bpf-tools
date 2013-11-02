@@ -87,6 +87,7 @@ enum {
 	TOK_BAND_EQ,
 	TOK_BOR_EQ,
 	TOK_BXOR_EQ,
+	TOK_CONTINUE,
 	TOK_VOID
 };
 
@@ -170,6 +171,7 @@ static char* tok_nam[] = {
 	"TOK_BAND_EQ",
 	"TOK_BOR_EQ",
 	"TOK_BXOR_EQ",
+	"TOK_CONTINUE",
 	"TOK_VOID"
 };
 
@@ -248,6 +250,7 @@ static char* tok_desc[] = {
 	"|",
 	"<<",
 	">>",
+	"continue",
 	"void type"
 };
 
@@ -258,7 +261,7 @@ struct bpf_kw {
 	char tok;
 };
 
-#define KW_COUNT 22
+#define KW_COUNT 23
 
 static struct bpf_kw kw_tab[] = 
 {
@@ -283,7 +286,8 @@ static struct bpf_kw kw_tab[] =
 	{ "struct", TOK_STRUCT },
 	{ "typedef", TOK_TYPEDEF },
 	{ "sizeof", TOK_SIZEOF },
-	{ "long", TOK_LONG }
+	{ "long", TOK_LONG },
+	{ "continue", TOK_CONTINUE }
 };
 
 /* routines */

@@ -127,10 +127,10 @@ int intl_label = 0; 		/* internal label numbering */
 char buf[1024];
 
 /* 
- * Stuff for `break' labels in WHILEs.
- * note that the parser turns FORs into
- * equivalent WHILEs so effectively this only
- * applies to WHILEs
+ * Stuff for `break' (and `continue')
+ * labels in WHILEs. Note that the parser 
+ * turns FORs into equivalent WHILEs so effectively
+ * this only applies to WHILE nodes
  */
 int break_count = 0;
 int break_labels[256];
@@ -2951,6 +2951,20 @@ char* codegen(exp_tree_t* tree)
 		if (!break_count)
 			codegen_fail("break outside of a loop", tree->tok);
 		printf("jmp IL%d # break\n", break_labels[break_count]);
+		return NULL;
+	}
+
+	/* continue label */
+	if (tree->head_type == CONTLAB) {
+		printf("CL%d:\n", break_labels[break_count]);
+		return NULL;
+	}
+
+	/* continue */
+	if (tree->head_type == CONTINUE) {
+		if (!break_count)
+			codegen_fail("continue outside of a loop", tree->tok);
+		printf("jmp CL%d # continue\n", break_labels[break_count]);
 		return NULL;
 	}
 

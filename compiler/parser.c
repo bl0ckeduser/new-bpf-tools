@@ -536,6 +536,7 @@ exp_tree_t lval()
 		| [cast-type] ident '(' arg { ',' arg } ')' block
 		| 'return' [expr] ';'
 		| 'break' ';'
+		| 'continue' ';'
 		| 'typedef' cast-type ident ';'
 */
 exp_tree_t block()
@@ -676,6 +677,12 @@ not_proc:
 		need(TOK_SEMICOLON);
 		return new_exp_tree(BREAK, &tok);
 	}
+	/* 'continue' ';' */
+	if ((tok = peek()).type == TOK_CONTINUE) {
+		adv();
+		need(TOK_SEMICOLON);
+		return new_exp_tree(CONTINUE, &tok);
+	}
 	/* if (expr) block1 [ else block2 ] */
 	if(peek().type == TOK_IF) {
 		adv();	/* eat if */
@@ -697,7 +704,11 @@ not_proc:
 		need(TOK_LPAREN);
 		add_child(&tree, alloc_exptree(expr()));
 		need(TOK_RPAREN);
-		add_child(&tree, alloc_exptree(block()));
+		/* (BLOCK (... inner block or statement of while ...) (CONTLAB)) */
+		subtree = new_exp_tree(BLOCK, NULL);
+		add_child(&subtree, alloc_exptree(block()));
+		add_child(&subtree, alloc_exptree(new_exp_tree(CONTLAB, NULL)));
+		add_child(&tree, alloc_exptree(subtree));
 		return tree;
 	}
 	/* '{' block '}' */
@@ -807,6 +818,8 @@ not_proc:
 		if (!valid_tree(subtree2 = block()))
 			parse_fail("block expected");
 		add_child(&subtree4, alloc_exptree(subtree2));
+		/* add the continue label before the increment */
+		add_child(&subtree4, alloc_exptree(new_exp_tree(CONTLAB, NULL)));
 		/* add increment (if any) to end of block */
 		if (valid_tree(subtree3))
 			add_child(&subtree4, alloc_exptree(subtree3));

@@ -704,8 +704,7 @@ int do_read(char *buf)
 		}
 
 		if (*tmp == ';')
-			/* XXX: continue */
-			goto contlab;
+			continue;
 
 		/* skip empty lines, parser hates them */
 		if (*tmp == '\n') {
@@ -725,8 +724,7 @@ int do_read(char *buf)
 				printf("\n");				
 				break;
 			}
-			/* XXX: continue */
-			goto contlab;
+			continue;
 		} else
 			bl = 0;
 
@@ -750,8 +748,6 @@ int do_read(char *buf)
 			else if (*p == ')')
 				--bal;
 		}
-		
-		contlab:;
 	}
 
 	return 1;

@@ -405,6 +405,11 @@ codegen_t codegen(exp_tree_t* tree)
 		return (codegen_t){ 0, bytesize };
 	}
 
+	/* continue label: just ignore */
+	if (tree->head_type == CONTLAB) {
+		return (codegen_t){ 0, 0 };
+	}
+
 	/* variable and array declarations */
 	if (tree->head_type == INT_DECL) {
 		for (i = 0; i < tree->child_count; ++i) {

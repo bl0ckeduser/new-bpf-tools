@@ -72,6 +72,8 @@ enum {		/* head_type */
 	BAND,
 	BSL,
 	BSR,
+	CONTLAB,
+	CONTINUE,
 	/* special */
 	NULL_TREE
 };
@@ -145,6 +147,8 @@ static char* tree_nam[] = {
 	"BAND",
 	"BSL",
 	"BSR",
+	"CONTLAB",
+	"CONTINUE",
 	"NULL_TREE"
 };
 
