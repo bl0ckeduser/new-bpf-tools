@@ -15,6 +15,7 @@
 #include "tree.h"
 #include "parser.h"
 #include "typedesc.h"
+#include <unistd.h>	/* XXX: for dup2; i guess windows might choke on it */
 
 int main(int argc, char** argv)
 {
@@ -28,6 +29,11 @@ int main(int argc, char** argv)
 	extern void fail(char*);
 	int i, c;
 	int alloc = 1024;
+	int dump_ast = 0;
+
+	/* CLI option: dump ast to stdout */
+	if (argc > 1 && !strcmp(argv[1], "--ast"))
+		dump_ast = 1;
 
 	/* Read code from stdin */
 	if (!(buf = malloc(alloc)))
@@ -62,6 +68,14 @@ int main(int argc, char** argv)
 #endif
 
 	tree = parse(tokens);
+
+	/* --ast flag: dump ast to stdout */
+	if (dump_ast) {
+		dup2(1, 2);	/* 2>&1 */
+		printout_tree(tree);
+		fputc('\n', stderr);
+		exit(0);
+	}
 
 #ifdef DEBUG
 	printout_tree(tree);

@@ -1,0 +1,10 @@
+The command-line flag "--ast" causes the compiler to merely
+output the AST (in s-expression form) for the input to stdout. 
+
+Thus you can do things like:
+
+	$ ./a.out --ast <test/sieve.c  | drawtree --square sieve.png
+
+where drawtree is a tree-drawing my noobself wrote and which is available at:
+ 
+	https://github.com/bl0ckeduser/drawtree	
