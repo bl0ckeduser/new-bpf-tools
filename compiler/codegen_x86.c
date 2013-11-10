@@ -909,6 +909,7 @@ void run_codegen(exp_tree_t *tree)
 			printf("# ------ macro hack to get stdin/stdout symbols on freebsd --- # \n");
 			printf(".set stdin, __stdinp\n");
 			printf(".set stdout,  __stdoutp\n");
+			printf(".set stderr, __stderrp\n");
 			printf("# ------------------------------------------------------------ #\n");
 		#endif
 		printf("# end globals =============\n\n");
