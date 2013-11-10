@@ -1,0 +1,17 @@
+some apparently good relevant weblinks
+
+-------------------------------------------------
+
+compiling switch statements
+
+http://stackoverflow.com/questions/927403/overhead-of-a-switch-statement-in-c
+http://www.eventhelix.com/realtimemantra/basics/CToAssemblyTranslation3.htm
+http://en.wikipedia.org/wiki/Switch_statement#Compilation
+http://www.reddit.com/r/compsci/comments/1nz5ow/didactics_of_compsci_teach_a_real_or_a/ccnenwk
+http://www.templeos.org/Wb/Accts/TS/Wb2/Rants/TAD/2013/10/Rant131001.html
+
+-------------------------------------------------
+
+general compiler stuff
+
+http://www.reddit.com/r/compsci/comments/1opjo6/system_dev_methodology_for_compiler_project/
