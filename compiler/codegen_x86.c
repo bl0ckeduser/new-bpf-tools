@@ -899,6 +899,18 @@ void run_codegen(exp_tree_t *tree)
 		printf(".section .data\n");
 		setup_symbols(tree, SYMTYPE_GLOBALS);
 		printf(".section .text\n");
+
+		/*
+		 * On FreeBSD 9.0 i386, the symbol for stdin 
+		 * is __stdinp (on linux it's just stdin)
+		 */
+		#ifdef __FreeBSD__
+			printf("\n");
+			printf("# ------ macro hack to get stdin/stdout symbols on freebsd --- # \n");
+			printf(".set stdin, __stdinp\n");
+			printf(".set stdout,  __stdoutp\n");
+			printf("# ------------------------------------------------------------ #\n");
+		#endif
 		printf("# end globals =============\n\n");
 	}
 
