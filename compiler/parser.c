@@ -517,6 +517,17 @@ exp_tree_t lval()
 	if (tok.type == TOK_IDENT) {
 		/* identifier alone -- variable */
 		adv();	/* eat the identifier */
+
+		#ifdef MINGW_BUILD
+			/*
+			 * hack for std{in,err,out} on mingw
+			 */
+			if (!strcmp(get_tok_str(tok), "stdin")
+			    || !strcmp(get_tok_str(tok), "stderr")
+			    || !strcmp(get_tok_str(tok), "stdout")) {
+				return new_exp_tree(MINGW_IOBUF, &tok);
+			}
+		#endif
 		return new_exp_tree(VARIABLE, &tok);
 	}
 	

@@ -1546,6 +1546,34 @@ char* codegen(exp_tree_t* tree)
 		new_temp_reg();
 	}
 
+
+	#ifdef MINGW_BUILD
+	/*
+	 * The strange MINGW symbols for stdin, stdeer, and stdout,
+	 * based on the output of "i586-mingw32msvc-cc (GCC) 4.6.3" in -S mode
+	 */
+	if (tree->head_type == MINGW_IOBUF
+		&& !strcmp(get_tok_str(*(tree->tok)), "stdin")) {
+		sto = get_temp_reg();
+		printf("movl __imp___iob, %s\n", sto);
+		return sto;
+	}
+	if (tree->head_type == MINGW_IOBUF
+		&& !strcmp(get_tok_str(*(tree->tok)), "stderr")) {
+		sto = get_temp_reg();
+		printf("movl __imp___iob, %s\n", sto);
+		printf("addl $32, %s\n", sto);
+		return sto;
+	}
+	if (tree->head_type == MINGW_IOBUF
+		&& !strcmp(get_tok_str(*(tree->tok)), "stdout")) {
+		sto = get_temp_reg();
+		printf("movl __imp___iob, %s\n", sto);
+		printf("addl $64, %s\n", sto);
+		return sto;
+	}
+	#endif
+
 	/* sequence */
 	if (tree->head_type == SEQ) {
 		for (i = 0; i < tree->child_count; ++i) {

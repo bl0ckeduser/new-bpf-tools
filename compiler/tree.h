@@ -74,6 +74,7 @@ enum {		/* head_type */
 	BSR,
 	CONTLAB,
 	CONTINUE,
+	MINGW_IOBUF,
 	/* special */
 	NULL_TREE
 };
@@ -149,6 +150,7 @@ static char* tree_nam[] = {
 	"BSR",
 	"CONTLAB",
 	"CONTINUE",
+	"MINGW_IOBUF",
 	"NULL_TREE"
 };
 
