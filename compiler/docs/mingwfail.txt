@@ -1,0 +1,47 @@
+State of things on MinGW, as of 2013-12-08
+==========================================
+
+Failed test cases:
+
+test/x86/array-init.c - FAIL
+test/x86/arrow-2.c - FAIL
+
+test/x86/arrow-2.c crashes the compiler.
+Some kind of memory bug relating to trees,
+mingw gdb can't seem to catch it.
+Should try valgrind on linux.
+
+test/x86/array-init.c compiles ok, but outputs some
+weird garbage at runtime. the correct output has the
+first line: "hahaha", but the output compiled with
+wannabe compiler looks like: "hahahaPubPuˆó("
+
+some trivial tests randomly fail sometimes, maybe the
+autotesting script is doing something stupid
+
+---------------
+
+the io test case ccc2012-s5.c fails too, at runtime,
+int he spot marked with big arrows:
+
+
+# >>> compiled code for 'main'
+_tco_main:
+movl $0, -28(%ebp)
+subl $12, %esp
+movl $_str_const_0, %esi
+>>>>>>	movl %esi, 0(%esp)	# argument 0 to scanf		<<<<<<<<
+leal -12(%ebp), %esi
+movl %esi, 4(%esp)	# argument 1 to scanf
+leal -16(%ebp), %esi
+movl %esi, 8(%esp)	# argument 2 to scanf
+call _scanf
+addl $12, %esp	# throw off args
+
+-------------------
+
+minilisp io test works great, euler59 works great too.
+euler11, permut, also work. euler22 seems to get stuck
+in a loop in the namesorting thing
+
+scanf, scanf2 work ok
