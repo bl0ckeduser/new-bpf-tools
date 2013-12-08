@@ -1608,7 +1608,7 @@ exp_tree_t e0_4()
 	 */
 	if (tok.type == TOK_OCTAL_INTEGER) {
 		fake_int.type = TOK_INTEGER;
-		buff = malloc(256);
+		buff = calloc(256, 1);
 		strncpy(buff, tok.start + 1, tok.len - 1);
 		sscanf(buff, "%o", &val);
 		sprintf(buff, "%d", val);
@@ -1622,7 +1622,7 @@ exp_tree_t e0_4()
 	}
 	if (tok.type == TOK_HEX_INTEGER) {
 		fake_int.type = TOK_INTEGER;
-		buff = malloc(256);
+		buff = calloc(256, 1);
 		strncpy(buff, tok.start + 2, tok.len - 2);
 		sscanf(buff, "%x", &val);
 		sprintf(buff, "%d", val);
@@ -1636,7 +1636,7 @@ exp_tree_t e0_4()
 	}
 	if (tok.type == TOK_CHAR_CONST) {
 		fake_int.type = TOK_INTEGER;
-		buff = malloc(8);
+		buff = calloc(8, 1);
 		sprintf(buff, "%d", *(tok.start + 1));
 		fake_int.start = buff;
 		fake_int.len = strlen(buff);
@@ -1648,7 +1648,7 @@ exp_tree_t e0_4()
 	}
 	if (tok.type == TOK_CHAR_CONST_ESC) {
 		fake_int.type = TOK_INTEGER;
-		buff = malloc(8);
+		buff = calloc(8, 1);
 		sprintf(buff, "%d", escape_code(*(tok.start + 2)));
 		fake_int.start = buff;
 		fake_int.len = strlen(buff);
