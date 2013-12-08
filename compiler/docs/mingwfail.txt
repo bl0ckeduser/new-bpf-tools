@@ -3,26 +3,18 @@ State of things on MinGW, as of 2013-12-08
 
 Failed test cases:
 
-test/x86/array-init.c - FAIL
-test/x86/arrow-2.c - FAIL
-
-test/x86/arrow-2.c crashes the compiler.
-Some kind of memory bug relating to trees,
-mingw gdb can't seem to catch it.
-Should try valgrind on linux.
-
-test/x86/array-init.c compiles ok, but outputs some
+test/x86/array-init.c -- it compiles ok, but outputs some
 weird garbage at runtime. the correct output has the
 first line: "hahaha", but the output compiled with
 wannabe compiler looks like: "hahahaPubPuˆó("
 
-some trivial tests randomly fail sometimes, maybe the
-autotesting script is doing something stupid
+(some trivial tests randomly fail sometimes; maybe the
+autotesting script is doing something stupid)
 
----------------
+---------------------
 
 the io test case ccc2012-s5.c fails too, at runtime,
-int he spot marked with big arrows:
+in the spot marked with big arrows:
 
 
 # >>> compiled code for 'main'
