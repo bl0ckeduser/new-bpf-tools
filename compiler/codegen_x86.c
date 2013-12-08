@@ -1600,11 +1600,14 @@ char* codegen(exp_tree_t* tree)
 		 */
 		if (tree->child[1]->head_type == STR_CONST
 			&& tree_typeof(tree->child[0]).arr == 1) {
-			for (i = 0; i < tree->child[1]->tok->len - 2; ++i) {
+			for (i = 0; i < tree->child[1]->tok->len - 1; ++i) {
 				sprintf(sbuf, "%d", i);
 				fakenum.start = &sbuf[0];
 				fakenum.len = strlen(sbuf);
-				sprintf(sbuf2, "%d", tree->child[1]->tok->start[i + 1]);
+				if (i == tree->child[1]->tok->len - 2)
+					sprintf(sbuf2, "0");	/* null terminator */
+				else
+					sprintf(sbuf2, "%d", tree->child[1]->tok->start[i + 1]);
 				fakenum2.start = &sbuf2[0];
 				fakenum2.len = strlen(sbuf2);
 				fake_tree_3 = new_exp_tree(NUMBER, &fakenum);
