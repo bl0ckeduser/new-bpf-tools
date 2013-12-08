@@ -18,6 +18,8 @@ char** allocnames()
 	for(i = 0; i < 20000; i++) 
 		if(!(names[i] = malloc(64)))
 			return 0;
+		else
+			*names[i] = 0;	/* initialization */
 
 	return names;
 }
