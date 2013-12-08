@@ -449,7 +449,7 @@ token_t* tokenize(char *buf)
 			 && c.success != TOK_NEWLINE
 			 && comstat == NOT_INSIDE_A_COMMENT) {
 				/* Expand token array if necessary */
-				if (++tok_count > tok_alloc) {
+				if (++tok_count >= tok_alloc) {
 					tok_alloc = tok_count + 64;
 					toks = realloc(toks,
 						tok_alloc * sizeof(token_t));
