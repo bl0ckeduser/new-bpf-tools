@@ -541,7 +541,7 @@ exp_tree_t lval()
 		| while '(' expr ')' block 
 		| for '(' [expr] ';' [expr] ';' [expr] ')' block
 		| '{' { expr ';' } '}' 
-		| instr '(' expr1, expr2, ..., exprN ')' ';'
+		| instr '(' expr0_1, expr0_2, ..., expr0_N ')' ';'
 		| ident ':'
 		| goto ident ';'
 		| [cast-type] ident '(' arg { ',' arg } ')' block
@@ -758,7 +758,11 @@ not_proc:
 		adv();	/* eat instruction */
 		need(TOK_LPAREN);
 		for (i = 0; i < args; i++) {
-			if (!valid_tree(subtree = expr()))
+			/* 
+			 * (Use expr0 to avoid conflict with ','
+			 * in expr)
+			 */
+			if (!valid_tree(subtree = expr0()))
 				parse_fail("expression expected");
 			add_child(&tree, alloc_exptree(subtree));
 			if (i < args - 1)

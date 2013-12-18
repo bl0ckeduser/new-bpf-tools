@@ -65,7 +65,7 @@ block := expr ';'
 	| while '(' expr ')' block 
 	| for '(' [expr] ';' [expr] ';' [expr] ')' block
 	| '{' { expr ';' } '}' 
-	| instr '(' expr1, expr2, ..., exprN ')' ';'
+	| instr '(' expr0_1, expr0_2, ..., expr0_N ')' ';'
 	| ident ':'
 	| goto ident ';'
 	| [cast-type] ident '(' arg { ',' arg } ')' block
