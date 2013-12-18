@@ -43,7 +43,12 @@ main()
     int r, c;
     int c_r, c_c;
     int cc = 0;
-    node_t map[30][30];
+    node_t** map;
+
+    map = malloc(30 * sizeof(node_t*));
+    for (i = 0 ; i < 30; ++i)
+        map[i] = malloc(30 * sizeof(node_t));
+    
     
     /* read row, column count */
     scanf("%d %d", &r, &c);

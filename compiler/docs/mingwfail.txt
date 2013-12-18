@@ -1,24 +1,14 @@
-State of things on MinGW, as of 2013-12-08
+State of things on MinGW, as of 2013-12-17
 ==========================================
 
-the io test case ccc2012-s5.c fails at runtime,
-in the spot marked with big arrows:
+everything seems good
 
+all the autotests seem ok
 
-# >>> compiled code for 'main'
-_tco_main:
-movl $0, -28(%ebp)
-subl $12, %esp
-movl $_str_const_0, %esi
->>>>>>	movl %esi, 0(%esp)	# argument 0 to scanf		<<<<<<<<
-leal -12(%ebp), %esi
-movl %esi, 4(%esp)	# argument 1 to scanf
-leal -16(%ebp), %esi
-movl %esi, 8(%esp)	# argument 2 to scanf
-call _scanf
-addl $12, %esp	# throw off args
+the ccc2012-s5 io test no longer fails
 
--------------------
+---
+from last test session:
 
 minilisp io test works great, euler59 works great too.
 euler11, euler22, permut, also work.
