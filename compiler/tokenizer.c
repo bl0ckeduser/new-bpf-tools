@@ -142,6 +142,7 @@ void add_token(nfa* t, char* tok, int key)
 				next = new_nfa();
 				t->map[' '] = next;
 				t->map['\t'] = next;
+				t->map['\r'] = next; /* Macintosh / MS-DOS bullshit */
 				t = next;
 				++n;
 				break;
