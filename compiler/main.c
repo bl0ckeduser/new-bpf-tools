@@ -17,6 +17,10 @@
 #include "typedesc.h"
 #include <unistd.h>	/* XXX: for dup2; i guess windows might choke on it */
 
+#ifdef WCC
+	#include <errno.h>	/* that's business with .NET */
+#endif
+
 int main(int argc, char** argv)
 {
 	char* buf, *nbuf;
@@ -61,7 +65,10 @@ int main(int argc, char** argv)
 		}
 		if (!inf)
 			fail("expected a .c file as an argument");
-		freopen(inf, "r", stdin);
+		if (!freopen(inf, "r", stdin)) {
+			sprintf(cmd, "could not open input file `%s': %s", inf, strerror(errno));
+			fail(cmd);
+		}
 	#else
 		/* CLI option: dump ast to stdout */
 		if (argc > 1 && !strcmp(argv[1], "--ast"))
