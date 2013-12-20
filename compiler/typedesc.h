@@ -12,6 +12,11 @@
  *  be possible to describe a new object that
  *  gathers several into an array, yields it from
  *  a function, or is a pointer to it"
+ * 
+ * well as it is here it's partly recursive like that.
+ * unfortunately there is also some "clump a bunch
+ * of stuff together and remember some precedence
+ * rules"
  */
 
 /* 
@@ -35,6 +40,15 @@ typedef struct {
 
 } typedesc_t;
 
+/*
+ * this is how the compiler
+ * thinks about structs.
+ * and ...
+ * it's a struct !
+ * we've almost made it to scheme land,
+ * get your wizard hats and 
+ * "grand recursive order" badges ready
+ */
 typedef struct struct_desc_s {
 	int cc;					/* number of tags */
 	char snam[128];			/* structure name */

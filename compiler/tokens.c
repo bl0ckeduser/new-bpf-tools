@@ -1,4 +1,5 @@
 /* Token helper routines */
+/* pretty stupid dumb boring asinine stuff here */
 
 #include "tokens.h"
 #include <string.h>

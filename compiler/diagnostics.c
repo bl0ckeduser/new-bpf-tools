@@ -1,4 +1,12 @@
-/* Pretty compiler-failure error */
+/* 
+ * This is a module whose task it is
+ * to print out pretty error messages
+ * for when the compiler fails.
+ * It has gotten fairly enterprise-quality.
+ * It does this kind of ASCII art thing where
+ * there's a little arrow under the offending character
+ * to which the error has been traced, etc.
+ */
 
 #include "tokenizer.h"
 #include "tokens.h"

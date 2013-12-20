@@ -1,15 +1,29 @@
-#include "tree.h"
-#include "tokens.h"
-#include "typedesc.h"
-#include <string.h>
-#include <stdio.h>
-
 /*
  * This module tries to figure out the type of
  * an expression tree. It is meant to work
  * with the x86 code generator found in the
  * file codegen_x86.c
+ * 
+ * Okay it gets kind of ugly
+ * 
+ * the basic thing, stupid helper routines aside,
+ * is still a tree recursion. rather than barf
+ * code as codegen's tree recursion does, it
+ * accumulates information on types
+ * (e.g. "it's a pointer to something, okay, let's
+ * add a pointer count thing, okay let's recurse,
+ * oh it's an array of something, okay let's
+ * add an array count thing, let's recurse,
+ * oh I hit a struct. well, ronald the clown, 
+ * it's a pointer to array of struct." 
+ * -- something like that.)
  */
+
+#include "tree.h"
+#include "tokens.h"
+#include "typedesc.h"
+#include <string.h>
+#include <stdio.h>
 
 char err_buf[1024];
 
@@ -37,6 +51,10 @@ extern token_t *findtok(exp_tree_t *et);
 
 /* 
  * Build a type-description structure
+ * This is kind of like that retarded java
+ * "constructor" bullshit where you take a bunch 
+ * of stuff and, uh, give it back as is but repackaged
+ * slightly. well, well, well.
  */
 typedesc_t mk_typedesc(int bt, int ptr, int arr)
 {
@@ -346,6 +364,8 @@ struct_pass_iter:
 		#endif
 
 		/* mystery segfault-proofing padding */
+		/* another sacrifice for the unfathomable 
+		 * microprocessor gods */		
 		while (tag_offs % 16)
 			++tag_offs;
 

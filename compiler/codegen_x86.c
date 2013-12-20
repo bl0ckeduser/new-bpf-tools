@@ -10,6 +10,10 @@
  * idiom of 0 = false, nonzero = true, unlike the BPFVM one.
  */
 
+/*
+ * The entry point is "run_codegen"
+ */
+
 /* ====================================================== */
 
 #define SYMLEN 256
@@ -66,12 +70,13 @@ enum {
 /* Name of function currently being coded */
 char current_proc[SYMLEN];
 
-/* Table of local symbols */
+/* Table of (current) local symbols */
+/* (only one procedure is ever being codegen'd at a given time) */ 
 char symtab[256][SYMLEN] = {""};
 int syms = 0;			/* count */
 int symbytes = 0;		/* stack size in bytes */
 int symsiz[256] = {0};		/* size of each object */
-typedesc_t symtyp[256];
+typedesc_t symtyp[256];		/* type description of each object */
 
 /* Table of global symbols */
 char globtab[256][SYMLEN] = {""};
@@ -79,11 +84,12 @@ int globs = 0;	/* count */
 typedesc_t globtyp[256];
 
 /* Table of (current) function-argument symbols */
+/* (only one procedure is ever being codegen'd at a given time) */
 char arg_symtab[256][SYMLEN] = {""};
 int arg_syms = 0;		/* count */
 int argbytes = 0;		/* total size in bytes */
 int argsiz[256] = {0};		/* size of each object */
-typedesc_t argtyp[256];
+typedesc_t argtyp[256];		/* type description of each object */
 
 /* 
  * Table of argument and return type tables associated
@@ -100,7 +106,8 @@ int funcdefs = 0;
 
 /* 
  * Table used for tracking named structs
- * (e.g. struct bob { ... }; then struct bob bob_variable;)
+ * (as in e.g. "struct bob { ... };" 
+ * followed by "struct bob bob_variable;")
  */
 struct_desc_t* named_struct[256];
 char named_struct_name[256][64];
@@ -116,15 +123,23 @@ char ts_used[TEMP_REGISTERS];
 /* Temporary-use stack offsets currently in use */
 char tm_used[TEMP_MEM];
 
-int proc_ok = 1;
-int else_ret;			/* used for "else return" optimization */
-int main_defined = 0;		/* set if user-defined main() exists */
-int ccid = 0;
+int proc_ok = 1;		/* this is used to prevent nested procedure defs
+						 * it is raised whenever a procedure is not being coded */
 
-int stack_size;
+int else_ret;			/* a flag raised when the "else return"
+						 * pattern is detected and can be optimized */
+
+int main_defined = 0;		/* this is set if user-defined main() exists */
+							/* (otherwise the main lexical body is treated
+							 * as "main", as in templeOS) */
+
+int ccid = 0;				/* internal label numbering,
+							 * used specifically for short-circuiting
+							 * booleans like || and && */
+
 int intl_label = 0; 		/* internal label numbering */
 
-char buf[1024];
+char buf[1024];				/* general use */
 
 /* 
  * Stuff for `break' (and `continue')
@@ -198,8 +213,9 @@ int arith_depth(exp_tree_t *t)
 }
 
 /* 
- * Checks for a plain "int" (without any pointer stars 
- * or array dimensions) 
+ * Checks if the provided type description
+ * describes a plain "int" 
+ * (without any pointer stars or array dimensions) 
  */
 int is_plain_int(typedesc_t td)
 {
@@ -208,6 +224,10 @@ int is_plain_int(typedesc_t td)
 		&& td.arr == 0;
 }
 
+/*
+ * Get the variable name token object
+ * from a procedure argument node
+ */
 token_t argvartok(exp_tree_t *arg)
 {
 	if (arg->child[0]->head_type == VARIABLE)
@@ -216,6 +236,11 @@ token_t argvartok(exp_tree_t *arg)
 		return *(arg->child[1]->tok);
 }
 
+/*
+ * Emit a verbose error diagnostic message 
+ * that puts a little arrow under the error, etc.
+ * Like in "enterprise-quality" compilers.
+ */
 void codegen_fail(char *msg, token_t *tok)
 {
 	compiler_fail(msg, tok, 0, 0);
@@ -235,6 +260,9 @@ void codegen_fail(char *msg, token_t *tok)
  * failes to compile.
  *
  * So here is a quick fix.
+ * 
+ * I'm certainly not an x86 expert (or an anything expert), 
+ * so some of this might come off as noob-tier ad-hoc shit, indeed
  */
 char *fixreg(char *r, int siz)
 {
@@ -283,6 +311,11 @@ char *move_conv_to_long(int membsiz)
  * This is required by main(), because
  * it is used in the BPFVM codegen
  * which was written before this one.
+ * The BPF vm codegen does some backpatching
+ * so it cannot linearly barf out code as it
+ * goes. This codegen needs no backpatching,
+ * because the problem of forward label branches 
+ * is left to the assembler to deal with it.
  */
 void print_code() {
 	;
@@ -312,6 +345,9 @@ char* get_temp_reg() {
 	fail("out of registers");
 }
 
+/*
+ * Find out how many registers are free
+ */
 int free_register_count() {
 	int i, c = 0;
 	for (i = 0; i < TEMP_REGISTERS; ++i)
@@ -355,7 +391,8 @@ char* get_temp_reg_siz(int siz) {
 
 
 /* 
- * Explicitly let go of a temporary register 
+ * Explicitly and voluntarily 
+ * let go of a temporary register 
  */
 void free_temp_reg(char *reg) {
 	int i;
@@ -389,7 +426,8 @@ char* get_temp_mem() {
 }
 
 /* 
- * Explicitly let go of temporary stack memory
+ * Explicitly and voluntarily let go
+ * of a temporary stack memory index
  */
 void free_temp_mem(char *reg) {
 	int i;
@@ -415,7 +453,8 @@ char *symstack(int id) {
 }
 
 /* 
- * Extract the raw string from a token 
+ * Extract the raw string 
+ * from a token object 
  */
 char* get_tok_str(token_t t)
 {
@@ -424,7 +463,6 @@ char* get_tok_str(token_t t)
 	buf[t.len] = 0;
 	return buf;
 }
-
 
 /* 
  * Check if a global is already defined 
@@ -502,7 +540,7 @@ int sym_add(token_t *tok, int size)
 }
 
 /*
- * Create a new global
+ * Create a new global symbol
  */ 
 int glob_add(token_t *tok)
 {
@@ -541,8 +579,9 @@ int offs(int *sizes, int ndx)
  * Find the GAS syntax for the address of 
  * a symbol, which could be a local stack
  * symbol, a global, or a function argument
- * (which is also on the stack, but in a
- * a funny position).
+ * (which is actually also a stack offset,
+ * like stack locals, but in a funny
+ * position).
  */
 char* sym_lookup(token_t* tok)
 {
@@ -578,6 +617,10 @@ char* sym_lookup(token_t* tok)
 	 * without a working preprocessor.
 	 * Perhaps it would be nice to pop up a
 	 * warning.
+	 * 
+	 * The bad part of this is that undeclared
+	 * variables only get spotted once you get
+	 * to the assembler.
 	 */
 	compiler_warn("assuming symbol is external", tok, 0, 0);
 	return s;
@@ -616,7 +659,11 @@ typedesc_t sym_lookup_type(token_t* tok)
 		if (!strcmp(globtab[i], s))
 			return globtyp[i];
 
-	/* assume it's an external int */
+	/* 
+	 * Assume it's an external int
+	 * (in parallel with similar behaviour
+	 * in sym_lookup)
+	 */
 	return mk_typedesc(INT_DECL, 0, 0);
 
 /*
@@ -627,6 +674,8 @@ typedesc_t sym_lookup_type(token_t* tok)
 
 /* 
  * Lookup storage number of a string constant
+ * (string constants are all put in a bunch
+ * of global symbols of the form "_str_const_XXX")
  */
 int str_const_lookup(token_t* tok)
 {
@@ -658,7 +707,10 @@ int str_const_add(token_t *tok)
  * Tree type -> arithmetic routine
  * (this is for the easy general
  * cases -- divison and remainders
- * need special attention on X86)
+ * need special attention on X86,
+ * since they aren't one-operation
+ * things, are finnicky about which
+ * registers you use, etc.)
  */
 char* arith_op(int ty)
 {
@@ -685,6 +737,11 @@ char* arith_op(int ty)
 	}
 }
 
+/*
+ * Find out if a tree has a node of
+ * type `nodety' anywhere in its whole
+ * body
+ */
 int checknode(exp_tree_t *t, int nodety)
 {
 	int i;
@@ -752,6 +809,8 @@ int create_array(int symty, exp_tree_t *dc,
 	 * array, not a pointer to it. This is an important
 	 * rule, according to "The Development of the C Language"
 	 * (http://www.cs.bell-labs.com/who/dmr/chist.html).
+	 * (It's not immediately obvious just by looking at C
+	 * that things are implemented this way)
 	 * 
 	 * The first element of the array is the last added here,
 	 * because the x86 stack grows "backwards" and sym_add()
@@ -796,13 +855,22 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	printf(".type %s, @function\n", name);
 	printf("%s:\n", name);
 #endif
+
 	/* 
 	 * Populate the symbol table with the
 	 * function's local variables and set aside
-	 * stack space for them
+	 * stack space for them. This is kind of
+	 * a messy process.
 	 */
 	setup_symbols(tree, SYMTYPE_STACK);
 
+	/*
+	 * Set up some general purpose temporary
+	 * stack memory
+	 * (there aren't so many registers, you know,
+	 * so sometimes you have to ``spill to stack''
+	 * as they say)
+	 */
 	for (i = 0; i < TEMP_MEM; ++i) {
 		buf2 = malloc(64);
 		strcpy(buf2, nameless_perm_storage(4));
@@ -842,7 +910,8 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
  * all the code at function level
  * is considered the main(), like in
  * losethos/templeOS's modified 
- * C / C++ compiler).
+ * C / C++ compiler, which is now
+ * officially known as "HolyC")
  */
 int look_for_main(exp_tree_t *tree)
 {
@@ -876,7 +945,10 @@ void run_codegen(exp_tree_t *tree)
 	/*
 	 * Define the format used for printf()
 	 * in the echo() code, then code the
-	 * user's string constants
+	 * user's string constants.
+	 * (echo is a builtin procedure that just
+	 * does a printf("%d\n", n), don't ask
+	 * why it's included)
 	 */
 	printf(".section .rodata\n");
 	printf("# start string constants ========\n");
@@ -891,8 +963,11 @@ void run_codegen(exp_tree_t *tree)
 
 	/*
 	 * If there is a main() defined,
-	 * the variables at function level
-	 * are globals
+	 * the variables at the same lexical
+	 * scope as functions are globals
+	 * (otherwise the main lexical scope
+	 * is treated as `main' and they are
+	 * actually `main'-locals, see lower down)
 	 */
 	if (main_defined) {
 		printf("# start globals =============\n");
@@ -903,6 +978,11 @@ void run_codegen(exp_tree_t *tree)
 		/*
 		 * On FreeBSD 9.0 i386, the symbol for stdin 
 		 * is __stdinp (on linux it's just stdin)
+		 * (It's even funkier on MinGW, so much so
+		 * that this kind of symbol hack isn't enough
+		 * and several instructions are necessary,
+		 * which is why the MinGW version of this hack
+		 * is in the main codegen routine and not here).
 		 */
 		#ifdef __FreeBSD__
 			printf("\n");
@@ -915,8 +995,10 @@ void run_codegen(exp_tree_t *tree)
 		printf("# end globals =============\n\n");
 	}
 
-	/* Don't ask me why this is necessary.
- 	 * I probably pasted it from an assembly tutorial. */
+	/* 
+	 * Don't ask me why this tidbit here is necessary.
+ 	 * I probably pasted it from an assembly tutorial. 
+	 */
 	printf(".section .text\n");
 #ifdef MINGW_BUILD
 	printf(".globl _main\n\n");
@@ -929,11 +1011,15 @@ void run_codegen(exp_tree_t *tree)
 	 * before doing any further work to prevent
 	 * their code from being output within
 	 * the code for "main"
+	 * (this codegen directly and linearly barfs
+	 * out code without any kind of backtracking,
+	 * it's easy to do that when the assembler
+	 * is the one taking care of forward label
+	 * jumps and symbols and such)
 	 */
 	proc_ok = 1;
 	deal_with_procs(tree);
-	proc_ok = 0;	/* no further procedures shall
-			 * be allowed */
+	proc_ok = 0;	/* no further procedures shall be allowed */
 
 	/*
 	 * If the user code contains no main(),
@@ -945,6 +1031,7 @@ void run_codegen(exp_tree_t *tree)
 
 	/*
 	 * Code a builtin echo(int n) utility routine
+	 * (don't ask why this exists)
 	 */
 #ifndef MINGW_BUILD
 	printf(".type echo, @function\n");
@@ -996,6 +1083,10 @@ void deal_with_str_consts(exp_tree_t *tree)
 			id, get_tok_str(*(tree->tok)));
 
 		/* XXX: TODO: escape sequences like \n ... */
+		/* 
+		 * Actually, I think the GNU assembler automatically
+	 	 * does these
+		 */
 	}
 
 	/* child recursion */
@@ -1011,16 +1102,18 @@ void deal_with_procs(exp_tree_t *tree)
 {
 	int i;
 
+	/* if this is a procedure-definition node */
 	if (tree->head_type == PROC) {
-		/* Clear local symbols accounting */
+		/* clear local symbols accounting */
 		syms = 0;
 		arg_syms = 0;
 
-		/* Code the arguments and body */
+		/* code the arguments and body */
 		codegen(tree);
 
-		/* Discard the func def tree so the
-		 * main codegen loop doesn't see it */
+		/* discard the func def tree, it's
+		 * over with being coded now and nobody else
+		 * wants to see it */
 		(*tree).head_type = NULL_TREE;
 	}
 
@@ -1074,6 +1167,14 @@ int int_type_decl(char ty)
 		|| ty == VOID_DECL;
 }
 
+/* 
+ * This routine populates the symbol table 
+ * with the currently-being-coded function's 
+ * local variables and sets aside
+ * stack space for them. It is kind of
+ * a messy process. In fact it is probably
+ * one of the worst parts of this compiler.
+ */
 void setup_symbols(exp_tree_t *tree, int symty)
 {
 	extern void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass);
@@ -1109,23 +1210,42 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 
 	/*
 	 * Handle structs in the second pass
+	 * (somehow it calms down the segfault gods
+	 * to set up their stack after that of the other 
+	 * types of variables. I'm clueless about the
+	 * finer details of x86)
 	 */
 	if ((tree->head_type == STRUCT_DECL
 		|| tree->head_type == NAMED_STRUCT_DECL) && !first_pass) {
+
+		/*
+		 * The first part of handling a struct declaration (e.g.
+		 * "struct meal *hamburger = NULL") is (unsurprisingly enough)
+		 * handling the actual "struct" definition
+		 * part. This could either be the full thing, e.g.
+		 * "struct meal { char *drink; char *main_plate; }"
+		 * or a named reference, e.g. "struct meal".
+		 */
+
+		/* the full thing */
 		if (tree->head_type == STRUCT_DECL) {
-			/* read the struct declaration parse tree */
+			/* parse the struct declaration syntax tree */
 			struct_base = struct_tree_2_typedesc(tree, &struct_bytes, &sd);
 			struct_base.struct_desc->bytes = struct_bytes;
 
 			/* register the struct's name (e.g. "bob" in 
-			 * "struct bob { ... };") */
+			 * "struct bob { ... };"), because it might
+			 * be referred to simply by its name later on
+			 * (in fact that's what the else-clause below 
+			 * deals with) */
+			/* XXX: wait, what if it's anonymous ? */
 			named_struct[named_structs] = struct_base.struct_desc;
 			strcpy(named_struct_name[named_structs],
 				get_tok_str(*(tree->tok)));
 			++named_structs;
 			children_offs = sd->cc;
 		} else {
-			/* NAMED_STRUCT_DECL -- use existing named struct type */
+			/* NAMED_STRUCT_DECL -- named reference case */
 			struct_base.ty = 0;		
 			struct_base.arr = struct_base.ptr = 0;
 			struct_base.is_struct = 1;
@@ -1136,28 +1256,43 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			struct_bytes = struct_base.struct_desc->bytes;
 		}
 
-		/* discard the tree from further codegeneneration */
+		/* Discard the tree from further codegeneneration */
 		tree->head_type = NULL_TREE;
 
 		/* create initializers tree */
+		/* (initializers are actual code, so they must
+		 * be packaged together in an artificial syntax tree that
+		 * gets sent off to the main codegen routine.
+		 * The current part of the codegen doesn't do actual code,
+		 * it does symbol table, typing, and memory accounting stuff)
+		 */
 		inits = new_exp_tree(BLOCK, NULL);
 
 		/* 
 		 * Now do the declaration children (i.e. the actual
 		 * variables, with pointer/array modifiers and 
-		 * symbol name identifiers, after the "struct { ... } " part)
+		 * symbol name identifiers, after the "struct { ... } " part,
+	 	 * e.g. the "*ronald[32]" part in 
+		 * "struct corporate_mascot_instance *ronald[32]".
+		 * it's a loop, because there could be several of them,
+		 * (each with their own particular array and pointer qualifications,
+		 * as in e.g. "struct clown **bozo, donald, *gerald[32]")
 		 */
 		for (i = children_offs; i < tree->child_count; ++i) {
 			dc = tree->child[i];
 
 			/* 
 			 * The type of the declaration child is derived
-			 * from the struct type by adding pointer or array
-			 * qualifications
+			 * from the struct type information (`struct_base')
+			 * by adding pointer or array qualifications
 			 */
 
 			typedat = struct_base;
+
+			/* array qualifications */
 			parse_array_info(&typedat, dc);
+
+			/* pointer qualifications */
 			count_stars(dc, &(typedat.ptr));
 
 			#ifdef DEBUG
@@ -1171,15 +1306,28 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 
 			/*
 			 * If there is an initializer, add it to the initializer
-			 * code tree
+			 * code syntax tree (that weird contrived thing that I
+			 * created a few paragraphs ago and justified the creation
+			 * of)
 			 */
 			if (dc->child_count - typedat.arr - typedat.ptr - 1) {
 				for (j = 1; j < dc->child_count; ++j)
+					/* if a declaration tree's node 
+					 * encountered at this depth
+					 * is not an array or pointer qualifier,
+					 * it's automatically an initializer. it could
+					 * be of several types (number, variable, 
+					 * array literal, whatever), so that's why 
+					 * this check is a "negative" or "not" check */
 					if (!(dc->child[j]->head_type == ARRAY_DIM
 						|| dc->child[j]->head_type == DECL_STAR)) {
 						initializer_val = dc->child[j];
 						break;
 					}
+
+				/* synthesize an assignment node
+				 * (so yeah, initializations are basically 
+				 * delayed assingments) */
 				init_expr = new_exp_tree(ASGN, NULL);
 				add_child(&init_expr, dc->child[0]);
 				add_child(&init_expr, initializer_val);
@@ -1206,11 +1354,15 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			 * (if it's an array, this is the size of the base object)
 			 */
 			if (typedat.ptr)
-				/* pointers are always 4 bytes on 32-bit x86
-				 * hurr durr amirite */
+				/* 
+				 * If it's any kind of pointer, it's easy,
+				 * it's always 4 bytes on 32-bit x86
+				 */
 				objsiz = 4;
 			else
 				/* not a pointer: it's just the size of the struct */
+				/* (remember that right now we are dealing exclusively
+				 * with struct declarations) */
 				objsiz = struct_bytes;
 
 			if (typedat.arr) {
@@ -1220,6 +1372,10 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				 */
 				array_base_type = typedat;
 				array_base_type.arr = 0;
+				/*
+				 * There's some arithmetic computation involved in creating
+				 * array symbols, and create_array() deals with that
+				 */
 				sym_num = create_array(symty, dc,
 					type2siz(array_base_type), arr_dim_prod(typedat) * objsiz);
 			} else {
@@ -1239,6 +1395,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 
 			/* 
 			 * Add type data to appropriate symbol table
+			 * (above we were taking care just of the name)
 			 */
 			if (symty == SYMTYPE_GLOBALS)
 				globtyp[sym_num] = typedat;
@@ -1259,8 +1416,13 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 
 	/*
 	 * Handle integer (char, int) types and pointers/arrays of them
+	 * (thankfully this is not as bad as dealing with structs)
 	 */
 	if (int_type_decl(decl)) {
+		/* 
+		 * As earlier, we loop over the declaration children,
+		 * i.e. e.g. {a, b, c} in "int a, b, c;"
+		 */
 		for (i = 0; i < tree->child_count; ++i) {
 			dc = tree->child[i];
 
@@ -1269,6 +1431,8 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			 * for some reason, if I put ints at
 			 * big offsets like -2408(%ebp),
 			 * segfaults happen. (???)
+			 * pleasing the incomprehensible 
+			 * segfault gods again, yes
 			 * 
 			 * Maybe it's actually an alignment
 			 * issue, but googling gives nothing
@@ -1450,6 +1614,13 @@ char *registerize_from(char *stor, int fromsiz)
 	return str;
 }
 
+/*
+ * Get a register that is allowed to be used
+ * in operations of a certain size
+ * (all this because you apparently can't
+ * do byte-level work with ESI and EDI.
+ * don't you love microprocessors ?)
+ */
 char* registerize_siz(char *stor, int siz)
 {
 	int is_reg = 0;
@@ -1477,7 +1648,13 @@ char* registerize_siz(char *stor, int siz)
  * the temporary register at which the runtime
  * evaluation value of the tree is stored
  * (if the tree is an expression
- * with a value)
+ * with a value). It's actually one of the
+ * neater parts of the program. It's a fairly
+ * clean tree recursion that does a case analysis
+ * on the type of the current node, and barfs out
+ * the precious x86 assembler code along the way. 
+ * In a better world this would be a switch() statement,
+ * I guess.
  */
 char* codegen(exp_tree_t* tree)
 {

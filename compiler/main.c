@@ -3,8 +3,17 @@
  * and now also 32-bit x86. It could easily
  * target other things given sufficient time.
  *
- * by Bl0ckeduser, December 2012 - August 2013
+ * by Bl0ckeduser, December 2012 - December 2013
  * Enjoy !
+ */
+
+/*
+ * what this file does:
+ * - deal with CLI arguments
+ * - call the lexer, parser, and codegen in order
+ * - a bunch of ugly boring crap like counting memory,
+ *   checking for IO errors, etc.  
+ * tonight, we go to the far west.
  */
 
 #include <stdio.h>

@@ -26,9 +26,12 @@ void optimize(exp_tree_t *et)
 		optimize(et->child[i]);
 	}
 
-	/* Simplify nested binary trees,
+	/* 
+	 * Simplify nested binary trees,
 	 * e.g. (SUB (SUB (NUMBER:3) (NUMBER:2)) (NUMBER:1))
 	 * becomes (SUB (NUMBER:3) (NUMBER:2) (NUMBER:1))
+	 * 
+	 * This helps write tighter code, of course.
 	 */
 	if (et->child_count == 2
 		&& et->child[0]->head_type == et->head_type

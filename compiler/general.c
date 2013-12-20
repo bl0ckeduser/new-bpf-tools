@@ -1,4 +1,4 @@
-/* General-use routines */
+/* Some assorted general-use helper routines */
 
 #include <stdlib.h>
 #include <stdio.h>
