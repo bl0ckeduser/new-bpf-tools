@@ -398,6 +398,8 @@ exp_tree_t decl2()
 	int stars = 0;
 	int i;
 	token_t zero = { TOK_INTEGER, "0", 1, 0, 0 };
+	int contains_ambig = 0;
+	int ambig = 0;
 
 	tree = new_exp_tree(DECL_CHILD, NULL);
 
@@ -417,13 +419,36 @@ exp_tree_t decl2()
 	if(peek().type == TOK_LBRACK) {
 multi_array_decl:
 		adv();	/* eat [ */
+		ambig = 0;
 		if (peek().type == TOK_INTEGER)
 			tok = need(TOK_INTEGER);
-		else
+		else {
+			/*
+			 * The meaning of [] depends upon context.
+			 * There are two cases:
+			 * - e.g. int foo[] = {1, 2, 3} -- it means an array
+			 *   the size of which is to be figuerd out by the
+			 *   compiler based on the initializer
+			 *
+			 * - e.g. char ptr[] = "Enjoy your teeth" -- it's
+			 *   an ancient notation for a pointer star '*'
+			 *
+			 * The `contains_ambig' variable is set in this case,
+			 * which delays the adding of any tree node to
+			 * a later point in time, a point which occurs
+		 	 * a few tokens ahead and at which the context
+			 * of [] has been inferred.
+			 */
 			tok = zero;
+			ambig = 1;
+			contains_ambig = 1;
+		}
 		need(TOK_RBRACK);
-		add_child(&tree, 
-			alloc_exptree(new_exp_tree(ARRAY_DIM, &tok)));
+		/* Don't add any nodes now if it's ambiguous, cf above */
+		if (!ambig) {
+			add_child(&tree, 
+				alloc_exptree(new_exp_tree(ARRAY_DIM, &tok)));
+		}
 		if (peek().type == TOK_LBRACK)
 			goto multi_array_decl;
 	}
@@ -433,9 +458,32 @@ multi_array_decl:
 		adv();	/* eat = */
 		if (!valid_tree(subtree2 = initializer()))
 			parse_fail("expected expression after =");
-		add_child(&tree, alloc_exptree(subtree2));
-	}
 
+		/* 
+		 * the first case for [], as in e.g.
+		 * int foo[] = {1, 2, 3}
+		 */
+		if (contains_ambig) {
+			if (subtree2.head_type == COMPLICATED_INITIALIZER) {
+				add_child(&tree, 
+					alloc_exptree(new_exp_tree(ARRAY_DIM, &zero)));
+			}
+		}
+
+		add_child(&tree, alloc_exptree(subtree2));
+
+		/*
+		 * the second case for [], as in e.g.
+		 * char ptr[] = "Enjoy your teeth"
+		 */
+		if (contains_ambig) {
+			if (subtree2.head_type != COMPLICATED_INITIALIZER) {
+				add_child(&tree, 
+					alloc_exptree(new_exp_tree(DECL_STAR, NULL)));
+			}
+		}
+	}
+	
 	/* add the pointer-stars */
 	if (stars) {
 		subtree = new_exp_tree(DECL_STAR, NULL);

@@ -57,9 +57,7 @@ int readnames(char** names)
 
 void sortnames(char** names, char** sorted)
 {
-	/* XXX: neanderthal notation for pointers */
-	/* char dummy[] = */
-	char* dummy = "ZZZZZZZZZZZZZZZZZZZ";
+	char dummy[] = "ZZZZZZZZZZZZZZZZZZZ";
 	char top[64];
 	int key;
 	int i = 0, j, k, l = 0;
