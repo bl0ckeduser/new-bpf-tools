@@ -305,9 +305,17 @@ exp_tree_t decl()
 		if (!strcmp(typedef_tag[i], str)) {
 			adv();
 			tree = copy_tree(typedef_desc[i]);
+			#ifdef DEBUG
+				fprintf(stderr, "tag: ");
+				printout_tree(tree);
+				fprintf(stderr, "\n");
+			#endif
 			if (is_basic_type(decl_dedispatch(tree.child[0]->child[0]->head_type))) {
 				id = tree.child[0]->child[0]->head_type;
 				goto int_decl;
+			}
+			else if (tree.head_type == CAST_TYPE) {
+				parse_fail("complicated typedef stuff -- compiler has issues with this currently, sorry");
 			}
 			goto decl_decl2;
 		}
@@ -694,12 +702,16 @@ not_proc:
 		need(TOK_SEMICOLON);
 		/*
 		 * The left operand of the typedef must be coded
-		 * itself, in case it is a struct -- structs need
+		 * itself *if* it is a struct -- structs need
 		 * to be seen by the codegen so it can track struct
 		 * tag names as in e.g. struct FOO { ... }; where
 		 * FOO would be the tag name.
 		 */
-		return subtree;
+		if (subtree.head_type != STRUCT_DECL) {
+			return new_exp_tree(BLOCK, NULL);
+		}
+		else
+			return subtree;
 	}
 
 	/* empty block -- ';' */
