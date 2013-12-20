@@ -402,12 +402,12 @@ int bignum_cmp(bignum_t* a, bignum_t* b){
 	if (a->length > b->length)
 		return -1;
 	if (b->length > a->length)
-		return /* XXX: + */1;
+		return +1;
 	for (i = a->length - 1; i >= 0; i--) {
 		if (a->dig[i] > b->dig[i])
 			return -1;
 		else if (a->dig[i] < b->dig[i])
-			return /* XXX: + */1;
+			return +1;
 	}
 	return 0;
 }
@@ -418,7 +418,7 @@ void bignum_sub(bignum_t* a, bignum_t* b){
 	long borrow = 0;
 
 	/* negative ? */
-	if (bignum_cmp(a, b) == /* XXX:+ */1) {
+	if (bignum_cmp(a, b) == +1) {
 		printf("I don't do negatives yet, sorry.\n");
 		exit(1);
 	}

@@ -313,7 +313,7 @@ exp_tree_t decl()
 				fprintf(stderr, "\n");
 			#endif
 			/*
-			 * CAST_TYPE tree format
+			 * CAST_TYPE tree format:
 			 * - BASE_TYPE node with child in "_DECL" declaration type tree format
 			 * - a number of DECL_STAR children
 			 */
@@ -1363,6 +1363,7 @@ exp_tree_t mul_expr()
 	e1 := '++' e1
 		 | '--' e1
 		 | '-' e1
+		 | '+' e1
 		 | '!' e1
 		 | cast
 		 | '*' e1
@@ -1391,6 +1392,11 @@ exp_tree_t e1()
 		adv(); /* eat - */
 		tree = new_exp_tree(NEGATIVE, NULL);
 		goto e1_prefix;
+	}
+	/* + e1 */
+	if (tok.type == TOK_PLUS) {
+		adv(); /* eat + */
+		return e1();
 	}
 	/* ! e1 */
 	if (tok.type == TOK_CC_NOT) {
