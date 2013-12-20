@@ -6,9 +6,7 @@ typedef struct herp_derp {
 
 typedef int mystery_type;
 typedef mystery_type meta_typedef;
-
-/* XXX: typedef is not that smart */
-/* typedef meta_typedef* pointer; */
+typedef meta_typedef* pointer;
 
 main()
 {
@@ -17,6 +15,12 @@ main()
 	int matrix[8][8];
 	struct herp_derp *ptr;
 	struct herp_derp arr2[32];
+	pointer u = malloc(sizeof(int));
+
+	*u = 123;
+	printf("*u = %d\n", 123);
+
+	printf("sizeof(pointer) / sizeof(int *) = %d\n", sizeof(pointer) / sizeof(int *));
 
 	printf("sizeof(int) - sizeof(bob) = %d\n", sizeof(int) - sizeof(bob));
 	printf("sizeof(int) / sizeof(bob) = %d\n", sizeof(int) / sizeof(bob));

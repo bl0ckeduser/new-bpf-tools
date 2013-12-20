@@ -294,9 +294,11 @@ exp_tree_t decl()
 {
 	token_t tok = peek();
 	exp_tree_t tree, subtree;
+	exp_tree_t conv;
 	char *str = get_tok_str(peek());
 	int i, id;
 	int td_decl = 0;
+	int stars = 0;
 
 	/* 
 	 * (basic-type|struct-decl|<typedef-tag>) decl2 { ','  decl2 }
@@ -311,14 +313,16 @@ exp_tree_t decl()
 				fprintf(stderr, "\n");
 			#endif
 			/*
-			 * this is actually incorrect if there are pointer stars
+			 * CAST_TYPE tree format
+			 * - BASE_TYPE node with child in "_DECL" declaration type tree format
+			 * - a number of DECL_STAR children
 			 */
-			if (is_basic_type(decl_dedispatch(tree.child[0]->child[0]->head_type))) {
-				id = tree.child[0]->child[0]->head_type;
-				goto int_decl;
-			}
-			else if (tree.head_type == CAST_TYPE) {
-				parse_fail("complicated typedef stuff -- compiler has issues with this currently, sorry");
+			if (tree.head_type == CAST_TYPE) {
+				conv = copy_tree(*(tree.child[0]->child[0]));
+				for (i = 0; i < tree.child_count; ++i)
+					if (tree.child[i]->head_type == DECL_STAR)
+						++stars;
+				tree = conv;
 			}
 			goto decl_decl2;
 		}
@@ -342,6 +346,11 @@ decl_decl2:
 		while (1) {
 			if (!valid_tree(subtree = decl2()))
 				parse_fail("bad declaration syntax");
+			/*
+			 * pointer stars from typedef tag
+			 */
+			for (i = 0; i < stars; ++i)
+				add_child(&subtree, alloc_exptree(new_exp_tree(DECL_STAR, NULL)));
 			add_child(&tree, alloc_exptree(subtree));
 			/* ',' decl2 */
 			if (peek().type != TOK_COMMA)
