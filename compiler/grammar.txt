@@ -74,7 +74,11 @@ block := expr ';'
 	| 'continue' ';'
 	| 'typedef' cast-type ident ';'
 
-arg := [cast-type] ident
+arg := [cast-type] ident [ '[]' ]
+/* 
+ * TODO: argument signatures like "char foo[256]",
+ * it's kind of rare and fucked up but iirc it's legal 
+ */
 
 expr := expr0 [, expr0]
 

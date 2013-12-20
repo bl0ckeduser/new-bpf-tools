@@ -847,8 +847,12 @@ not_proc:
 }
 
 /*
-	arg := [cast-type] ident
+	arg := [cast-type] ident [ '[]' ]
 */
+/* 
+ * TODO: argument signatures like "char foo[256]",
+ * it's kind of rare and fucked up but iirc it's legal 
+ */
 exp_tree_t arg()
 {
 	exp_tree_t ct;
@@ -860,6 +864,16 @@ exp_tree_t arg()
 	tok = need(TOK_IDENT);
 	add_child(&at, alloc_exptree(
 		new_exp_tree(VARIABLE, &tok)));
+
+	if (peek().type == TOK_LBRACK) {
+		adv();
+		if (peek().type == TOK_RBRACK) {
+			adv();
+			/* add a pointer-leveledness star */
+			add_child(at.child[0], alloc_exptree(new_exp_tree(DECL_STAR, &tok)));
+		} else
+			parse_fail("] expected");
+	}
 
 	return at;
 }
