@@ -20,6 +20,7 @@ void foo(char *vec[], int l)
 main()
 {
 	/* XXX: char *vec[] ? */
+	/* no that's illegal according to gcc, keep **vec */
 	char **vec = malloc(5 * sizeof(char *));
 	int i;
 	for (i = 0; i < 5; ++i) {

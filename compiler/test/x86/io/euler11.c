@@ -19,8 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* XXX: int main(int argc, char* argv[]) */
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
 	/* Input */
 	/*
