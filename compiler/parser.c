@@ -310,6 +310,9 @@ exp_tree_t decl()
 				printout_tree(tree);
 				fprintf(stderr, "\n");
 			#endif
+			/*
+			 * this is actually incorrect if there are pointer stars
+			 */
 			if (is_basic_type(decl_dedispatch(tree.child[0]->child[0]->head_type))) {
 				id = tree.child[0]->child[0]->head_type;
 				goto int_decl;
