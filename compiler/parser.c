@@ -242,8 +242,8 @@ cast_typedef:
 		btt = new_exp_tree(BASE_TYPE, NULL);
 		add_child(&btt, alloc_exptree(btct));
 		add_child(&ct, alloc_exptree(btt));
-		star = new_exp_tree(DECL_STAR, NULL);
 cast_typedef_2:
+		star = new_exp_tree(DECL_STAR, NULL);
 		while (peek().type == TOK_MUL)
 			adv(), add_child(&ct, alloc_exptree(star));
 		return ct;
