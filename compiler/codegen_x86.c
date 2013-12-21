@@ -1751,7 +1751,7 @@ char* codegen(exp_tree_t* tree)
 	}
 	#endif
 
-	/* sequence */
+	/* comma-separated sequence */
 	if (tree->head_type == SEQ) {
 		for (i = 0; i < tree->child_count; ++i) {
 			sto = codegen(tree->child[i]);
@@ -1850,7 +1850,7 @@ char* codegen(exp_tree_t* tree)
 		}
 	}
 
-	/* ? : */
+	/* ternary operator -- ? : */
 	if (tree->head_type == TERNARY) {
 		tlab = ++intl_label;
 		intl_label++;
@@ -2282,6 +2282,9 @@ char* codegen(exp_tree_t* tree)
 
 		/* 
 		 * Register function typing info
+		 * XXX: I guess this is the same kind of code
+		 * that would be needed to implement function
+		 * "prototypes"
 		 */
 		/* argument types */
 		for (i = 0; i < argl->child_count; ++i)
