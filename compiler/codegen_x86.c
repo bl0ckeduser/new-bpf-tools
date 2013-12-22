@@ -124,22 +124,22 @@ char ts_used[TEMP_REGISTERS];
 char tm_used[TEMP_MEM];
 
 int proc_ok = 1;		/* this is used to prevent nested procedure defs
-						 * it is raised whenever a procedure is not being coded */
+				 * it is raised whenever a procedure is not being coded */
 
 int else_ret;			/* a flag raised when the "else return"
-						 * pattern is detected and can be optimized */
+				 * pattern is detected and can be optimized */
 
 int main_defined = 0;		/* this is set if user-defined main() exists */
-							/* (otherwise the main lexical body is treated
-							 * as "main", as in templeOS) */
+				/* (otherwise the main lexical body is treated
+				 * as "main", as in templeOS) */
 
 int ccid = 0;				/* internal label numbering,
-							 * used specifically for short-circuiting
-							 * booleans like || and && */
+					 * used specifically for short-circuiting
+				   	 * booleans like || and && */
 
 int intl_label = 0; 		/* internal label numbering */
 
-char buf[1024];				/* general use */
+char buf[1024];			/* general use */
 
 /* 
  * Stuff for `break' (and `continue')
