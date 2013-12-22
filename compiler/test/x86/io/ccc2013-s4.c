@@ -49,7 +49,7 @@ char *my_realloc(char *ptr, int len)
         return new_ptr;
 }
 
-/* XXX: void expand(int d, int siz); */
+void expand(int d, int siz);
 
 derp_t* new_derp(int id)
 {
