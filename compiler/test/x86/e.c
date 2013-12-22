@@ -40,6 +40,22 @@ typedef struct bignum {
 	int alloc;	/* bytes allocated */
 } bignum_t;
 
+/* bignum_t* make_bignum(void); */
+/*
+ * XXX: it seems (void) means: i want zero args
+ * i don't even remember what it means i should lookitup
+ * in the book one day
+ */
+void bignum_copy(bignum_t* dest, bignum_t* src);
+void bignum_add(bignum_t*, bignum_t*);
+void bignum_sub(bignum_t*, bignum_t*);
+void bignum_put(bignum_t*);
+void bignum_free(bignum_t* bn);
+void bignum_nmul(bignum_t* a, int n);
+void bignum_nset(bignum_t* a, int n);
+int bignum_len(bignum_t* a);
+void bignum_shift(bignum_t* bn);
+
 bignum_t* make_bignum()
 {
 	bignum_t* bn;
