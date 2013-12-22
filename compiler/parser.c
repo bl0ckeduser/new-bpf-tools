@@ -619,7 +619,7 @@ exp_tree_t lval()
 		| instr '(' expr0_1, expr0_2, ..., expr0_N ')' ';'
 		| ident ':'
 		| goto ident ';'
-		| [cast-type] ident '(' arg { ',' arg } ')' block
+		| [cast-type] ident '(' arg { ',' arg } ')' (block | ';')
 		| 'return' [expr] ';'
 		| 'break' ';'
 		| 'continue' ';'
@@ -697,6 +697,21 @@ is_proc:
 		}
 		adv();
 		add_child(&tree, alloc_exptree(subtree));
+		/*
+		 * If there's just a semicolon ahead,
+		 * it's actually a prototype.
+		 * XXX: at this point, stuff like
+		 * int donald(void) isn't supported,
+		 * (specifically the lonely `void' without
+		 * a variable declaration after it part)
+		 * nor do I remember what it means.
+		 * Will have to read the book!
+		 */
+		if (peek().type == TOK_SEMICOLON) {
+			adv();
+			tree.head_type = PROTOTYPE;
+			return tree;
+		}
 		subtree = block();
 		if (!valid_tree(subtree))
 			parse_fail("block expected");

@@ -75,6 +75,7 @@ enum {		/* head_type */
 	CONTLAB,
 	CONTINUE,
 	MINGW_IOBUF,
+	PROTOTYPE,
 	/* special */
 	NULL_TREE
 };
@@ -151,6 +152,7 @@ static char* tree_nam[] = {
 	"CONTLAB",
 	"CONTINUE",
 	"MINGW_IOBUF",
+	"PROTOTYPE",
 	"NULL_TREE"
 };
 

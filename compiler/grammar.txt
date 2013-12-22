@@ -68,7 +68,7 @@ block := expr ';'
 	| instr '(' expr0_1, expr0_2, ..., expr0_N ')' ';'
 	| ident ':'
 	| goto ident ';'
-	| [cast-type] ident '(' arg { ',' arg } ')' block
+	| [cast-type] ident '(' arg { ',' arg } ')' (block | ';')
 	| 'return' [expr] ';'
 	| 'break' ';'
 	| 'continue' ';'
