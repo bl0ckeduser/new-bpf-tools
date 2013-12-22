@@ -18,5 +18,9 @@ Features used but not compiled by the x86 compiler
 - "unsigned" qualifier
 - function prototypes
   e.g. typedesc_t tree_typeof_iter(typedesc_t, exp_tree_t*);
+  UPDATE: some support for these. the main lacks at this point are:
+    - blablabla blablabla(void), specifically the `(void)' thing
+    - anal type conflict checking (would probably require an
+      complicated recursive parallel tree walk, aghdsjdsfsd)
 - switch/case/break
 - adjacent string concatenation
