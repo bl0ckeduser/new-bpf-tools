@@ -1097,13 +1097,16 @@ void deal_with_str_consts(exp_tree_t *tree)
 
 /* 
  * Code all the function definitions in a program
+ * It also deals with prototypes now.
  */
 void deal_with_procs(exp_tree_t *tree)
 {
 	int i;
 
 	/* if this is a procedure-definition node */
-	if (tree->head_type == PROC) {
+	if (tree->head_type == PROC 
+		|| tree->head_type == PROTOTYPE) {
+
 		/* clear local symbols accounting */
 		syms = 0;
 		arg_syms = 0;
@@ -1120,7 +1123,8 @@ void deal_with_procs(exp_tree_t *tree)
 	/* child recursion */
 	for (i = 0; i < tree->child_count; ++i)
 		if (tree->child[i]->head_type == BLOCK
-		|| tree->child[i]->head_type == PROC)
+		|| tree->child[i]->head_type == PROC
+		|| tree->child[i]->head_type == PROTOTYPE)
 			deal_with_procs(tree->child[i]);
 }
 
@@ -2222,12 +2226,19 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
-	/* procedure definition */
-	if (tree->head_type == PROC) {
+	/* 
+	 * This deal with a procedure definition, 
+	 * or with a prototype, for which a work to be done
+	 * is a subset of a work to be done for
+	 * procedure definitions.
+	 * XXX: check if a proc def conflicts with an
+	 * existing prototype
+	 */
+	if (tree->head_type == PROC || tree->head_type == PROTOTYPE) {
 		/*
 		 * Can't nest procedure definitions, not in C, anyway
 		 */
-		if (!proc_ok)
+		if (tree->head_type == PROC && !proc_ok)
 			compiler_fail("function definition not allowed here (it's nested)",
 				findtok(tree), 0, 0);
 
@@ -2282,10 +2293,14 @@ char* codegen(exp_tree_t* tree)
 
 		/* 
 		 * Register function typing info
-		 * XXX: I guess this is the same kind of code
-		 * that would be needed to implement function
-		 * "prototypes"
 		 */
+
+		#ifdef DEBUG
+			fprintf(stderr, "Registering function `%s'...\n", get_tok_str(*(tree->tok)));
+			fprintf(stderr, "Its return type description is: \n");
+			dump_td(tree_typeof(tree));
+		#endif
+
 		/* argument types */
 		for (i = 0; i < argl->child_count; ++i)
 			func_desc[funcdefs].argtyp[i] = argtyp[i];
@@ -2302,7 +2317,16 @@ char* codegen(exp_tree_t* tree)
 		funcdefs++;
 
 		/* prevent nested procedure defs */
-		proc_ok = 0;
+		if (tree->head_type == PROC)
+			proc_ok = 0;
+
+		/*
+		 * We fuck off early when it's a prototype,
+	 	 * avoiding the block-coding part that only
+		 * makes sense for actualy procedure definitions
+		 */
+		if (tree->head_type == PROTOTYPE)
+			return NULL;
 
 		/* 
 		 * Do the boilerplate routine stuff and code

@@ -644,7 +644,8 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	 * 	and also function return types, oh and sizeof() also uses this
 	 */
 	if ((tp->head_type == CAST || tp->head_type == ARG
-		|| tp->head_type == PROC || tp->head_type == SIZEOF) 
+		|| tp->head_type == PROC || tp->head_type == PROTOTYPE 
+		|| tp->head_type == SIZEOF) 
 			&& tp->child[0]->head_type == CAST_TYPE) {
 		if (tp->child[0]->child[0]->head_type != BASE_TYPE
 			|| tp->child[0]->child[0]->child_count != 1) {
