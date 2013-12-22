@@ -252,19 +252,12 @@ void add_token(nfa* t, char* tok, int key)
  * wannabe-regex NFA matcher
  */
 
-match_t match(nfa* automaton, char* full_text, char* where)
-{
-	extern match_t match_algo(nfa* t, char* full_tok, char* tok);
-
-	return match_algo(automaton, full_text, where);
-}
-
 /* 
  * nfa* t		:	matching automaton / current node
  * char* full_tok	:	full text
  * char* tok		: 	where we are now
  */	
-match_t match_algo(nfa* t, char* full_tok, char* tok)
+match_t match(nfa* t, char* full_tok, char* tok)
 {
 	int i = 0;
 	char c;
