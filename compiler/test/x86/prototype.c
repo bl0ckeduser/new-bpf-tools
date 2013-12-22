@@ -1,5 +1,5 @@
 /* a prototype */
-int* toothlessness(int foo,
+int* toothlessness(int,
 		   char* ronald_mcdonald_is_named_donald_in_japan);
 
 int main(int argc, char* argv[])

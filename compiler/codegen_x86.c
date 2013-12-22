@@ -2261,19 +2261,24 @@ char* codegen(exp_tree_t* tree)
 		if (argl->child_count) {
 			for (i = 0; argl->child[i]; ++i) {
 				/* 
-				 * Copy this argument's variable name to proc_args[i]
+				 * Copy this argument's variable name to proc_args[i],
+				 * unless it's a prototype, because prototypes may not
+				 * have identifier names in all arguments. (as in e.g.
+				 * "int donald(int, char*)")
 				 */
-				buf = malloc(64);
-				strcpy(buf, get_tok_str
-					(argvartok(argl->child[i])));
-				proc_args[i] = buf;
+				if (tree->head_type == PROC) {
+					buf = malloc(64);
+					strcpy(buf, get_tok_str
+						(argvartok(argl->child[i])));
+					proc_args[i] = buf;
 
-				#ifdef DEBUG
-					/* debug-print argument type info */
-					fprintf(stderr, "%s: \n",
-						get_tok_str(argvartok(argl->child[i])));
-					dump_td(tree_typeof(argl->child[i]));
-				#endif
+					#ifdef DEBUG
+						/* debug-print argument type info */
+						fprintf(stderr, "%s: \n",
+							get_tok_str(argvartok(argl->child[i])));
+						dump_td(tree_typeof(argl->child[i]));
+					#endif
+				}
 
 				/* Obtain and store argument type data */
 				argtyp[i] = tree_typeof(argl->child[i]);

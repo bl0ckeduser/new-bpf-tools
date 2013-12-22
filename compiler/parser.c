@@ -637,6 +637,7 @@ exp_tree_t block()
 	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	int sav_indx, ident_indx, arg_indx;
+	int must_be_proto = 0;
 
 	/* return-value type before a procedure */
 	sav_indx = indx;
@@ -691,6 +692,18 @@ is_proc:
 			subtree2 = arg();
 			if (!valid_tree(subtree2))
 				parse_fail("argument expected");
+			/*
+			 * A PROTO_ARG node is passed if there
+			 * is no identifier in the argument parse,
+			 * as in e.g. "int*" or "void". this is
+			 * only valid in prototypes, of course.
+			 * XXX: foo(void) before a code-body 
+			 * may have a special meaning, I don't remember...
+			 */
+			if (subtree2.head_type == PROTO_ARG) {
+				must_be_proto = 1;
+				subtree2.head_type = ARG;
+			}
 			add_child(&subtree, alloc_exptree(subtree2));
 			if (peek().type != TOK_RPAREN)
 				need(TOK_COMMA);
@@ -700,18 +713,18 @@ is_proc:
 		/*
 		 * If there's just a semicolon ahead,
 		 * it's actually a prototype.
-		 * XXX: at this point, stuff like
-		 * int donald(void) isn't supported,
-		 * (specifically the lonely `void' without
-		 * a variable declaration after it part)
-		 * nor do I remember what it means.
-		 * Will have to read the book!
 		 */
 		if (peek().type == TOK_SEMICOLON) {
 			adv();
 			tree.head_type = PROTOTYPE;
 			return tree;
-		}
+		} else if (must_be_proto)
+				/* 
+				 * Cases like "int *", as noted earlier.
+				 * FYI test case `test/x86/error/proto-arg.c' triggers this.
+				 */
+				parse_fail("declaration without an identifier "
+						   "in a function definition's arguments list");
 		subtree = block();
 		if (!valid_tree(subtree))
 			parse_fail("block expected");
@@ -941,7 +954,7 @@ not_proc:
 }
 
 /*
-	arg := [cast-type] ident [ '[]' ]
+	arg := [cast-type] [ident] [ '[]' ]
 */
 /* 
  * TODO: argument signatures like "char foo[256]",
@@ -955,9 +968,21 @@ exp_tree_t arg()
 
 	if (valid_tree((ct = cast_type())))
 		add_child(&at, alloc_exptree(ct));
-	tok = need(TOK_IDENT);
-	add_child(&at, alloc_exptree(
-		new_exp_tree(VARIABLE, &tok)));
+
+	if (peek().type == TOK_IDENT) {
+		tok = peek();
+		add_child(&at, alloc_exptree(
+			new_exp_tree(VARIABLE, &tok)));
+		adv();
+	} else {
+		/*
+		 * If there's no identifier, this is
+		 * only valid in a prototype, hence
+		 * this special flag which gets
+		 * seen higher up
+		 */
+		at.head_type = PROTO_ARG;
+	}
 
 	if (peek().type == TOK_LBRACK) {
 		adv();
