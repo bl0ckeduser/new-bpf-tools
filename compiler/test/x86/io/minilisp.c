@@ -911,9 +911,7 @@ char* build(list_t* l, char *expr)
 			*q++ = *p++;
 		*q = 0;
 		l->type = NUMBER;
-		int tmp;
-		sscanf(tok, "%d", &tmp);
-		l->val = tmp;		/* XXX: &(a->b) */
+		sscanf(tok, "%d", &(l->val));
 		l->val *= sgn;
 	} else {	/* symbol */
 		while (*p == ' ' || *p == '\t')

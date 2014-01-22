@@ -1951,6 +1951,38 @@ char* codegen(exp_tree_t* tree)
 		return sto3;
 	}
 
+	/*
+	 * &(a->b)
+	 */
+	if (tree->head_type == ADDR
+		&& tree->child[0]->head_type == DEREF_STRUCT_MEMB) {
+		tree = tree->child[0];
+
+		char buf[128];
+		strcpy(buf, get_tok_str(*(tree->child[1]->tok)));
+		int offs = struct_tag_offs(tree_typeof(tree->child[0]),
+						buf);
+
+		printf("# -> load tag `%s' with offset %d\n", buf, offs);
+
+		membsiz = type2siz(tree_typeof(tree));
+
+		/* get base adr */
+		if (tree->child[0]->head_type != VARIABLE)
+			sym_s = registerize(codegen(tree->child[0]));
+		else
+			sym_s = sym_lookup(tree->child[0]->tok);
+
+		sto2 = get_temp_reg();
+
+		/* build pointer */
+		printf("movl %s, %s\n", sym_s, sto2);
+		free_temp_reg(sym_s);
+		printf("addl $%d, %s\n", offs, sto2);
+		
+		return sto2;
+	}
+
 	/* 
 	 * XXX: CAST tree -- might want to have some code here,
 	 * e.g. for int -> char conversion or whatever,
