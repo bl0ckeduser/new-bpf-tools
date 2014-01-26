@@ -31,7 +31,6 @@ typedef struct bignum {
 	int alloc;	/* bytes allocated */
 } bignum_t;
 
-/* XXX: bignum_t* make_bignum(void); */
 void bignum_copy(bignum_t* dest, bignum_t* src);
 void bignum_add(bignum_t*, bignum_t*);
 void bignum_sub(bignum_t*, bignum_t*);
@@ -44,6 +43,19 @@ void bignum_shift(bignum_t* bn);
 void bignum_mul(bignum_t* a, bignum_t* b);
 int bignum_cmp(bignum_t* a, bignum_t* b);
 int do_sqrt(int s);
+
+bignum_t* make_bignum()
+{
+	bignum_t* bn;
+	require((bn = malloc(sizeof(bignum_t))) != null, 
+		"bignum structure allocation");
+	require((bn->dig = malloc(1000)) != null, 
+		"bignum dig allocation");
+	bn->alloc = 1000;
+	bn->length = 0;
+	return bn;
+}
+
 
 void require(int e, char* msg)
 {
@@ -154,18 +166,6 @@ void trunczeroes(bignum_t* a) {
 
 	/* take them off the length number */
 	a->length -= c;
-}
-
-bignum_t* make_bignum()
-{
-	bignum_t* bn;
-	require((bn = malloc(sizeof(bignum_t))) != null, 
-		"bignum structure allocation");
-	require((bn->dig = malloc(1000)) != null, 
-		"bignum dig allocation");
-	bn->alloc = 1000;
-	bn->length = 0;
-	return bn;
 }
 
 /* multiply by ten */

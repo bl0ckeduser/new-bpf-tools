@@ -22,5 +22,6 @@ Features used but not compiled by the x86 compiler
     - blablabla blablabla(void), specifically the `(void)' thing
     - anal type conflict checking (would probably require an
       complicated recursive parallel tree walk, aghdsjdsfsd)
+    - it seems not to work for empty () in some cases
 - switch/case/break
 - adjacent string concatenation
