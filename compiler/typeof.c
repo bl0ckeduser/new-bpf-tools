@@ -402,6 +402,11 @@ int struct_tag_offs(typedesc_t stru, char *tag_name)
 {
 	int i;
 
+	if (stru.struct_desc == NULL) {
+		sprintf(err_buf, "unknown structure when looking for tag `%s'", tag_name);
+		fail(err_buf);
+	}
+
 	/* figure out the type of the tag and return it */
 	for (i = 0; i < stru.struct_desc->cc; ++i) {
 		if (!strcmp(stru.struct_desc->name[i], tag_name)) {
