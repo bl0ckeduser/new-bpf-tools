@@ -4,7 +4,7 @@
 # to that from C_COMPILER, which is considered valid.
 
 # clang also works
-C_COMPILER=gcc
+C_COMPILER=c99
 
 # I like to use `md5sum' on Linux but some un*xes only
 # have `sum', so yeah...
