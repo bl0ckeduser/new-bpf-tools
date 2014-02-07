@@ -50,6 +50,7 @@ extern void discard_stars(exp_tree_t *dc);
 char* get_tok_str(token_t t);
 extern int arr_dim_prod(typedesc_t ty);
 extern void parse_array_info(typedesc_t *typedat, exp_tree_t *et);
+void create_jump_tables(exp_tree_t*);
 
 /* ====================================================== */
 
