@@ -2612,6 +2612,12 @@ char* codegen(exp_tree_t* tree)
 		 * then get rid of it
 		 */
 		--tree->child_count;
+
+		/*
+		 * make a label for deep-nested `break'-ing
+		 */
+		lab1 = intl_label++;
+		break_labels[++break_count] = lab1;
 		
 		/*
 		 * Code the main switch argument,
@@ -2693,6 +2699,12 @@ char* codegen(exp_tree_t* tree)
 				(void)codegen(tree->child[i]);
 			}
 		}
+
+		/*
+		 * close break-scope
+		 */
+		printf("IL%d:\n", lab1);
+		--break_count;
 
 		if (!defset)
 			printf("jt%d_def:\n", jumptab);

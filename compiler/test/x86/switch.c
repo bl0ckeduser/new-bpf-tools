@@ -39,6 +39,18 @@ bar(u) {
 	printf("aha\n");
 }
 
+baz(u) {
+	switch(u) {
+		case 0: {
+			printf("yes but pepsi energy fields\n");
+			if (1 == 1)
+				break;
+		}
+		case 1:
+			printf("bad compiler me very angry blob\n");
+	}
+}
+
 main() {
 	int i;
 	int ind[] = {-1, -2, 322, 324, 323, 325, 3, 20000, 10000, 120, 1, 2, 24, 25, 26, 29, 54};
@@ -48,4 +60,6 @@ main() {
 	printf("ladies and gentlemen, salad and kings, anchovies, bacon\n");
 	for (i = 0; i < 8; ++i)
 		bar(i % 4);
+
+	baz(0);
 }
