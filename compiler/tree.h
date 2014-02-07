@@ -77,6 +77,10 @@ enum {		/* head_type */
 	MINGW_IOBUF,
 	PROTOTYPE,
 	PROTO_ARG,
+	SWITCH,
+	SWITCH_CASE,
+	SWITCH_DEFAULT,
+	SWITCH_BREAK,
 	/* special */
 	NULL_TREE
 };
@@ -155,6 +159,10 @@ static char* tree_nam[] = {
 	"MINGW_IOBUF",
 	"PROTOTYPE",
 	"PROTO_ARG",
+	"SWITCH",
+	"SWITCH_CASE",
+	"SWITCH_DEFAULT",
+	"SWITCH_BREAK",
 	"NULL_TREE"
 };
 

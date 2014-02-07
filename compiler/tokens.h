@@ -88,6 +88,9 @@ enum {
 	TOK_BOR_EQ,
 	TOK_BXOR_EQ,
 	TOK_CONTINUE,
+	TOK_SWITCH,
+	TOK_CASE,
+	TOK_DEFAULT,
 	TOK_VOID
 };
 
@@ -172,6 +175,9 @@ static char* tok_nam[] = {
 	"TOK_BOR_EQ",
 	"TOK_BXOR_EQ",
 	"TOK_CONTINUE",
+	"TOK_SWITCH",
+	"TOK_CASE",
+	"TOK_DEFAULT",
 	"TOK_VOID"
 };
 
@@ -251,6 +257,9 @@ static char* tok_desc[] = {
 	"<<",
 	">>",
 	"continue",
+	"switch",
+	"switch case label",
+	"switch default label",
 	"void type"
 };
 
@@ -261,7 +270,7 @@ struct bpf_kw {
 	char tok;
 };
 
-#define KW_COUNT 23
+#define KW_COUNT 26
 
 static struct bpf_kw kw_tab[] = 
 {
@@ -287,7 +296,10 @@ static struct bpf_kw kw_tab[] =
 	{ "typedef", TOK_TYPEDEF },
 	{ "sizeof", TOK_SIZEOF },
 	{ "long", TOK_LONG },
-	{ "continue", TOK_CONTINUE }
+	{ "continue", TOK_CONTINUE },
+	{ "switch", TOK_SWITCH },
+	{ "case", TOK_CASE },
+	{ "default", TOK_DEFAULT }
 };
 
 /* routines */

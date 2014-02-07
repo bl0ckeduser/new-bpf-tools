@@ -68,6 +68,7 @@ block := expr ';'
 	| if '(' expr ')' block [else block] 
 	| while '(' expr ')' block 
 	| for '(' [expr] ';' [expr] ';' [expr] ')' block
+	| switch '(' expr ')' '{' { [('case' num | 'default') ':'] [block] ['break' ';'] } '}'
 	| '{' { expr ';' } '}' 
 	| instr '(' expr0_1, expr0_2, ..., expr0_N ')' ';'
 	| ident ':'

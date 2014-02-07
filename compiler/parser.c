@@ -615,6 +615,7 @@ exp_tree_t lval()
 		| if '(' expr ')' block [else block] 
 		| while '(' expr ')' block 
 		| for '(' [expr] ';' [expr] ';' [expr] ')' block
+		| switch '(' expr ')' '{' { [('case' num | 'default') ':'] [block] ['break' ';'] } '}'
 		| '{' { expr ';' } '}' 
 		| instr '(' expr0_1, expr0_2, ..., expr0_N ')' ';'
 		| ident ':'
@@ -638,7 +639,8 @@ exp_tree_t block()
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	int sav_indx, ident_indx, arg_indx;
 	int must_be_proto = 0;
-
+	int deflab;
+	
 	/* return-value type before a procedure */
 	sav_indx = indx;
 	if (valid_tree(proctyp = cast_type()))
@@ -734,6 +736,59 @@ is_proc:
 not_proc:
 		indx = sav_indx;
 		/* carry on with other checks */
+	}
+
+	/* switch '(' expr ')' '{' { [('case' num | 'default') ':'] [block] ['break' ';'] } '}' */
+	if (peek().type == TOK_SWITCH) {
+		tok = peek();
+		tree = new_exp_tree(SWITCH, &tok);
+		adv();
+		subtree = expr();
+		if (!valid_tree(subtree))
+			parse_fail("expression expected");
+		add_child(&tree, alloc_exptree(subtree));
+		need(TOK_LBRACE);
+		for (;;) {
+			/* (case INTEGER | default): .... */
+			if (peek().type == TOK_CASE || peek().type == TOK_DEFAULT) {
+				deflab = peek().type == TOK_DEFAULT;
+				adv();
+				if (!deflab)
+					tok = need(TOK_INTEGER);
+				need(TOK_COLON);
+				if (deflab)
+					subtree = new_exp_tree(SWITCH_DEFAULT, NULL);
+				else
+					subtree = new_exp_tree(SWITCH_CASE, &tok);
+				add_child(&tree, alloc_exptree(subtree));
+				for (;;) {
+					if (peek().type == TOK_BREAK
+					 || peek().type == TOK_CASE
+					 || peek().type == TOK_RBRACE)
+						break;
+					subtree = block();
+					if (!valid_tree(subtree))
+						break;
+					add_child(&tree, alloc_exptree(subtree));
+				}
+			}
+			/* break */
+			else if (peek().type == TOK_BREAK) {
+				tok = peek();
+				adv();
+				need(TOK_SEMICOLON);
+				subtree = new_exp_tree(SWITCH_BREAK, &tok);
+				add_child(&tree, alloc_exptree(subtree));
+				printf("break\n");
+			}
+			/* } */
+			else if (peek().type == TOK_RBRACE)
+				break;
+			else
+				parse_fail("i'm confused by this switch statement");
+		}
+		need(TOK_RBRACE);
+		return tree;
 	}
 
 	/* typedef cast-type ident ';' */
