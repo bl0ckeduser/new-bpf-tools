@@ -27,15 +27,22 @@ subl $68, %esp
 
 # arg: 0=>foo, 1=>bar, 2=>baz
 movl 8(%ebp), %eax
-movl $jt0, %ebx
-imull $4, %eax
-addl %eax, %ebx
 
+#
+# 	Relevant part starts here, assuming the case value
+# 	is in %eax
+#
+movl $jt0, %ebx				# jumptab base -> %ebx
+imull $4, %eax				# jumptab case-index *= 4
+addl %eax, %ebx				# %ebx = jumptab pointer + 4 * index
+
+#### debugging #####
 pushl %ebx
 call echo
 addl $4, %esp
+####################
 
-jmp (%ebx)
+jmp (%ebx)				# goto jumptab[case-index];
 
 jt0_l0:
 movl $_str_const_0, %esi
