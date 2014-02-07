@@ -23,5 +23,6 @@ Features used but not compiled by the x86 compiler
     - anal type conflict checking (would probably require an
       complicated recursive parallel tree walk, aghdsjdsfsd)
     - it seems not to work for empty () in some cases
-- switch/case/break
+- switch/case/break/default
+  UPDATE: well they seem to be mostly working now.
 - adjacent string concatenation

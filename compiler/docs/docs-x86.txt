@@ -122,6 +122,34 @@ elements are C syntax.
 		A continue statement in a "while" loop skips to the loop's
 		next iteration. A continue statement in a "for" loop
 		jumps to the next repetition of the increment.
+	
+	v. switch statement
+
+		switch(u) {
+			case 123:
+				...
+			break;
+
+			case 456:
+			case 789:
+				...
+			break;
+
+			default:
+				...
+		}
+
+		If the expression in switch() matches any
+		of the case-labels, the appropriate case-label
+		is jumped to. Otherwise, if there is a default label,
+		it is jumped to. Otherwise, the switch statement will
+		be skipped. The "break" statement inside the body of
+		the switch statement jumps to the outside of the
+		switch statement. Negative case-labels are not yet
+		supported. Case-labels above 1023 are not supported
+		yet. Hopefully this is correctly compiled at this point.
+		The tests run OK.
+	
 
 4. Arithmetic
 	Operands are any kind of expression: number, variable, array
