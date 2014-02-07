@@ -158,6 +158,8 @@ int break_labels[256];
  */
 exp_tree_t *codegen_current_tree = NULL;
 
+int switch_maxlab[256];
+
 /* ====================================================== */
 
 /*
@@ -1174,7 +1176,11 @@ void create_jump_tables(exp_tree_t* tree)
 				fflush(stdout);
 			}
 			if (caselab[i] == -1) {
-				printf("0");
+				/* 
+				 * no match: jump to `default' label (which is made to
+				 * be the end of the switch if there is no `default' defined)
+			 	 */
+				printf("jt%d_def", switch_count);
 			} else {
 				printf("jt%d_l%d", switch_count, caselab[i]);
 			}
@@ -1182,6 +1188,12 @@ void create_jump_tables(exp_tree_t* tree)
 		}
 		printf("\n");
 		printf("#################################################\n");
+
+		/*
+		 * keep track of maximum label.
+		 * XXX: array limited to 256 entries
+		 */
+		switch_maxlab[switch_count] = maxlab;
 
 		/*
 		 * "decorate" the tree with the number
@@ -1845,6 +1857,7 @@ char* codegen(exp_tree_t* tree)
 	int entries, fill;
 	int jumptab;
 	int casenum;
+	int defset;
 
 	/*
 	 * Track the tree currently
@@ -2608,11 +2621,21 @@ char* codegen(exp_tree_t* tree)
 		sto = registerize(codegen(tree->child[0]));
 
 		/*
-		 * XXX: some checks to see whether it is
+		 * Some checks to see whether it is
 		 * within the range of existing labels
-		 * would be in order. if not you could jump
-		 * to a `default' label, if any.
+		 * If not jump to a `default' label, if any.
 		 */
+		sto2 = get_temp_reg();
+
+		printf("movl $%d, %s\n", switch_maxlab[jumptab], sto2);
+		printf("cmpl %s, %s\n", sto2, sto);
+		printf("jg jt%d_def\n", jumptab);
+		
+		printf("movl $%d, %s\n", 0, sto2);
+		printf("cmpl %s, %s\n", sto2, sto);
+		printf("jl jt%d_def\n", jumptab);
+
+		free_temp_reg(sto2);
 
 		/*
 		 * The main switch arg becomes an index 
@@ -2650,6 +2673,7 @@ char* codegen(exp_tree_t* tree)
 		 * `break's and `default' also
 		 */
 		casenum = 0;
+		defset = 0;
 		for (i = 1; i < tree->child_count; ++i) {
 			if (tree->child[i]->head_type == SWITCH_CASE) {
 				printf("jt%d_l%d:\n",
@@ -2657,9 +2681,11 @@ char* codegen(exp_tree_t* tree)
 			} else if (tree->child[i]->head_type == SWITCH_BREAK) {
 				printf("jmp jt%d_end\n", jumptab);
 			} else if (tree->child[i]->head_type == SWITCH_DEFAULT) {
-				/* XXX: TODO: switch-default */
-				compiler_fail("switch-default not implemented yet",
+				if (defset)
+					compiler_fail("only one `default' per `switch' please",
 							findtok(tree->child[i]), 0, 0);
+				defset = 1;
+				printf("jt%d_def:\n", jumptab);
 			} else {
 				/*
 				 * Normal code
@@ -2667,6 +2693,9 @@ char* codegen(exp_tree_t* tree)
 				(void)codegen(tree->child[i]);
 			}
 		}
+
+		if (!defset)
+			printf("jt%d_def:\n", jumptab);
 
 		printf("jt%d_end:\n", jumptab);
 		return NULL;
