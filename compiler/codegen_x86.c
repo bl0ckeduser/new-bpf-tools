@@ -141,6 +141,8 @@ int intl_label = 0; 		/* internal label numbering */
 
 char buf[1024];			/* general use */
 
+int switch_count = 0;		/* index of a switch statement */
+							/* (counts; used for building jump tables) */
 /* 
  * Stuff for `break' (and `continue')
  * labels in WHILEs. Note that the parser 
@@ -957,6 +959,18 @@ void run_codegen(exp_tree_t *tree)
 	printf("# end string constants ==========\n\n");
 
 	/*
+	 * Create the jump tables for switch statements
+	 * (AFAIK they should be going in rodata here).
+	 * This will only create a bunch of pointers, the
+	 * switch statements themselves are coded in the main
+	 * codegen loop. This routine will "decorate" the SWITCH
+	 * tree nodes with information linking them back to their
+	 * appropriate pointers.
+	 */
+	create_jump_tables(tree);
+	printf("\n");
+
+	/*
 	 * Find out if the user defined main()
 	 */
 	main_defined = look_for_main(tree);
@@ -1061,6 +1075,135 @@ void run_codegen(exp_tree_t *tree)
 			 dump_td(tree_typeof(tree->child[i]));
 		}
 	#endif
+}
+
+/*
+ * Create jump tables for switch statements
+ * (they go in .rodata at the top of the .S output)
+ */
+void create_jump_tables(exp_tree_t* tree)
+{
+	int* caselab;
+	char *str;
+	int count = 0;
+	int i;
+	int lab;
+	int maxlab = -1;
+	exp_tree_t decor;
+	token_t num;
+
+	/*
+	 * Recurse down the code tree looking
+	 * for a switch-statement tree node
+	 */
+	for (i = 0; i < tree->child_count; ++i) {
+		create_jump_tables(tree->child[i]);
+	}
+
+	/*
+	 * Found a switch statement node,
+	 * so now do the actual work
+	 */
+	if (tree->head_type == SWITCH) {
+		/*
+		 * Memory allocation and initialization
+		 * -- boring run-of-the-millbureacratic stuff
+		 */
+		caselab = malloc(1024 * sizeof(int));
+		if (!caselab)
+			fail("couldn't malloc a few kilobytes :(");
+
+		/*
+		 * Look for case labels, and associate
+		 * their index to their numeric labels
+		 */
+		for (i = 0; i < 1024; ++i)
+			caselab[i] = -1;
+		for (i = 0; i < tree->child_count; ++i) {
+			if (tree->child[i]->head_type == SWITCH_CASE) {
+				/*
+				 * "switch(u) { case 0: foo(); }"
+				 * 
+				 * makes the tree:
+				 * 
+				 * (SWITCH:switch 
+				 *		(VARIABLE:u)
+				 *		(SWITCH_CASE:0)
+				 * 		(PROC_CALL:foo))
+				 */
+				str = get_tok_str(*(tree->child[i]->tok));
+				sscanf(str, "%d", &lab);
+				/*
+				 * XXX: a more sophisticated scheme
+				 * may address these range issues, but I'm
+				 * getting a basic version working for now.
+				 */
+				if (lab < 0) {
+					compiler_fail("can't do negative case-values yet",
+								findtok(tree), 0, 0);
+				}
+				if (lab > 1023) {
+					compiler_fail("can't do case-values > 1023 yet",
+								findtok(tree), 0, 0);
+				}
+
+				/*
+				 * Figuring out which case label value is the 
+				 * highest
+				 */
+				if (lab > maxlab)
+					maxlab = lab;
+
+				/*
+				 * Associate this case label value to the index of
+				 * this case label
+				 */
+				caselab[lab] = count++;
+			}
+		}
+
+		/*
+		 * Write out the jump table
+		 */
+		printf("########## jump table for `switch' %-4d #########\n", switch_count);
+		printf("jt%d: .long ", switch_count);
+		fflush(stdout);
+		for (i = 0; i <= maxlab; ++i) {
+			if (i) {
+				printf(", ");
+				fflush(stdout);
+			}
+			if (caselab[i] == -1) {
+				printf("0");
+			} else {
+				printf("jt%d_l%d", switch_count, caselab[i]);
+			}
+			fflush(stdout);
+		}
+		printf("\n");
+		printf("#################################################\n");
+
+		/*
+		 * "decorate" the tree with the number
+		 * of its jumptable pointer (given by `switch_count')
+		 */
+		str = malloc(64);
+		if (!str)
+			fail("i couldn't get my 64 bytes, i'm quite sad");
+		sprintf(str, "%d", switch_count);
+		num.start = str;
+		num.len = strlen(str);
+		num.from_line = 0;
+		num.from_line = 1;
+		decor = new_exp_tree(NUMBER, &num);
+		add_child(tree, alloc_exptree(decor));
+
+		/*
+		 * clean up and increase counter
+		 */
+		free(caselab);
+		++switch_count;
+	}
 }
 
 /*
@@ -1700,6 +1843,8 @@ char* codegen(exp_tree_t* tree)
 	int do_deref;
 	int tlab;
 	int entries, fill;
+	int jumptab;
+	int casenum;
 
 	/*
 	 * Track the tree currently
@@ -2435,6 +2580,95 @@ char* codegen(exp_tree_t* tree)
 			 */
 			printf("movl %s, %%eax # ret\n", sto, str);
 		printf("jmp _ret_%s\n", current_proc);
+		return NULL;
+	}
+
+	/*
+	 * `switch' statement
+	 * Note that the jump table has already been
+	 * built and injected into .rodata this point
+	 */
+	if (tree->head_type == SWITCH) {
+		/* 
+		 * Retrieve the special decorative node that
+		 * says which jump table number this has been
+		 * mapped to. (see function `create_jump_tables')
+		 */
+		sscanf(get_tok_str(*(tree->child[tree->child_count - 1]->tok)), "%d", &jumptab);
+		/*
+		 * then get rid of it
+		 */
+		--tree->child_count;
+		
+		/*
+		 * Code the main switch argument,
+		 * i.e. the `u' in switch(u) { ... },
+		 * and put the result in a register
+		 */
+		sto = registerize(codegen(tree->child[0]));
+
+		/*
+		 * XXX: some checks to see whether it is
+		 * within the range of existing labels
+		 * would be in order. if not you could jump
+		 * to a `default' label, if any.
+		 */
+
+		/*
+		 * The main switch arg becomes an index 
+		 * into the jump table. Multiply it by
+		 * four bytes because we're doing byte
+		 * addresses and things
+		 * are a 32-bit word apart.
+		 */
+		printf("imull $4, %s\n", sto);
+
+		/*
+		 * Fetch the jump table pointer
+		 * into a register
+		 */
+		sto2 = get_temp_reg();
+		printf("movl $jt%d, %s\n", jumptab, sto2);
+
+		/*
+		 * add index*4 to the jumptable pointer
+		 */
+		printf("addl %s, %s\n", sto, sto2);
+
+		/*
+		 * goto jump_table_pointer[index];
+		 */
+		printf("jmp (%s)\n", sto2);
+
+		free_temp_reg(sto);
+		free_temp_reg(sto2);
+
+		/*
+		 * now we code the inside of the switch
+		 * statement, which contains regular code
+		 * and a few special `case' labels, and
+		 * `break's and `default' also
+		 */
+		casenum = 0;
+		for (i = 1; i < tree->child_count; ++i) {
+			if (tree->child[i]->head_type == SWITCH_CASE) {
+				printf("jt%d_l%d:\n",
+					jumptab, casenum++);
+			} else if (tree->child[i]->head_type == SWITCH_BREAK) {
+				printf("jmp jt%d_end\n", jumptab);
+			} else if (tree->child[i]->head_type == SWITCH_DEFAULT) {
+				/* XXX: TODO: switch-default */
+				compiler_fail("switch-default not implemented yet",
+							findtok(tree->child[i]), 0, 0);
+			} else {
+				/*
+				 * Normal code
+				 */
+				(void)codegen(tree->child[i]);
+			}
+		}
+
+		printf("jt%d_end:\n", jumptab);
 		return NULL;
 	}
 

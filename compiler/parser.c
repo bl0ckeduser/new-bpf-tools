@@ -779,7 +779,6 @@ not_proc:
 				need(TOK_SEMICOLON);
 				subtree = new_exp_tree(SWITCH_BREAK, &tok);
 				add_child(&tree, alloc_exptree(subtree));
-				printf("break\n");
 			}
 			/* } */
 			else if (peek().type == TOK_RBRACE)
