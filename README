@@ -1,43 +1,61 @@
-This project is a personal programming exercise. It consists mainly in 
+This project is a personal programming exercise. It consists mainly in
 a compiler for a subset of C, targeting 32-bit x86 (via GNU assembler).
 
-This 32-bit x86 compiler is tested on FreeBSD, GNU / Linux, and Windows 
+This 32-bit x86 compiler is tested on FreeBSD, GNU / Linux, and Windows
 (via the MinGW toolchain).
 
-Please go in the "compiler" directory and read "compiler/docs/docs-x86.txt" 
-for info about the supported C features, how to build the program, etc.
+Please go in the "compiler" directory and read
+"compiler/docs/docs-x86.txt" for info about the supported C features,
+how to build the program, etc.  (There is some other useful information
+in the "compiler/docs" directory.)
 
-The test programs "compiler/test/x86/*.c" should give an idea of the subset
-of C accepted at this point. Highlights include: pointers and multi-dimensional 
-arrays of structs, ints, and chars; structs with self-referential pointers;
-support for several libc calls (e.g. printf); custom procedures with 
-recursion allowed; for-loops; typedefs; string constants.
+The test programs "compiler/test/x86/*.c" should give an idea of the
+subset of C accepted at this point. Highlights include: pointers and
+multi-dimensional arrays of structs, ints, and chars; structs with
+self-referential pointers; support for several libc calls (e.g. printf);
+custom procedures with recursion allowed; for-loops; typedefs; string
+constants; switch statements compiled to jump tables; (some) function
+prototypes; (some) array initializers.
 
-There are still bugs, probably especially in constructs not yet tried in 
-the test programs. Some expressions may not compile properly yet, or compile
-at all, for that matter. This is a work-in-progress. Big real serious 
-professional or academic compilers likely use more sophisitcated techniques; 
-I'm doing this project to learn because I still have a lot to learn.
+There are still bugs, probably especially in constructs not yet tried
+in the test programs. Some expressions may not compile properly yet,
+or compile at all, for that matter. This is a work-in-progress. Big real
+serious professional or academic compilers likely use more sophisitcated
+techniques; I'm doing this project to learn because I still have a lot
+to learn.
+
+I haven't read the standard. I'm mostly looking at gcc's x86 output and
+imitating that. It's not going to give a professional-quality standard
+compiler but it will certainly be a good learning experience for me.
 
 -------------------------------------------------------------------------
 
-This compiler can also target my terrible old bytecode VM, arbitrarily 
-named "BPF" -- for details, see "README-BPF" and "compiler/docs/docs-bpf.txt"
+This compiler can also target my terrible old bytecode VM,
+arbitrarily named "BPF" -- for details, see "README-BPF" and
+"compiler/docs/docs-bpf.txt"
 
-Note that the BPF compiler supports a much smaller subset of C than does 
+Note that the BPF compiler supports a much smaller subset of C than does
 the x86 compiler, and it may have some weird modifications.
 
 -------------------------------------------------------------------------
 
-Future project ideas: 
+Future project ideas:
 
-The compiler could be improved, merged with a well-designed VM and 
-hacked into a big REPL to create a script interpreter.
+MIPS codegen (i'm learning MIPS at school as of early 2014)
+
+The compiler could be improved, merged with a well-designed VM and hacked
+into a big REPL to create a script interpreter.
 
 Supporting a larger subset of C ? Not sure if it would be possible to
 do this by growing this code.
 
-Support for other real architectures than x86, say e.g. powerpc or arm 
+Support for other real architectures than x86, say e.g. powerpc or arm
 (PowerPC does not look easy.)
 
 Support for popular serious VMs like JVM / .NET / LLVM
+
+-------------------------------------------------------------------------
+
+Project started: December 2012
+
+
