@@ -85,7 +85,7 @@ arg := [cast-type] ident [ '[]' ]
  * it's kind of rare and fucked up but iirc it's legal 
  */
 
-expr := expr0 [, expr0]
+expr := expr0 [',' expr0]
 
 expr0 := e1 asg-op expr 
 	| ternary-expr

@@ -1057,7 +1057,7 @@ exp_tree_t arg()
 }
 
 /*
-	expr := expr0 [, expr0]
+	expr := expr0 [',' expr0]
 */
 exp_tree_t expr()
 {
