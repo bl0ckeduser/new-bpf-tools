@@ -29,7 +29,8 @@ use clang if desired.
 Below is a quick overview of the language syntax. < > symbols denote
 an optional part in a construction. If the choice of some paragraphs
 seems strange, remember that I'm trying to follow the grammar's 
-structure closely.
+structure closely. Some minor stuff recently added to the compiler
+might be missing.
 
 I'm really trying to implement C. So most (all ?) of these syntactical
 elements are C syntax.
@@ -57,6 +58,7 @@ elements are C syntax.
 		long		(4 bytes)
 		int		(4 bytes)
 		char		(1 byte)
+		void 		(0 bytes, I guess)
 
 	(and also structs, to some extent, see lower down the
 	paragraph on structs)
@@ -422,7 +424,6 @@ elements are C syntax.
 		  but I guess maybe you can use memcpy and pointers for now
 		- no struct literals of any kind are supported,
 		  so e.g. no constant struct initializers
-		- expressions of the form &(a->b) are currently not supported
 
 20. typedefs
 
@@ -456,6 +457,67 @@ elements are C syntax.
 	Derived compound assignment operators have also
 	been implemented: ^= |= &=
 
+24. comma (sequencing) operator
+
+	can be useful in cases like:
+
+		for(i = 0, j = 0; i < 5 && j < 10; ++i, ++j) {
+
+			...
+
+25. preprocessor
+
+	The C preprocessor isn't supported yet.
+	#-lines are just consumed and ignored by the tokenizer.
+	This approach permits some compatibility with trivial
+	things like #include <stdio.h> but not stuff like #ifdef
+
+26. function prototypes
+
+	There is some support for function prototypes at this point.
+
+	Some examples (from the test code):
+
+		int* toothlessness(int,
+			   char* ronald_mcdonald_is_named_donald_in_japan);
+
+		void expand(int d, int siz);
+
+		void bignum_sub(bignum_t*, bignum_t*);
+
+27. array initializers
+
+	There is some support for array initializers at this point.
+
+	Some examples (from the sample code):
+
+		char *happy2014 = "hohoho ! happy new year 2014 to you";
+        	char* name[] = {"Roaldn", "McOdandls"};
+        	char old_school_ptr[] = "hahaha !!!!";
+		char bob[1024] = "hahaha";
+		int arr3[10] = {0};	// fill
+		int arr[] = {1, 2, 3 + 4 + 5 };
+
+28. external symbols
+
+	A priori, there is no true external symbols support, 
+	but the compiler has some special hacks in it to make sure stdin,
+	stdout, and stderr work on:
+
+		- Linux
+		  (verified on Linux 3.2.0, x86_64)
+		- Windows/MinGW 
+		  (probably verified on WinXP 32-bit and Win7 64-bit), 
+		- FreeBSD 
+		  (verified on FreeBSD 9.0, i386)
+
+29. bit shifts
+
+	Bit shifts are parsed (since commit 5d13e45bbb... of 2013-10-27)
+	but not yet compiled. So as such they are not yet available.
+
+----------------------------------------------------------------------------
+
 			-------------------------
 			   Operator precedence
 			    and associativity
@@ -465,7 +527,7 @@ From greatest to lowest precedence:
 
 	[]	->	.
 	* (dereference)
-	- (sign), ( ), ++, --, procedure calls, sizeof, & (address-of), !
+	- + (signs), ( ), ++, --, procedure calls, sizeof, & (address-of), !
 	(...)  (cast)
 	* (multiplication) / %
 	+ -
@@ -477,6 +539,7 @@ From greatest to lowest precedence:
 	||
 	?:
 	= += -= *= /= ^= |= &=
+	, (sequencing)
 
 All arithmetic operators (+ et al.) are left-associative.
 
