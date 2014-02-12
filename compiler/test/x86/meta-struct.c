@@ -46,8 +46,9 @@ typedef struct token {
 
 typedef struct exp_tree {
 	char head_type;
-	/* XXX: token_t* tok; */
-	struct token* tok;
+	token_t* tok;
+	/* struct token* tok; */
+	/* (works too) */
 	int child_count;
 	int child_alloc;
 	struct exp_tree **child;
