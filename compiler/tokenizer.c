@@ -397,7 +397,7 @@ token_t* tokenize(char *buf)
 				TOK_FAIL("tokenization failed -- unknown pattern");
 		} else {
 			/*
-			 * Matching from this offset has suceeded
+			 * Matching from this offset has succeeded
 			 */
 
 			/* 

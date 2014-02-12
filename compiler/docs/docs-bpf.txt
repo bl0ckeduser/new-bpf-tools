@@ -55,7 +55,7 @@ an optional part in a construction.
 			block
 	
 	     init, condition, increment are expressions.
-	     if condition is ommitted, the compiler writes in
+	     if condition is omitted, the compiler writes in
 	     "1 == 1" (always true) instead.
 
 	     In general, the statement will be rewritten as:
@@ -72,7 +72,7 @@ an optional part in a construction.
 	e.g. 
 		1 + 2 * 3 		(evaluates to 7)
 		(1 + 2) * 3		(evaluates to 9)
-		z - x * x + 123		(evalutes to something)	
+		z - x * x + 123		(evaluates to something)	
 		-x + 5
 		
 5. Assignment operators
@@ -184,8 +184,8 @@ will raise syntax errors.
 
 This compiler assumes VM behaviour about which the specification is 
 ambiguous. This behaviour is that "PtrTo X" will store to X the address 
-of the beggining of the following instruction rather than the address of its 
-own beggining.
+of the beginning of the following instruction rather than the address of its 
+own beginning.
 
 Be careful not to overuse array expressions. They are expensive
 in bytes of memory and bytes of program code, because I have to use a special

@@ -247,7 +247,7 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 		}
 		if (j < dc->child_count) {
 			#ifdef DEBUG
-				fprintf(stderr, "it has an initializaiton-implied size: %d\n",
+				fprintf(stderr, "it has an initialization-implied size: %d\n",
 					 dc->child[j]->child_count);
 			#endif
 			typedat->arr_dim[typedat->arr - 1] = dc->child[j]->child_count;

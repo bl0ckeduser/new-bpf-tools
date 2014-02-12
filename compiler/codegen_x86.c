@@ -262,7 +262,7 @@ void codegen_fail(char *msg, token_t *tok)
  *
  * GNU i386 assembler version 2.17.50 gives the diagnostic
  * "error: invalid operand for instruction" for the same code and
- * failes to compile.
+ * fails to compile.
  *
  * So here is a quick fix.
  * 
@@ -711,7 +711,7 @@ int str_const_add(token_t *tok)
 /* 
  * Tree type -> arithmetic routine
  * (this is for the easy general
- * cases -- divison and remainders
+ * cases -- division and remainders
  * need special attention on X86,
  * since they aren't one-operation
  * things, are finnicky about which
@@ -1487,7 +1487,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 
 				/* synthesize an assignment node
 				 * (so yeah, initializations are basically 
-				 * delayed assingments) */
+				 * delayed assignments) */
 				init_expr = new_exp_tree(ASGN, NULL);
 				add_child(&init_expr, dc->child[0]);
 				add_child(&init_expr, initializer_val);
@@ -2519,7 +2519,7 @@ char* codegen(exp_tree_t* tree)
 		/*
 		 * We fuck off early when it's a prototype,
 	 	 * avoiding the block-coding part that only
-		 * makes sense for actualy procedure definitions
+		 * makes sense for actual procedure definitions
 		 */
 		if (tree->head_type == PROTOTYPE)
 			return NULL;
@@ -3618,7 +3618,7 @@ char* optimized_if(exp_tree_t* tree, char *oppcheck)
 	char *str, *str2, *sto, *sto2;
 	int lab1 = intl_label++;
 	int lab2 = intl_label++;
-	/* optimized conditonal */
+	/* optimized conditional */
 	str = codegen(tree->child[0]->child[0]);
 	str2 = codegen(tree->child[0]->child[1]);
 	sto = registerize(str);

@@ -94,7 +94,7 @@ elements are C syntax.
 			block
 	
 	     "init", "condition", and "increment" are expressions.
-	     if "condition" is ommitted, the compiler writes in
+	     if "condition" is omitted, the compiler writes in
 	     "1 == 1" (an always-true expression) instead.
 
 	     In general, the statement will be rewritten as:
@@ -291,7 +291,7 @@ elements are C syntax.
 
 14. Constants
 
-	I. String contants
+	I. String constants
 
 		Example: "bob 123"
 
@@ -484,7 +484,7 @@ The logical connectives (&& and ||) are left-associative.
 
 The "bitwise" operators (& ^ |) are left-associative.
 
-The structure-access operators -> and . are left-associtiave
+The structure-access operators -> and . are left-associative
 (anyway, if they weren't, they wouldn't make any sense).
 
 Assignment (=) and compound-assignment operators (+= et al.) 

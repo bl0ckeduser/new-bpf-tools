@@ -255,7 +255,7 @@ void run_codegen(exp_tree_t *tree)
 /* 
  * Look for labels and setup their symbols and
  * initial code. The initial code is a bunch
- * of assignments at the beggining of the
+ * of assignments at the beginning of the
  * compiled program that store the program
  * offsets of each label to their symbol-
  * addresses. These offsets get backpatched
@@ -697,7 +697,7 @@ codegen_t codegen(exp_tree_t* tree)
 		push_line(buf);
 		bp1b = push_compiled_token("_");
 		push_compiled_token("\n");
-		/* conditonal branch */
+		/* conditional branch */
 		sprintf(buf, "zbPtrTo %d 0 %d\n", cod.adr, sto);
 		push_line(buf);
 		bytesize += codegen(tree->child[1]).bytes;
