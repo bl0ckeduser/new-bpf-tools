@@ -51,6 +51,7 @@ exp_tree_t e0();
 exp_tree_t e0_2();
 exp_tree_t e0_3();
 exp_tree_t e0_4();
+exp_tree_t int_const();
 exp_tree_t initializer();
 int decl_dispatch(char type);
 
@@ -1725,9 +1726,6 @@ exp_tree_t e0_4()
 	exp_tree_t tree = null_tree, subtree = null_tree;
 	exp_tree_t subtree2 = null_tree, subtree3;
 	token_t tok = peek();
-	token_t fake_int;
-	char *buff;
-	int val;
 	int neg = 0;
 	int paren;
 
@@ -1800,6 +1798,20 @@ exp_tree_t e0_4()
 	if (valid_tree((tree = lval())))
 		return tree;
 
+	if (valid_tree((tree = int_const())))
+		return tree;
+
+	return null_tree;
+}
+
+exp_tree_t int_const()
+{
+	token_t fake_int;
+	exp_tree_t tree;
+	token_t tok = peek();
+	char *buff;
+	int val;
+
 	/*
 	 * Integer and character constants
 	 */
@@ -1860,7 +1872,6 @@ exp_tree_t e0_4()
 		adv();	/* eat number */
 		return tree;
 	}
-
 	return null_tree;
 }
 
