@@ -134,16 +134,16 @@ int main_defined = 0;		/* this is set if user-defined main() exists */
 				/* (otherwise the main lexical body is treated
 				 * as "main", as in templeOS) */
 
-int ccid = 0;				/* internal label numbering,
-					 * used specifically for short-circuiting
-				   	 * booleans like || and && */
+int ccid = 0;			/* internal label numbering,
+				 * used specifically for short-circuiting
+				 * booleans like || and && */
 
 int intl_label = 0; 		/* internal label numbering */
 
 char buf[1024];			/* general use */
 
 int switch_count = 0;		/* index of a switch statement */
-							/* (counts; used for building jump tables) */
+				/* (counts; used for building jump tables) */
 /* 
  * Stuff for `break' (and `continue')
  * labels in WHILEs. Note that the parser 
