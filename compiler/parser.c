@@ -754,8 +754,12 @@ not_proc:
 			if (peek().type == TOK_CASE || peek().type == TOK_DEFAULT) {
 				deflab = peek().type == TOK_DEFAULT;
 				adv();
-				if (!deflab)
-					tok = need(TOK_INTEGER);
+				if (!deflab) {
+					subtree = int_const();
+					if (!valid_tree(subtree))
+						parse_fail("integer constant expected (n.b. i don't fold constant expressions yet sorry)");
+					tok = *(subtree.tok);
+				}
 				need(TOK_COLON);
 				if (deflab)
 					subtree = new_exp_tree(SWITCH_DEFAULT, NULL);

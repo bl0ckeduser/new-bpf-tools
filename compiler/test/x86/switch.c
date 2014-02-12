@@ -51,6 +51,17 @@ baz(u) {
 	}
 }
 
+donut(u) {
+	switch(u) {
+		case '0':
+			printf("zero\n");
+			break;
+		case '1':
+			printf("one\n");
+			break;
+	}
+}
+
 main() {
 	int i;
 	int ind[] = {-1, -2, 322, 324, 323, 325, 3, 20000, 10000, 120, 1, 2, 24, 25, 26, 29, 54};
@@ -62,4 +73,6 @@ main() {
 		bar(i % 4);
 
 	baz(0);
+
+	donut('0'); donut('0'); donut('1'); donut('1');
 }
