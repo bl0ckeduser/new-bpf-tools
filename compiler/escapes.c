@@ -1,9 +1,9 @@
-/* escape sequence -> character	*/
+/* escape sequence -> character */
 /* Source: http://web.cs.mun.ca/~michael/c/ascii-table.html */
 
-/* XXX:	this isn't smart enough	to deal	with octal sequences like \012
- * in fact even	the interface (one character) is too stupid to start
- * with	*/
+/* XXX: this isn't smart enough to deal with octal sequences like \012
+ * in fact even the interface (one character) is too stupid to start
+ * with */
 
 extern void fail(char*);
 
