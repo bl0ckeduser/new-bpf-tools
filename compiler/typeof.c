@@ -27,8 +27,10 @@
 
 char err_buf[1024];
 
-/* Internal-use prototype */
+/* Internal-use prototypes */
 typedesc_t tree_typeof_iter(typedesc_t, exp_tree_t*);
+typedesc_t struct_tree_2_typedesc(exp_tree_t *tree, int *bytecount,
+	struct_desc_t **sd_arg);
 
 /* 
  * Hooks to x86 codegen symbol-type query 
@@ -199,17 +201,26 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 	int stars = 0;
 	int newlen = 0;
 	int i, j, k;
+	int struct_bytes;
+	struct_desc_t* sd;
 
+	/*
 	if (decl == STRUCT_DECL) {
 		compiler_fail("sorry I can't do structs in this context yet",
 					findtok(father), 0, 0);
 	}
+	*/
 
 	/* count pointer stars */
 	count_stars(dc, &stars);
 
 	/* build type description for the object */
-	*typedat = mk_typedesc(decl, stars, 0);
+	if (decl == STRUCT_DECL) {
+		*typedat = struct_tree_2_typedesc(father, &struct_bytes, &sd);
+		typedat->ptr = stars;
+	} else {
+		*typedat = mk_typedesc(decl, stars, 0);
+	}
 	parse_array_info(typedat, dc);
 	*array_base_type = *typedat;
 	array_base_type->arr = 0;
@@ -340,7 +351,14 @@ struct_pass_iter:
 	 * (?????)
 	 */
 	for (i = 0; i < (*sd_arg)->cc; ++i) {
-		dc = tree->child[i]->child[0];
+		/*
+		 * STRUCT_DECL ->
+		 *    CHAR_DECL / INT_DECL / etc. ->
+		 *		 ... last child node is DECL_CHILD ->
+		 * 			VARIABLE node with token = identifier;
+		 *          also DECL_STAR nodes
+		 */
+		dc = tree->child[i]->child[tree->child[i]->child_count - 1];
 		/* get tag name */
 		strcpy(tag_name, get_tok_str(*(dc->child[0]->tok)));
 

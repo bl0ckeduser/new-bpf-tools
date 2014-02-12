@@ -1389,6 +1389,10 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 
 		/* the full thing */
 		if (tree->head_type == STRUCT_DECL) {
+			#ifdef DEBUG
+				printf("struct variable with base struct %s...\n", 
+					get_tok_str(*(tree->tok)));
+			#endif
 			/* parse the struct declaration syntax tree */
 			struct_base = struct_tree_2_typedesc(tree, &struct_bytes, &sd);
 			struct_base.struct_desc->bytes = struct_bytes;
