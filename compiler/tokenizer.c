@@ -566,7 +566,7 @@ void setup_tokenizer()
 	add_token(t[0], "0D+", TOK_OCTAL_INTEGER);
 	add_token(t[1], "0xB+", TOK_HEX_INTEGER);
 	add_token(t[1], "0XB+", TOK_HEX_INTEGER);
-	add_token(t[0], "D+", TOK_INTEGER);
+	add_token(t[2], "D+", TOK_INTEGER);
 
 	/* W: any whitespace character */
 	add_token(t[0], "W+", TOK_WHITESPACE);
