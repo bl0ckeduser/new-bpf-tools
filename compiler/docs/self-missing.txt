@@ -1,6 +1,7 @@
 Features used but not compiled by the x86 compiler
 ==================================================
 
+- "extern" prototypes
 - function pointers (used in parser.c)
 - multiple files
 - preprocessor: #define #else #endif #ifdef #ifndef #include
