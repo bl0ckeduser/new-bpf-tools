@@ -12,6 +12,13 @@ enum bob {
 	EIGHT
 } derp = EIGHT;
 
+/* anonymous enum */
+enum {
+	THING,
+	GADGET,
+	OBJECT
+};
+
 void go (int x)
 {
 	switch (x) {
@@ -25,6 +32,7 @@ void go (int x)
 main()
 {
 	enum bob thing = SEVEN;
+	printf("%d\n", THING);
 	printf("%d %d ", derp, thing);
 	while (--thing >= 5)
 		printf("%d ", thing);

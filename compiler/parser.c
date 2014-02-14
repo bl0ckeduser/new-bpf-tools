@@ -233,10 +233,15 @@ exp_tree_t cast_type()
 
 	/* enum 'identifier': synonym for int for all I care */
 	if (peek().type == TOK_ENUM) {
-		adv();
-		(void)need(TOK_IDENT);
-		btct = new_exp_tree(INT_DECL, NULL);
-		goto cast_typedef;
+		sav_indx = adv() - 1;
+		if (peek().type == TOK_IDENT) {
+			adv();
+			if (peek().type != TOK_LBRACE) {
+				btct = new_exp_tree(INT_DECL, NULL);
+				goto cast_typedef;
+			}
+		}
+		indx = sav_indx;
 	}
 
 	/* 'struct' ident ... */
