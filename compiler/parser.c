@@ -866,6 +866,8 @@ not_proc:
 		strcpy(typedef_tag[typedefs], get_tok_str(tok));
 		typedef_desc[typedefs] = copy_tree(subtree);
 		++typedefs;
+		if (typedefs >= 64)
+			parse_fail("too many typedefs, sorry, will eventually improve capacity");
 		need(TOK_SEMICOLON);
 		/*
 		 * The left operand of the typedef must be coded
@@ -1934,6 +1936,8 @@ exp_tree_t enum_decl()
 		enum_tags[enums].key = ident;
 		enum_tags[enums].val = i;
 		++enums;
+		if (enums >= 128)
+			parse_fail("too many enums, sorry, will eventually improve capacity");
 		#ifdef DEBUG
 			fprintf(stderr, "enum const: %s -> ",
 				get_tok_str(ident));
