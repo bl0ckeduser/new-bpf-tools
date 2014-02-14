@@ -26,14 +26,17 @@ int tok_count;
  * for these dictionaries
  */
 
-char typedef_tag[32][64];	     /* XXX: limited!*/
-exp_tree_t typedef_desc[64];	/* XXX: limited!*/
+#define MAX_ENUMS 128
+#define MAX_TYPEDEFS 64
+
+char typedef_tag[32][MAX_TYPEDEFS];	     /* XXX: limited!*/
+exp_tree_t typedef_desc[MAX_TYPEDEFS];	/* XXX: limited!*/
 int typedefs = 0;
 
 struct enum_tag {
 	token_t key;
 	int val;
-} enum_tags[128];		/* XXX: limited!*/
+} enum_tags[MAX_ENUMS];		/* XXX: limited!*/
 int enums = 0;
 
 extern char* get_tok_str(token_t t);
@@ -866,7 +869,7 @@ not_proc:
 		strcpy(typedef_tag[typedefs], get_tok_str(tok));
 		typedef_desc[typedefs] = copy_tree(subtree);
 		++typedefs;
-		if (typedefs >= 64)
+		if (typedefs >= MAX_TYPEDEFS)
 			parse_fail("too many typedefs, sorry, will eventually improve capacity");
 		need(TOK_SEMICOLON);
 		/*
@@ -1987,7 +1990,7 @@ exp_tree_t enum_decl()
 		enum_tags[enums].key = ident;
 		enum_tags[enums].val = i;
 		++enums;
-		if (enums >= 128)
+		if (enums >= MAX_ENUMS)
 			parse_fail("too many enums, sorry, will eventually improve capacity");
 		#ifdef DEBUG
 			fprintf(stderr, "enum const: %s -> ",
