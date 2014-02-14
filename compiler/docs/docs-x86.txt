@@ -516,6 +516,35 @@ elements are C syntax.
 	Bit shifts are parsed (since commit 5d13e45bbb... of 2013-10-27)
 	but not yet compiled. So as such they are not yet available.
 
+30. enums
+
+	"enum" creates symbolic constants which can be used
+	as numeric constants anywhere in a program, and in particular
+	can be used a switch-case label values.
+	
+	The syntax looks like:
+
+		enum [optional identifier] {
+			FOO [ = optional number],
+			BAR,
+			BAZ,
+			BARK,
+			DOG,
+			BOX
+		} [optional variable declarations, e.g. var, *var[32], etc] ;
+	
+	By default, counting starts at 0 and increases by 1 every step.
+	If you introduce values with "=", the named constant gets the
+	assigned value and counting resumes by increments of 1 from 
+	that value for subsequent entries.
+
+	"enum XXX" for any arbitrary XXX is a type which is aliased 
+	to type "int". This type is supported in casts, but not yet
+	in function signatures. In any event, I never got the point of
+	this thing other than a kind of meaningless verbose syntax
+	sugar. Maybe it has some actual semantical or type-analysis
+	use, I don't know.
+
 ----------------------------------------------------------------------------
 
 			-------------------------

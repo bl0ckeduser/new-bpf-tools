@@ -11,6 +11,7 @@ Features used but not compiled by the x86 compiler
 - "static" qualifier
 - enumerations
   e.g. enum { A = 0, B, C, ..., Z};
+  UPDATE: mostly working now
 - struct and array initializers
   e.g. bob[] = {"a", "b", "c"}
   e.g. exp_tree_t null_tree = { 58, 0x0, 0, 0, 0x0 };
