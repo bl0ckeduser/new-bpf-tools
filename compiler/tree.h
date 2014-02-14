@@ -81,6 +81,7 @@ enum {		/* head_type */
 	SWITCH_CASE,
 	SWITCH_DEFAULT,
 	SWITCH_BREAK,
+	ENUM_DECL,
 	/* special */
 	NULL_TREE
 };
@@ -163,6 +164,7 @@ static char* tree_nam[] = {
 	"SWITCH_CASE",
 	"SWITCH_DEFAULT",
 	"SWITCH_BREAK",
+	"ENUM_DECL",
 	"NULL_TREE"
 };
 

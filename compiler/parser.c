@@ -53,6 +53,8 @@ exp_tree_t e0_3();
 exp_tree_t e0_4();
 exp_tree_t int_const();
 exp_tree_t initializer();
+exp_tree_t enum_decl();
+exp_tree_t enum_tag_decl();
 int decl_dispatch(char type);
 
 void printout(exp_tree_t et);
@@ -208,7 +210,8 @@ exp_tree_t cast()
 
 /*
  * cast-type := basic-type {'*'} | <typedef-tag> {'*'}
- *				| 'struct' ident {'*'}
+ *				 | 'struct' ident {'*'}
+ *				 | 'enum' identifier
  */
 exp_tree_t cast_type()
 {
@@ -216,6 +219,14 @@ exp_tree_t cast_type()
 	exp_tree_t btt, btct, ct, star;
 	char *str = get_tok_str(peek());
 	int i, sav_indx;
+
+	/* enum 'identifier': synonym for int for all I care */
+	if (peek().type == TOK_ENUM) {
+		adv();
+		(void)need(TOK_IDENT);
+		btct = new_exp_tree(INT_DECL, NULL);
+		goto cast_typedef;
+	}
 
 	/* 'struct' ident ... */
 	if (peek().type == TOK_STRUCT) {
@@ -262,7 +273,9 @@ cast_typedef_2:
 }
 
 /* 
- * decl := (basic-type | struct-decl) decl2 { ','  decl2 } 
+ * decl := (basic-type | struct-decl | enum-decl | 'enum' identifier) decl2 { ','  decl2 } 
+ *	   | struct-decl
+ *	   | enum-decl
  */
 int decl_dispatch(char type)
 {
@@ -309,7 +322,9 @@ exp_tree_t decl()
 	int stars = 0;
 
 	/* 
-	 * (basic-type|struct-decl|<typedef-tag>) decl2 { ','  decl2 }
+	 * (basic-type|struct-decl|enum-decl
+	 *  |'enum' identifier|<typedef-tag>) 
+	 *	decl2 { ','  decl2 }
   	 */
 	for (i = 0; i < typedefs; ++i) {
 		if (!strcmp(typedef_tag[i], str)) {
@@ -336,6 +351,35 @@ exp_tree_t decl()
 		}
 	}
 
+	/* enum-decl */
+	if (valid_tree((tree = enum_decl()))) {
+		/*
+		 * are there children args ? then
+		 * enums are ints for all the codegen cares
+		 * otherwise just give an empty block,
+		 * again because the codegen doesn't care
+		 */
+
+		/* no declaration children */
+		if (peek().type == TOK_SEMICOLON) {
+			tree.head_type = BLOCK;
+			tree.child_count = 0;
+			return tree;
+		}
+
+		/* there are children */
+		id = INT_DECL;
+		goto int_decl;
+	}
+
+	/* enum 'identifier': synonym for int for all I care */
+	if (peek().type == TOK_ENUM) {
+		adv();
+		(void)need(TOK_IDENT);
+		id = INT_DECL;
+		goto int_decl;
+	}
+
 	if (valid_tree((tree = struct_decl())))
 		if (tree.head_type == STRUCT_DECL)
 			goto decl_decl2;
@@ -351,6 +395,7 @@ decl_decl2:
 		if (tree.head_type == STRUCT_DECL
 			&& peek().type == TOK_SEMICOLON)
 			return tree;
+
 		while (1) {
 			if (!valid_tree(subtree = decl2()))
 				parse_fail("bad declaration syntax");
@@ -1808,6 +1853,86 @@ exp_tree_t e0_4()
 	return null_tree;
 }
 
+/*
+ * enums
+ */
+
+/* enum-decl := 'enum' [identifier] '{' enumerator-list '}' */
+exp_tree_t enum_decl()
+{
+	exp_tree_t tree, subtree, subtree2;
+	token_t ident;
+	int i = 0;	/* number index mapping */
+	int back = indx;
+
+	if (peek().type != TOK_ENUM)
+		return null_tree;
+	
+	adv();
+
+	if (peek().type == TOK_IDENT) {
+		ident = peek();
+		adv();
+		tree = new_exp_tree(ENUM_DECL, &ident);
+	} else {
+		tree = new_exp_tree(ENUM_DECL, NULL);
+	}
+
+	/*
+	 * enumerator-list := identifier [ = constant ]
+	 *		 { ',' identifier [ = constant ] }
+	 */
+	if (peek().type == TOK_LBRACE)
+		adv();
+	else {
+		/* backtrack, it's just a tag type */
+		indx = back;
+		return null_tree;
+	}
+
+	#ifdef DEBUG
+		fprintf(stderr, "======= enum encountered ===== \n");
+	#endif
+
+	for (i = 0; ; ++i) {
+		ident = need(TOK_IDENT);
+		if (peek().type == TOK_ASGN) {
+			adv();
+			subtree = int_const();
+			if (!valid_tree(subtree))
+				parse_fail("constant expected (n.b. i don't do"
+					   " expression folding yet sorry)");
+			sscanf(get_tok_str(*(subtree.tok)), "%d", &i);
+		}
+
+		/*
+		 * register this enum constant
+		 * XXX: todo the actual registering
+		 */
+		#ifdef DEBUG
+			fprintf(stderr, "enum const: %s -> ",
+				get_tok_str(ident));
+			fprintf(stderr, "%d \n",
+				i);
+		#endif
+
+		if (peek().type != TOK_COMMA)
+			break;
+		else
+			adv();
+	}
+	need(TOK_RBRACE);
+	
+	#ifdef DEBUG
+		fprintf(stderr, "============================== \n");
+	#endif
+
+	return tree;
+}
+
+/*
+ * Integer constant
+ */
 exp_tree_t int_const()
 {
 	token_t fake_int;

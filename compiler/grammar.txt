@@ -14,8 +14,9 @@ basic-type := 'int'
 /* declaration stuff */
 
 /* e.g. int a, b, c; */
-decl := (basic-type | struct-decl) decl2 { ','  decl2 } 
+decl := (basic-type | struct-decl | enum-decl | 'enum' identifier) decl2 { ','  decl2 } 
 	| struct-decl
+	| enum-decl
 
 /*
  * 	*foo
@@ -44,6 +45,14 @@ struct-decl := 'struct' [ident] '{' decl ';' { decl ';' } '}'
 		| 'struct' [ident] decl2 { ','  decl2 } ';'
 
 /* TODO stuff like "struct derp* foo;" */
+/* above is probably handled at this point through decl2 */
+
+/* ========= enums ========== */
+
+enum-decl := 'enum' [identifier] '{' enumerator-list '}'
+enumerator-list := identifier [ = constant ] { ',' identifier [ = constant ] }
+
+/* ========================== */
 
 /* ====================================================== */
 
@@ -60,6 +69,7 @@ cast-type := basic-type {'*'}
 		| struct-decl
 		| <typedef-tag> {'*'}
 		| 'struct' ident {'*'}
+		| 'enum' identifier
 
 /* ====================================================== */
 
