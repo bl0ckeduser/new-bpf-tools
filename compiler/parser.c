@@ -1162,6 +1162,8 @@ exp_tree_t expr0()
 	token_t tok;
 	exp_tree_t seq;
 	int save = indx;
+	char *buf;
+	int iter;
 
 	if (valid_tree(lv = e1())) {
 		/* "lvalue asg-op expr0" pattern */
@@ -1223,6 +1225,55 @@ exp_tree_t expr0()
 	if ((tok = peek()).type == TOK_STR_CONST) {
 		adv();
 		tree = new_exp_tree(STR_CONST, &tok);
+		/* 
+		 * adjacent string concatenation
+		 */
+		for (;;) {
+			/* 
+			 * eat an adjacent-string token, else stop the loop
+			 */
+			if (peek().type != TOK_STR_CONST)
+				break;
+			tok = peek();
+			adv();
+
+			/*
+			 * set aside space for the expanded string
+			 */
+			buf = malloc(tree.tok->len + tok.len + 1);
+			if (!buf)
+				fail("malloc failed");
+			*buf = 0;
+
+			/* 
+			 * skip closing " from previous string, and add it
+			 * to the new expanded string
+			 */
+			strncat(buf, get_tok_str(*(tree.tok)), tree.tok->len - 1);
+
+			/*
+			 * skip leading " and closing " from new string, and add it
+			 * to the new expanded string
+			 */
+			strncat(buf, get_tok_str(tok) + 1, tok.len - 2);
+
+			/*
+			 * null-termination..
+			 */
+			buf[tree.tok->len + tok.len] = 0;
+
+			/*
+			 * add closing " if this is the last iteration
+			 */
+			if (peek().type != TOK_STR_CONST)
+				strcat(buf, "\"");
+
+			/*
+			 * save the new expanded string to the tree node
+			 */
+			tree.tok->start = buf;
+			tree.tok->len = tree.tok->len + tok.len;
+		}
 		return tree;
 	}
 

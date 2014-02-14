@@ -27,4 +27,4 @@ Features used but not compiled by the x86 compiler
     - it seems not to work for empty () in some cases
 - switch/case/break/default
   UPDATE: well they seem to be mostly working now.
-- adjacent string concatenation
+- adjacent string concatenation	-- update: now DONE
