@@ -23,15 +23,18 @@
 	also, inner struct type references like in
 
 	struct foo {
-		struct bar {
-
-		} bar_thing;
+		struct bar_thing {
+			int field;
+		} bar;
 
 		struct bar_thing* pointer;
 	}
 	
 	are apparently currently broken; probably just
-	a missing symbol table call somewhere
+	a missing symbol table call somewhere.
+
+	well i'm not sure if that sort of thing is actually
+	supported by C or not. maybe not.
  */
 
 typedef struct token {
