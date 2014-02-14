@@ -21,9 +21,20 @@ token_t *tokens;
 int indx;
 int tok_count;
 
-char typedef_tag[32][64];
-exp_tree_t typedef_desc[64];
+/*
+ * XXX: something like a hash table or bst would be smarter
+ * for these dictionaries
+ */
+
+char typedef_tag[32][64];	     /* XXX: limited!*/
+exp_tree_t typedef_desc[64];	/* XXX: limited!*/
 int typedefs = 0;
+
+struct enum_tag {
+	token_t key;
+	int val;
+} enum_tags[128];		/* XXX: limited!*/
+int enums = 0;
 
 extern char* get_tok_str(token_t t);
 
@@ -1842,12 +1853,19 @@ exp_tree_t e0_4()
 	}
 
 	/*
+	 * integer constant.
+	 * N.B. this must go before lval()
+	 * because lval() might misinterpret
+	 * an enum tag as an undeclared external
+	 * variable
+	 */
+	if (valid_tree((tree = int_const())))
+		return tree;
+
+	/*
 	 * lvalue
 	 */
 	if (valid_tree((tree = lval())))
-		return tree;
-
-	if (valid_tree((tree = int_const())))
 		return tree;
 
 	return null_tree;
@@ -1907,8 +1925,10 @@ exp_tree_t enum_decl()
 
 		/*
 		 * register this enum constant
-		 * XXX: todo the actual registering
 		 */
+		enum_tags[enums].key = ident;
+		enum_tags[enums].val = i;
+		++enums;
 		#ifdef DEBUG
 			fprintf(stderr, "enum const: %s -> ",
 				get_tok_str(ident));
@@ -1940,6 +1960,32 @@ exp_tree_t int_const()
 	token_t tok = peek();
 	char *buff;
 	int val;
+	int i;
+	char tag[64];
+
+	/*
+	 * Enum tags
+	 * XXX: lazy inefficient O(n) array-based dictionary 
+	 * and associated lookup code that copies lots of bytes
+	 * BST or hash table would be smarter
+	 */
+	if (tok.type == TOK_IDENT) {
+		for (i = 0; i < enums; ++i) {
+			strcpy(tag, get_tok_str(enum_tags[i].key));
+			if (!strcmp(tag, get_tok_str(tok))) {
+				fake_int.type = TOK_IDENT;
+				buff = calloc(256, 1);
+				sprintf(buff, "%d", enum_tags[i].val);
+				fake_int.start = buff;
+				fake_int.len = strlen(buff);
+				fake_int.from_line = 0;
+				fake_int.from_line = 1;
+				tree = new_exp_tree(NUMBER, &fake_int);
+				adv();	/* eat the tag */
+				return tree;
+			}
+		}
+	}
 
 	/*
 	 * Integer and character constants
