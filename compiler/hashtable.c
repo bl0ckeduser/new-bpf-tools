@@ -8,21 +8,46 @@
 
 extern void fail(char *);
 
+/* ======================================================== */
+
 /*
  * Hash function. mostly just random nonsense for now,
  * I am no expert on hash functions.
+ *
+ * mode 0: hash a string
+ * mode 1: hash a single character
  */
+unsigned int hashtab_hash_mode(char *key, int nbuck, int mode, char prev, unsigned int prev_hash);
+
 unsigned int hashtab_hash(char *key, int nbuck)
 {
-	unsigned int hash = 0;
+	return hashtab_hash_mode(key, nbuck, 0, 0, 0);
+}
+
+unsigned int hashtab_hash_char(char c, char prev, int nbuck, unsigned int prev_hash)
+{
+	return hashtab_hash_mode(&c, nbuck, 1, prev, prev_hash);
+}
+
+unsigned int hashtab_hash_mode(char *key, int nbuck, int single_char_mode, char prev, unsigned int prev_hash)
+{
+	unsigned int hash = prev_hash;
 	unsigned int prev_key = *key;
+	if (single_char_mode)
+		prev_key = prev;
 	while (*key) {
 		hash += (*key - prev_key) * 100;
-		hash += (prev_key = *key++);
+		hash += (prev_key = *key);
 		hash %= nbuck;
+		if (single_char_mode)
+			break;
+		else
+			++key;
 	}
 	return hash;
 }
+
+/* ======================================================== */
 
 hashtab_t* new_hashtab(void)
 {
@@ -43,9 +68,18 @@ hashtab_t* new_hashtab(void)
 	return htab;
 }
 
+/* ======================================================== */
+
 void* hashtab_lookup(hashtab_t* htab, char* key)
 {
-	unsigned int hash = hashtab_hash(key, htab->nbuck);
+	return hashtab_lookup_with_hash(
+			htab, 
+			key, 
+			hashtab_hash(key, htab->nbuck));
+}
+
+void* hashtab_lookup_with_hash(hashtab_t* htab, char* key, unsigned int hash)
+{
 	hashtab_entry_t *ptr = htab->buck[hash];
 
 	while (ptr)
@@ -61,6 +95,7 @@ void* hashtab_lookup(hashtab_t* htab, char* key)
 	else
 		return NULL;
 }
+/* ======================================================== */
 
 void hashtab_insert(hashtab_t* htab, char* key, void* val)
 {
@@ -78,4 +113,7 @@ void hashtab_insert(hashtab_t* htab, char* key, void* val)
 		fail("couldn't allocate a string");
 	strcpy((*ptr)->key, key);
 	(*ptr)->val = val;
+	(*ptr)->next = NULL;
 }
+
+/* ======================================================== */
