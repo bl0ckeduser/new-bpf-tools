@@ -10,6 +10,11 @@ C_COMPILER=c99
 # have `sum', so yeah...
 SUM_TOOL=sum
 
+pass=0
+passes=""
+fail=0
+fails=""
+
 for x in test/*.c test/x86/*.c
 do
 	rm -rf autotest-tmp
@@ -38,8 +43,17 @@ do
 	if [ "$good_result" = "$blok_result" ];
 	then
 		echo "$x - PASS"
+		pass=$(expr $pass + 1)
+		passes="$passes $x"
 	else
 		echo "$x - FAIL"
+		fail=$(expr $fail + 1)
+		fails="$fails $x"
 	fi
 	rm -rf autotest-tmp/
 done
+
+echo "----"
+echo "totals:"
+echo "passes: $pass ($passes)"
+echo "fails: $fail ($fails)"
