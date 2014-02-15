@@ -338,6 +338,7 @@ token_t* tokenize(char *buf)
 	char buf2[1024];
 	char fail_msg[1024] = "";
 	char *p;
+	char *old;
 	int max;
 	int i;
 	int line = 1;
@@ -367,6 +368,7 @@ token_t* tokenize(char *buf)
 		 * which pattern to choose.
 		 */
 		max = -1;	/* clear record length */
+		old = p;
 		for (i = 0; i < tc; i++) {
 			/* try matching pattern number i */
 			m = match(t[i], buf, p);
@@ -380,6 +382,16 @@ token_t* tokenize(char *buf)
 					c = m;
 				}
 			}
+		}
+
+		/*
+		 * if inside a C comment, only look for
+		 * comment close tokens. (otherwise some
+		 * patterns will do nasty wrong things)
+		 */
+		if (comstat == INSIDE_A_C_COMMENT && m.success != C_CMNT_CLOSE) {
+			max = -1;
+			p = old;
 		}
 
 		if (max == -1) {
@@ -636,9 +648,9 @@ void setup_tokenizer()
 	add_token(t[0], "]", TOK_RBRACK);
 
 	/* comments */
-	add_token(t[1], "/\\*", C_CMNT_OPEN);
-	add_token(t[1], "\\*/", C_CMNT_CLOSE);
-	add_token(t[1], "//", CPP_CMNT);
+	add_token(t[2], "/\\*", C_CMNT_OPEN);
+	add_token(t[2], "\\*/", C_CMNT_CLOSE);
+	add_token(t[2], "//", CPP_CMNT);
 
 	/* string constants */
 	add_token(t[0], "\"Q*\"", TOK_STR_CONST);
