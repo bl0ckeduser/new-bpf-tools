@@ -11,6 +11,9 @@
  * and consequently the matching code is cleaner
  * and faster.
  *
+ * On Feb. 2014, keyword matching was updated to
+ * use a hash table.
+ *
  * Okay this is kind of messy, but what it boils down
  * to is: a graph whose edges are characters and nodes
  * "states", and where egde-crossing deterministically
@@ -20,19 +23,22 @@
  * It was far messier (and slower, etc) 
  * last year before I spent some time cleaning it up.
  *
- * Bl0ckeduser, December 2012 - updated Dec. 2013
+ * Bl0ckeduser, December 2012 - updated Feb. 2014
  */
 
 /* 
  * XXX: the automatons never get free()d
  */
 
+#include "hashtable.h"
 #include "tokenizer.h"
 #include "tokens.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+hashtab_t *keywords;
+int *iptr;
 char **code_lines;
 int cl_alloc = 0;
 extern void fail(char* mesg);
@@ -58,6 +64,9 @@ typedef struct match_struct {
 	
 	/* pointer to last character matched */
 	char* pos;
+
+	/* hash of match */
+	unsigned int hash;
 } match_t;
 
 /*
@@ -261,8 +270,10 @@ match_t match(nfa* t, char* full_tok, char* tok)
 {
 	int i = 0;
 	char c;
+	int prev = -1;
 	match_t m;
 	int str_const = 0;
+	unsigned int hash = 0;
 
 	/* 
 	 * Iterate the matching loop as long as there are
@@ -270,7 +281,8 @@ match_t match(nfa* t, char* full_tok, char* tok)
 	 */
 	while (i <= strlen(tok)) {
 		/* 
-		 * Syntax sugar for "current character"
+		 * The `c' variable is just being syntax sugar
+		 * for "current character"
 		 */
 		c = tok[i];
 
@@ -292,6 +304,15 @@ match_t match(nfa* t, char* full_tok, char* tok)
 		if (t->map[c]) {
 			t = t->map[c];
 			++i;
+
+			/*
+			 * incremental hashing (to spot keywords quickly;
+			 * see later down in the file)
+			 */
+			if (prev == -1)
+				prev = c;
+			hash = hashtab_hash_char(c, prev, keywords->nbuck, hash);
+			prev = c;
 		}
 		/* 
 		 * Otherwise, check for an epsilon edge
@@ -317,10 +338,12 @@ match_t match(nfa* t, char* full_tok, char* tok)
 		/* Match succeeded */
 		m.success = t->valid_token;
 		m.pos = tok + i;
+		m.hash = hash;
 	} else {
 		/* No match */
 		m.success = 0;
 	}
+
 
 	return m;
 }
@@ -350,8 +373,19 @@ token_t* tokenize(char *buf)
 
 	cl_alloc = 64;
 	code_lines = malloc(cl_alloc * sizeof(char *));
-
 	*code_lines = buf;
+
+	/*
+	 * Build the keywords hash table
+	 */
+	keywords = new_hashtab();
+	for (i = 0; i < KW_COUNT; ++i) {
+		iptr = malloc(sizeof(int));
+		if (!iptr)
+			fail("couldn't get a few bytes of heap :(");
+		*iptr = kw_tab[i].tok;
+		hashtab_insert(keywords, kw_tab[i].str, iptr);
+	}
 
 	/* While there are characters left ... */
 	for (p = buf; *p;) {
@@ -414,20 +448,17 @@ token_t* tokenize(char *buf)
 
 			/* 
 			 * Spot keywords. They are initially
-			 * recognized as identifiers. 
-			 *
-			 * XXX: this lazy hack is a massive bottleneck and it
-			 * makes the tokenizer super slow where it should be
-			 * alltogether O(n) where n is the number of
-			 * incoming characters. a hash table would be appropriate.
+			 * recognized as identifiers, but we use
+			 * a hash table (and inplace incremental 
+			 * hashing in the matching routine, a hack 
+			 * to save time) to discriminate them from
+			 * identifiers.
 			 */
 			if (c.success == TOK_IDENT) {
 				strncpy(buf2, p, max);
 				buf2[max] = 0;
-				for (i = 0; i < KW_COUNT; i++) {
-					if (!strcmp(buf2, kw_tab[i].str))
-						c.success = kw_tab[i].tok;
-				}
+				if ((iptr = hashtab_lookup_with_hash(keywords, buf2, c.hash)))
+					c.success = *iptr;
 			}
 
 			/*
