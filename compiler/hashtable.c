@@ -15,7 +15,10 @@ extern void fail(char *);
  * I am no expert on hash functions.
  *
  * mode 0: hash a string
- * mode 1: hash a single character
+ * mode 1: (incrementally) hash a single character
+ * (this mode is so the tokenizer can hash and match in parallel
+ * to save time. the tokenizer uses a hash table to distinguish
+ * keywords like "int" from identifiers)
  */
 unsigned int hashtab_hash_mode(char *key, int nbuck, int mode, char prev, unsigned int prev_hash);
 

@@ -68,6 +68,12 @@ enum {
 	SYMTYPE_GLOBALS
 };
 
+/*
+ * XXX: all these stupid O(n) arrays
+ * could and should be converted to use
+ * the new hashtable
+ */
+
 /* Name of function currently being coded */
 char current_proc[SYMLEN];
 
