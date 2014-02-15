@@ -22,17 +22,8 @@ token_t *tokens;
 int indx;
 int tok_count;
 
-/*
- * XXX: something like a hash table or bst would be smarter
- * for these dictionaries
- */
-
-#define MAX_ENUMS 128
-#define MAX_TYPEDEFS 64
-
-char typedef_tag[32][MAX_TYPEDEFS];	     /* XXX: limited!*/
-exp_tree_t typedef_desc[MAX_TYPEDEFS];	/* XXX: limited!*/
-int typedefs = 0;
+hashtab_t *enum_tags;
+hashtab_t *typedef_tags;
 
 extern char* get_tok_str(token_t t);
 
@@ -66,18 +57,12 @@ exp_tree_t enum_decl();
 exp_tree_t enum_tag_decl();
 int decl_dispatch(char type);
 
-hashtab_t *enum_tags;
-
 void printout(exp_tree_t et);
 extern void fail(char* mesg);
 
 int check_typedef(char *str)
 {
-	int i;
-	for (i = 0; i < typedefs; ++i)
-		if (!strcmp(typedef_tag[i], str))
-			return 1;
-	return 0;
+	return hashtab_lookup(typedef_tags, str) != NULL;
 }
 
 exp_tree_t copy_tree(exp_tree_t src_a)
@@ -166,6 +151,9 @@ exp_tree_t parse(token_t *t)
 	/* set up enum tags dictionary */
 	enum_tags = new_hashtab();
 
+	/* set up typedef tags dictionary */
+	typedef_tags = new_hashtab();
+
 	/* count the tokens */
 	for (i = 0; t[i].start; ++i)
 		;
@@ -233,6 +221,7 @@ exp_tree_t cast_type()
 	exp_tree_t btt, btct, ct, star;
 	char *str = get_tok_str(peek());
 	int i, sav_indx;
+	exp_tree_t *tdtree;
 
 	/* enum 'identifier': synonym for int for all I care */
 	if (peek().type == TOK_ENUM) {
@@ -260,16 +249,14 @@ exp_tree_t cast_type()
 		}
 	}
 
-	for (i = 0; i < typedefs; ++i) {
-		if (!strcmp(typedef_tag[i], str)) {
-			adv();
-			btct = copy_tree(typedef_desc[i]);
-			if (btct.head_type == CAST_TYPE) {
-				ct = btct;
-				goto cast_typedef_2;
-			}
-			goto cast_typedef;
+	if ((tdtree = hashtab_lookup(typedef_tags, str))) {
+		adv();
+		btct = copy_tree(*tdtree);
+		if (btct.head_type == CAST_TYPE) {
+			ct = btct;
+			goto cast_typedef_2;
 		}
+		goto cast_typedef;
 	}
 
 	if (is_basic_type((bt = peek()).type)) {
@@ -339,35 +326,34 @@ exp_tree_t decl()
 	int i, id;
 	int td_decl = 0;
 	int stars = 0;
+	exp_tree_t *tdtree;
 
 	/* 
 	 * (basic-type|struct-decl|enum-decl
 	 *  |'enum' identifier|<typedef-tag>) 
 	 *	decl2 { ','  decl2 }
   	 */
-	for (i = 0; i < typedefs; ++i) {
-		if (!strcmp(typedef_tag[i], str)) {
-			adv();
-			tree = copy_tree(typedef_desc[i]);
-			#ifdef DEBUG
-				fprintf(stderr, "tag: ");
-				printout_tree(tree);
-				fprintf(stderr, "\n");
-			#endif
-			/*
-			 * CAST_TYPE tree format:
-			 * - BASE_TYPE node with child in "_DECL" declaration type tree format
-			 * - a number of DECL_STAR children
-			 */
-			if (tree.head_type == CAST_TYPE) {
-				conv = copy_tree(*(tree.child[0]->child[0]));
-				for (i = 0; i < tree.child_count; ++i)
-					if (tree.child[i]->head_type == DECL_STAR)
-						++stars;
-				tree = conv;
-			}
-			goto decl_decl2;
+	if ((tdtree = hashtab_lookup(typedef_tags, str))) {
+		adv();
+		tree = copy_tree(*tdtree);
+		#ifdef DEBUG
+			fprintf(stderr, "tag: ");
+			printout_tree(tree);
+			fprintf(stderr, "\n");
+		#endif
+		/*
+		 * CAST_TYPE tree format:
+		 * - BASE_TYPE node with child in "_DECL" declaration type tree format
+		 * - a number of DECL_STAR children
+		 */
+		if (tree.head_type == CAST_TYPE) {
+			conv = copy_tree(*(tree.child[0]->child[0]));
+			for (i = 0; i < tree.child_count; ++i)
+				if (tree.child[i]->head_type == DECL_STAR)
+					++stars;
+			tree = conv;
 		}
+		goto decl_decl2;
 	}
 
 	/* enum-decl */
@@ -705,6 +691,7 @@ exp_tree_t block()
 	int sav_indx, ident_indx, arg_indx;
 	int must_be_proto = 0;
 	int deflab;
+	exp_tree_t tag;
 	
 	/* return-value type before a procedure */
 	sav_indx = indx;
@@ -868,11 +855,14 @@ not_proc:
 		if (!valid_tree(subtree))
 			parse_fail("expected a declarator after 'typedef'");
 		tok = need(TOK_IDENT);
-		strcpy(typedef_tag[typedefs], get_tok_str(tok));
-		typedef_desc[typedefs] = copy_tree(subtree);
-		++typedefs;
-		if (typedefs >= MAX_TYPEDEFS)
-			parse_fail("too many typedefs, sorry, will eventually improve capacity");
+
+		/*
+		 * register the tag string (`tok') as key and its type description
+		 * tree (`tag') as the associated value
+		 */
+		tag = copy_tree(subtree);
+		hashtab_insert(typedef_tags, get_tok_str(tok), alloc_exptree(tag));
+
 		need(TOK_SEMICOLON);
 		/*
 		 * The left operand of the typedef must be coded
