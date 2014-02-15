@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "hashtable.h"
 #include "tokenizer.h"
 #include "tokens.h"
 #include "tree.h"
@@ -32,12 +33,6 @@ int tok_count;
 char typedef_tag[32][MAX_TYPEDEFS];	     /* XXX: limited!*/
 exp_tree_t typedef_desc[MAX_TYPEDEFS];	/* XXX: limited!*/
 int typedefs = 0;
-
-struct enum_tag {
-	token_t key;
-	int val;
-} enum_tags[MAX_ENUMS];		/* XXX: limited!*/
-int enums = 0;
 
 extern char* get_tok_str(token_t t);
 
@@ -70,6 +65,8 @@ exp_tree_t initializer();
 exp_tree_t enum_decl();
 exp_tree_t enum_tag_decl();
 int decl_dispatch(char type);
+
+hashtab_t *enum_tags;
 
 void printout(exp_tree_t et);
 extern void fail(char* mesg);
@@ -165,6 +162,9 @@ exp_tree_t parse(token_t *t)
 	program = new_exp_tree(BLOCK, NULL);
 	token_t end = { TOK_NOMORETOKENSLEFT, "", 0, 0, 0 };
 	int i;
+
+	/* set up enum tags dictionary */
+	enum_tags = new_hashtab();
 
 	/* count the tokens */
 	for (i = 0; t[i].start; ++i)
@@ -1989,11 +1989,11 @@ exp_tree_t enum_decl()
 		/*
 		 * register this enum constant
 		 */
-		enum_tags[enums].key = ident;
-		enum_tags[enums].val = i;
-		++enums;
-		if (enums >= MAX_ENUMS)
-			parse_fail("too many enums, sorry, will eventually improve capacity");
+		int *iptr = malloc(sizeof(int));
+		if (!iptr)
+			fail("malloc an int");
+		*iptr = i;
+		hashtab_insert(enum_tags, get_tok_str(ident), iptr);
 		#ifdef DEBUG
 			fprintf(stderr, "enum const: %s -> ",
 				get_tok_str(ident));
@@ -2026,29 +2026,24 @@ exp_tree_t int_const()
 	char *buff;
 	int val;
 	int i;
+	int *iptr;
 	char tag[64];
 
 	/*
 	 * Enum tags
-	 * XXX: lazy inefficient O(n) array-based dictionary 
-	 * and associated lookup code that copies lots of bytes
-	 * BST or hash table would be smarter
 	 */
 	if (tok.type == TOK_IDENT) {
-		for (i = 0; i < enums; ++i) {
-			strcpy(tag, get_tok_str(enum_tags[i].key));
-			if (!strcmp(tag, get_tok_str(tok))) {
-				fake_int.type = TOK_IDENT;
-				buff = calloc(256, 1);
-				sprintf(buff, "%d", enum_tags[i].val);
-				fake_int.start = buff;
-				fake_int.len = strlen(buff);
-				fake_int.from_line = 0;
-				fake_int.from_line = 1;
-				tree = new_exp_tree(NUMBER, &fake_int);
-				adv();	/* eat the tag */
-				return tree;
-			}
+		if ((iptr = hashtab_lookup(enum_tags, get_tok_str(tok)))) {
+			fake_int.type = TOK_IDENT;
+			buff = calloc(256, 1);
+			sprintf(buff, "%d", *iptr);
+			fake_int.start = buff;
+			fake_int.len = strlen(buff);
+			fake_int.from_line = 0;
+			fake_int.from_line = 1;
+			tree = new_exp_tree(NUMBER, &fake_int);
+			adv();	/* eat the tag */
+			return tree;
 		}
 	}
 
