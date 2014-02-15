@@ -780,6 +780,8 @@ is_proc:
 		/*
 		 * If there's just a semicolon ahead,
 		 * it's actually a prototype.
+		 * XXX: prototypes like "int foo();",
+		 * specifically the "()" part, do not work.
 		 */
 		if (peek().type == TOK_SEMICOLON) {
 			adv();
