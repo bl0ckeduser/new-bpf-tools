@@ -786,12 +786,12 @@ is_proc:
 			tree.head_type = PROTOTYPE;
 			return tree;
 		} else if (must_be_proto)
-				/* 
-				 * Cases like "int *", as noted earlier.
-				 * FYI test case `test/x86/error/proto-arg.c' triggers this.
-				 */
-				parse_fail("declaration without an identifier "
-						   "in a function definition's arguments list");
+			/* 
+			 * Cases like "int *", as noted earlier.
+			 * FYI test case `test/x86/error/proto-arg.c' triggers this.
+			 */
+			parse_fail("declaration without an identifier "
+				   "in a function definition's arguments list");
 		subtree = block();
 		if (!valid_tree(subtree))
 			parse_fail("block expected");
