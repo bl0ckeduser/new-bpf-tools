@@ -5,6 +5,6 @@ gcc -DMINGW_BUILD -g -std=c99 codegen_x86.c diagnostics.c general.c main.c optim
 
 else
 
-c99 codegen_x86.c diagnostics.c general.c main.c optimize.c parser.c tokenizer.c tokens.c tree.c typeof.c escapes.c hashtable.c
+c99 -O3 codegen_x86.c diagnostics.c general.c main.c optimize.c parser.c tokenizer.c tokens.c tree.c typeof.c escapes.c hashtable.c
 
 fi
