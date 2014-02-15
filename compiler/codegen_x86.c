@@ -131,7 +131,7 @@ char ts_used[TEMP_REGISTERS];
 char tm_used[TEMP_MEM];
 
 int proc_ok = 1;		/* this is used to prevent nested procedure defs
-				 * it is raised whenever a procedure is not being coded */
+			   	 * it is raised whenever a procedure is not being coded */
 
 int else_ret;			/* a flag raised when the "else return"
 				 * pattern is detected and can be optimized */
@@ -511,7 +511,7 @@ int sym_check(token_t* tok)
 	for (i = 0; i < arg_syms; i++)
 		if (!strcmp(arg_symtab[i], s)) {
 			sprintf(buf, "declaration of local symbol `%s' conflicts"
-						 " with an argument having the same name", s);
+				     " with an argument having the same name", s);
 			compiler_fail(buf, tok, 0, 0);
 		}
 	return 0;
@@ -930,7 +930,7 @@ int look_for_main(exp_tree_t *tree)
 
 	if (tree->head_type == PROC) {
 		if (!strcmp(get_tok_str(*(tree->tok)),
-					"main"))
+			     "main"))
 			return 1;
 	}
 
@@ -1149,11 +1149,11 @@ void create_jump_tables(exp_tree_t* tree)
 				 */
 				if (lab < 0) {
 					compiler_fail("can't do negative case-values yet",
-								findtok(tree), 0, 0);
+							findtok(tree), 0, 0);
 				}
 				if (lab > 1023) {
 					compiler_fail("can't do case-values > 1023 yet",
-								findtok(tree), 0, 0);
+							findtok(tree), 0, 0);
 				}
 
 				/*
@@ -1299,7 +1299,7 @@ char *decl2suffix(char ty)
 	switch (ty) {
 		case LONG_DECL:		/* 4 bytes */
 			return "l";
-		case INT_DECL:		/* 4 bytes */
+		case INT_DECL:			/* 4 bytes */
 			return "l";
 		case CHAR_DECL:		/* 1 byte */
 			return "b";
@@ -1736,9 +1736,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 	 * to ensure some things happen only in their assigned pass */
 	for (i = 0; i < tree->child_count; ++i)
 		if (tree->child[i]->head_type == BLOCK
-		||	tree->child[i]->head_type == IF
-		||	tree->child[i]->head_type == WHILE
-		||	int_type_decl(tree->child[i]->head_type)
+		||  tree->child[i]->head_type == IF
+		||  tree->child[i]->head_type == WHILE
+		||  int_type_decl(tree->child[i]->head_type)
 		||  (!first_pass && tree->child[i]->head_type == STRUCT_DECL)
 		||  (!first_pass && tree->child[i]->head_type == NAMED_STRUCT_DECL))
 			setup_symbols_iter(tree->child[i], symty, first_pass);
@@ -2307,11 +2307,11 @@ char* codegen(exp_tree_t* tree)
 					 */
 					if (tree->child_count != func_desc[i].argc) {
 						sprintf(sbuf, "Argument count mismatch -- "
-									  "`%s' expects %d arguments but "
-									  "you have given it %d",
-										func_desc[i].name,
-										func_desc[i].argc,
-										tree->child_count);
+							      "`%s' expects %d arguments but "
+							      "you have given it %d",
+								func_desc[i].name,
+								func_desc[i].argc,
+								tree->child_count);
 						compiler_fail(sbuf,
 							findtok(tree), 0, 0);
 					}
@@ -2452,8 +2452,8 @@ char* codegen(exp_tree_t* tree)
 			custom_return_type = 1;
 			argl = tree->child[1];
 			compiler_warn("only int- or char- sized return types work",
-							findtok(tree),
-							0, 0);
+					findtok(tree),
+					0, 0);
 		}
 		else
 			argl = tree->child[0];
