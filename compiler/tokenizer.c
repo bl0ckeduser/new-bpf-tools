@@ -403,6 +403,11 @@ token_t* tokenize(char *buf)
 			/* 
 			 * Spot keywords. They are initially
 			 * recognized as identifiers. 
+			 *
+			 * XXX: this lazy hack is a massive bottleneck and it
+			 * makes the tokenizer super slow where it should be
+			 * alltogether O(n) where n is the number of
+			 * incoming characters. a hash table would be appropriate.
 			 */
 			if (c.success == TOK_IDENT) {
 				strncpy(buf2, p, max);
