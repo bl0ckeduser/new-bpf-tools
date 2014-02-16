@@ -12,6 +12,14 @@ Features used but not compiled by the x86 compiler
 - "static" qualifier
 - "unsigned" qualifier
 - struct function return types (used in parser.c -- e.g. "exp_tree_t block();")
+- complicated struct-array-initializations (used by kw_tab)
+ (e.g. struct foo bob[] = {{"a",0},...... etc)
+  either fails with a message saying it's unsupported in global scope,
+  or a cryptic debugging message that looks like:
+
+	codegen_x86: incapable of coding tree:
+	(ASGN (VARIABLE:kw_tab) (COMPLICATED_INITIALIZER....
+- structs as function arguments
 
 -------------------------------------------------------------------------
 

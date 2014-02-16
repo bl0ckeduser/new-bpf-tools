@@ -415,11 +415,17 @@ elements are C syntax.
 	Current known pitfalls (as of writing) that I can remember:
 
 		- you probably can't have a struct inside a struct yet
+		  UPDATE: that's a work in progress. 
+		  see test/x86/meta-struct.c 
 		- structs cannot be used as function argument types
 		  or function return types. note however that pointers 
 		  to struct, arrays of pointers to struct, pointers 
-		  to pointers to struct, etc. -- anything that is a pointer
-		  should work, though.
+		  to pointers to struct, etc. -- any kind of pointer --
+	          should work.
+	          (pointers are much easier to deal with, they're just
+		   words that point to some stuff; you can
+		   dereference them and depack them and pass them around
+		   as single words on the stack, etc)
 		- struct assignments (e.g. a = b) are unsupported,
 		  but I guess maybe you can use memcpy and pointers for now
 		- no struct literals of any kind are supported,
