@@ -18,6 +18,7 @@
 
 #define SYMLEN 256
 
+#include "hashtable.h"
 #include "tree.h"
 #include "tokens.h"
 #include "typedesc.h"
@@ -121,8 +122,8 @@ char named_struct_name[256][64];
 int named_structs = 0;
 
 /* Table of string-constant symbols */
-char str_const_tab[256][SYMLEN] = {""};
-int str_consts = 0;
+hashtab_t* str_consts;
+int str_const_id = 0;
 
 /* Temporary-use registers currently in use */
 char ts_used[TEMP_REGISTERS];
@@ -690,16 +691,16 @@ typedesc_t sym_lookup_type(token_t* tok)
  */
 int str_const_lookup(token_t* tok)
 {
-	char buf[1024];
-	char *s = get_tok_str(*tok);
-	int i = 0;
+	int *val;
 
-	for (i = 0; i < str_consts; i++)
-		if (!strcmp(str_const_tab[i], s))
-			return i;
+	val = hashtab_lookup(str_consts, get_tok_str(*tok));	
 
-	sprintf(buf, "unregistered string constant `%s'", s);
-	compiler_fail(buf, tok, 0, 0);
+	if (!val) {
+		sprintf(buf, "unregistered string constant `%s'", get_tok_str(*tok));
+		compiler_fail(buf, tok, 0, 0);
+	}
+
+	return *val;
 }
 
 /* 
@@ -707,11 +708,11 @@ int str_const_lookup(token_t* tok)
  */
 int str_const_add(token_t *tok)
 {
-	char *s = get_tok_str(*tok);
-	if (strlen(s) >= SYMLEN)
-		compiler_fail("string constant too long", tok, 0, 0);
-	strcpy(str_const_tab[str_consts], s);
-	return str_consts++; 
+	int *iptr = malloc(sizeof(int));
+	if (!iptr)
+		fail("malloc an int");
+	hashtab_insert(str_consts, get_tok_str(*tok), iptr);
+	return *iptr = str_const_id++;
 }
 
 /* 
@@ -952,6 +953,11 @@ void run_codegen(exp_tree_t *tree)
 	char *main_args[] = { NULL };
 	extern void deal_with_procs(exp_tree_t *tree);
 	extern void deal_with_str_consts(exp_tree_t *tree);
+
+	/*
+	 * set up hash table for string constants
+	 */
+	str_consts = new_hashtab();
 
 	/*
 	 * Define the format used for printf()
