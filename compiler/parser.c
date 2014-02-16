@@ -731,7 +731,7 @@ exp_tree_t block()
 				}
 		}
 		adv();
-		if (peek().type != TOK_LBRACE)
+		if (!typed_proc && peek().type != TOK_LBRACE)
 			goto not_proc;
 is_proc:
 		indx = indx_bound(ident_indx + 1);			
@@ -767,8 +767,6 @@ is_proc:
 		/*
 		 * If there's just a semicolon ahead,
 		 * it's actually a prototype.
-		 * XXX: prototypes like "int foo();",
-		 * specifically the "()" part, do not work.
 		 */
 		if (peek().type == TOK_SEMICOLON) {
 			adv();

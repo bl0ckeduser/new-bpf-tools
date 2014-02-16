@@ -2,6 +2,15 @@
 int* toothlessness(int,
 		   char* ronald_mcdonald_is_named_donald_in_japan);
 
+/* a prototype with an empty arglist (these didn't use to work) */
+int foo();
+
+foo()
+{
+	puts("hahahahahaah");
+}
+
+
 int main(int argc, char* argv[])
 {
 	int* hamburgers_the_cornerstone_of_any_nutrititous_breakfast
@@ -13,6 +22,8 @@ int main(int argc, char* argv[])
 
 	printf("*hambugers = %d\n", 
 		*hamburgers_the_cornerstone_of_any_nutrititous_breakfast);
+
+	foo();
 }
 
 int* toothlessness(int foo, char* reaction_to_weird_fact) {
