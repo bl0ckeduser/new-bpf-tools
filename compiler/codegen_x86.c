@@ -2458,6 +2458,16 @@ char* codegen(exp_tree_t* tree)
 		else
 			argl = tree->child[0];
 
+		/*
+		 * Special case: (void) means exactly zero arguments
+		 */
+		if (argl->child_count == 1
+			&& argl->child[0]->child_count == 1
+			&& argl->child[0]->child[0]->child_count == 1
+			&& argl->child[0]->child[0]->child[0]->child_count == 1
+			&& argl->child[0]->child[0]->child[0]->child[0]->head_type == VOID_DECL)
+			argl->child_count = 0;
+
 		argbytes = 0;
 		if (argl->child_count) {
 			for (i = 0; argl->child[i]; ++i) {
@@ -2520,6 +2530,21 @@ char* codegen(exp_tree_t* tree)
 		else
 			/* default return type is "int" */
 			func_desc[funcdefs].ret_typ = mk_typedesc(INT_DECL, 0, 0);
+
+		/*
+		 * Special case: prototypes like foo(void)
+		 * mean that the function takes exactly zero
+		 * arguments.
+		 */
+		if (func_desc[funcdefs].argc == 1
+		    && func_desc[funcdefs].argtyp[0].arr == 0
+		    && func_desc[funcdefs].argtyp[0].ptr == 0
+		    && func_desc[funcdefs].argtyp[0].is_struct == 0
+		    && func_desc[funcdefs].argtyp[0].is_struct_name_ref == 0
+		    && func_desc[funcdefs].argtyp[0].ty == VOID_DECL) {
+			func_desc[funcdefs].argc = 0;
+		}
+
 		funcdefs++;
 
 		/* prevent nested procedure defs */

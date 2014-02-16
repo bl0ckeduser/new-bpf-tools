@@ -25,6 +25,7 @@ Features used but not compiled by the x86 compiler
   e.g. typedesc_t tree_typeof_iter(typedesc_t, exp_tree_t*);
   UPDATE: some support for these. the main lacks at this point are:
     - blablabla blablabla(void), specifically the `(void)' thing
+    - meta update: (void) should be working now
     - anal type conflict checking (would probably require an
       complicated recursive parallel tree walk, aghdsjdsfsd)
     - it seems not to work for empty () in some cases (!!!!!)

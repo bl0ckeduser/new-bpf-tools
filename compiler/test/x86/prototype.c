@@ -5,9 +5,17 @@ int* toothlessness(int,
 /* a prototype with an empty arglist (these didn't use to work) */
 int foo();
 
+/* (void) means exactly zero arguments, as far as I understand */
+int bar(void);
+
 foo()
 {
 	puts("hahahahahaah");
+}
+
+bar(void)
+{
+	puts("hohohohohohoh");
 }
 
 
@@ -24,6 +32,7 @@ int main(int argc, char* argv[])
 		*hamburgers_the_cornerstone_of_any_nutrititous_breakfast);
 
 	foo();
+	bar();
 }
 
 int* toothlessness(int foo, char* reaction_to_weird_fact) {

@@ -40,7 +40,7 @@ typedef struct bignum {
 	int alloc;	/* bytes allocated */
 } bignum_t;
 
-/* bignum_t* make_bignum(void); */
+bignum_t* make_bignum(void);
 /*
  * XXX: it seems (void) means: i want zero args
  * i don't even remember what it means i should lookitup

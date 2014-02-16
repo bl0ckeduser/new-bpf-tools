@@ -691,7 +691,7 @@ exp_tree_t block()
 	int sav_indx, ident_indx, arg_indx;
 	int must_be_proto = 0;
 	int deflab;
-	exp_tree_t tag;
+	exp_tree_t tag;	
 	
 	/* return-value type before a procedure */
 	sav_indx = indx;
@@ -742,6 +742,7 @@ is_proc:
 		/* argument list */
 		subtree = new_exp_tree(ARG_LIST, NULL);
 		need(TOK_LPAREN);
+		args = 0;
 		while (peek().type != TOK_RPAREN) {
 			subtree2 = arg();
 			if (!valid_tree(subtree2))
@@ -761,7 +762,17 @@ is_proc:
 			add_child(&subtree, alloc_exptree(subtree2));
 			if (peek().type != TOK_RPAREN)
 				need(TOK_COMMA);
+			++args;
 		}
+		/*
+		 * Special case: (void) is valid
+		 */
+		if (must_be_proto 
+			&& args == 1 
+			&& subtree2.child[0]
+			    ->child[0]->child[0]
+			    ->head_type == VOID_DECL)
+			must_be_proto = 0;
 		adv();
 		add_child(&tree, alloc_exptree(subtree));
 		/*
