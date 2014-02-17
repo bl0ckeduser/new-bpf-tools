@@ -1793,7 +1793,7 @@ char *registerize_from(char *stor, int fromsiz)
 	str = get_temp_reg_siz(fromsiz);
 	printf("%s %s, %s\n", 
 		move_conv_to_long(fromsiz), 
-		fixreg(stor, fromsiz), str, fromsiz);
+		fixreg(stor, fromsiz), str);
 	return str;
 }
 
@@ -2639,7 +2639,7 @@ char* codegen(exp_tree_t* tree)
 			 * XXX: this assumes an int return value
 			 * (which is the default, anyway) 
 			 */
-			printf("movl %s, %%eax # ret\n", sto, str);
+			printf("movl %s, %%eax # ret\n", sto);
 		printf("jmp _ret_%s\n", current_proc);
 		return NULL;
 	}
