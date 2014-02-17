@@ -301,24 +301,15 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 typedesc_t struct_tree_2_typedesc(exp_tree_t *tree, int *bytecount,
 	struct_desc_t **sd_arg)
 {
-	int i, j, k, sto;
 	exp_tree_t *dc;
-	int stars, newlen;
-	char *str;
-	int sym_num;
 	int objsiz;
-	int start_bytes;
-	int decl = tree->head_type;
-	typedesc_t typedat, struct_base, tag_type;
-	int array_bytes;
-	int dim;
+	typedesc_t struct_base, tag_type;
 	typedesc_t array_base_type;
 	int tag_offs;
 	char tag_name[64];
-	int struct_bytes;
 	typedesc_t *heap_typ;
-	int padding;
 	int struct_pass;
+	int i;
 
 	/* 
 	 * Build the struct's type description
@@ -617,7 +608,7 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	int i;
 	int max_decl, max_siz, max_ptr, siz;
 	typedesc_t ctd;
-	typedesc_t struct_typ, tag_typ;
+	typedesc_t struct_typ;
 	char tag_name[128];
 	struct_desc_t *sd;
 	int bc;

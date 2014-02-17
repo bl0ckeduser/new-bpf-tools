@@ -1363,25 +1363,15 @@ void setup_symbols(exp_tree_t *tree, int symty)
 
 void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 {
-	int i, j, k, sto;
+	int i, j;
 	exp_tree_t *dc;
-	int stars, newlen;
-	char *str;
 	int sym_num;
 	int objsiz;
-	int start_bytes;
 	int decl = tree->head_type;
-	typedesc_t typedat, struct_base, tag_type;
-	int array_bytes;
-	int dim;
+	typedesc_t typedat, struct_base;
 	typedesc_t array_base_type;
 	struct_desc_t* sd;
-	int tag_offs;
-	char tag_name[64];
 	int struct_bytes;
-	typedesc_t *heap_typ;
-	int padding;
-	int struct_pass;
 	exp_tree_t inits;
 	exp_tree_t init_expr;
 	exp_tree_t *initializer_val;
@@ -1851,7 +1841,7 @@ char* registerize_siz(char *stor, int siz)
  */
 char* codegen(exp_tree_t* tree)
 {
-	char *sto, *sto2, *sto3, *sto4;
+	char *sto, *sto2, *sto3;
 	char *str, *str2;
 	char *name;
 	char *proc_args[32];
@@ -1885,7 +1875,6 @@ char* codegen(exp_tree_t* tree)
 	int stackstor;
 	exp_tree_t *argl, *codeblock;
 	int custom_return_type;
-	int ptr_diff;
 	int do_deref;
 	int tlab;
 	int entries, fill;
