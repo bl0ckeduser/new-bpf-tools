@@ -1149,9 +1149,9 @@ void create_jump_tables(exp_tree_t* tree)
 				 * makes the tree:
 				 * 
 				 * (SWITCH:switch 
-				 *		(VARIABLE:u)
-				 *		(SWITCH_CASE:0)
-				 * 		(PROC_CALL:foo))
+				 *	(VARIABLE:u)
+				 *	(SWITCH_CASE:0)
+				 * 	(PROC_CALL:foo))
 				 */
 				str = get_tok_str(*(tree->child[i]->tok));
 				sscanf(str, "%d", &lab);
@@ -2264,7 +2264,7 @@ char* codegen(exp_tree_t* tree)
 		&& tree->child_count == 1) {
 		/* 
 		 * Find byte size of *exp
-	     */
+		 */
 		membsiz = type2siz(
 			deref_typeof(tree_typeof(tree->child[0])));
 		
@@ -2276,9 +2276,9 @@ char* codegen(exp_tree_t* tree)
 		if (membsiz <= 0) {
 			membsiz = 1;
 			compiler_warn("you're dereferencing what doesn't"
-						  " seem to be a pointer.\nsegfaults might"
-						  " be coming your way soon.",
-						  findtok(tree), 0, 0);
+				      " seem to be a pointer.\nsegfaults might"
+				      " be coming your way soon.",
+					findtok(tree), 0, 0);
 		}
 
 		/* deref and convert to int -- because
@@ -3719,7 +3719,7 @@ char* optimized_while(exp_tree_t* tree, char *oppcheck)
 	printf("cmpl %s, %s\n", sto2, sto);
 	free_temp_reg(sto);
 	free_temp_reg(sto2);
-	printf("%s IL%d\n",	oppcheck, lab2);
+	printf("%s IL%d\n", oppcheck, lab2);
 	/* open break-scope */
 	break_labels[++break_count] = lab2;
 	/* codegen the block */
