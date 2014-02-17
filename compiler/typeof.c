@@ -27,14 +27,16 @@
 
 char err_buf[1024];
 
-/* Internal-use prototypes */
+/*
+ * Internal-use prototypes
+ */
 typedesc_t tree_typeof_iter(typedesc_t, exp_tree_t*);
 typedesc_t struct_tree_2_typedesc(exp_tree_t *tree, int *bytecount,
 	struct_desc_t **sd_arg);
 
 /* 
  * Hooks to x86 codegen symbol-type query 
- * / constant dispatch table stuff
+ * and constant dispatch table stuff
  */
 extern typedesc_t sym_lookup_type(token_t* tok);
 extern int int_type_decl(char ty);
@@ -318,20 +320,28 @@ typedesc_t struct_tree_2_typedesc(exp_tree_t *tree, int *bytecount,
 	int padding;
 	int struct_pass;
 
-	/* build the struct's type description
+	/* 
+	 * Build the struct's type description
 	 * (derived types like pointers come later in the
-	 * declaration children) */
+	 * declaration children)
+	 */
 	struct_base.ty = 0;		
 	struct_base.arr = struct_base.ptr = 0;
 
-	/* allocate struct-description structure
-	 * (yes this is starting to get meta) */
+	/* 
+	 * Allocate struct-description structure
+	 * (yes this is starting to get meta)
+	 */
 	*sd_arg = malloc(sizeof(struct_desc_t));
 
-	/* track structure name */
+	/* 
+	 * Track structure name
+	 */
 	strcpy((*sd_arg)->snam, get_tok_str(*(tree->tok)));
 
-	/* figure out tag count */
+	/* 
+	 * Figure out tag count
+	 */
 	(*sd_arg)->cc = 0;
 	for (i = 0; i < tree->child_count; ++i)
 		if (tree->child[i]->head_type == DECL_CHILD)
@@ -339,7 +349,9 @@ typedesc_t struct_tree_2_typedesc(exp_tree_t *tree, int *bytecount,
 		else
 			(*sd_arg)->cc += 1;
 
-	/* iterate over tags */
+	/* 
+	 * Iterate over tags
+	 */
 	struct_pass = 0;
 	tag_offs = 0;
 struct_pass_iter:
@@ -359,10 +371,15 @@ struct_pass_iter:
 		 *          also DECL_STAR nodes
 		 */
 		dc = tree->child[i]->child[tree->child[i]->child_count - 1];
-		/* get tag name */
+
+		/* 
+		 * Get tag name
+		 */
 		strcpy(tag_name, get_tok_str(*(dc->child[0]->tok)));
 
-		/* get information on the tag's type */
+		/*
+		 * Get information on the tag's type
+		 */
 		/* XXX: tags can't be structs themselves yet ! */
 		parse_type(dc, &tag_type, &array_base_type, &objsiz, 
 			tree->child[i]->head_type, tree->child[i]);
@@ -381,34 +398,47 @@ struct_pass_iter:
 			dump_td(tag_type);
 		#endif
 
-		/* mystery segfault-proofing padding */
-		/* another sacrifice for the unfathomable 
-		 * microprocessor gods */		
+		/* 
+		 * Mystery segfault-proofing padding
+		 * (another sacrifice for the unfathomable 
+		 * microprocessor gods)
+		 */
 		while (tag_offs % 16)
 			++tag_offs;
 
-		/* write tag data to struct description */
+		/* 
+		 * Write tag data to struct description
+		 */
 		(*sd_arg)->offs[i] = tag_offs;
 		(*sd_arg)->name[i] = malloc(128);
 		strcpy((*sd_arg)->name[i], tag_name);
-		/* (gotta *copy* the tag type data to heap because it's stack 
+
+		/*
+		 * (gotta *copy* the tag type data to heap because it's stack 
 		 * -- otherwise funny things happen when you try to 
-		 * read it outside of this function) */
+		 * read it outside of this function)
+		 */
 		heap_typ = malloc(sizeof(typedesc_t));
 		memcpy(heap_typ, &tag_type, sizeof(typedesc_t));
 		(*sd_arg)->typ[i] = heap_typ;
 
-		/* bump tag offset calculation */
+		/*
+		 * bump tag offset calculation
+		 */
 		tag_offs += objsiz;
 	}
 
 	if (!struct_pass++)
 		goto struct_pass_iter;
 
-	/* size in bytes of the whole struct */
+	/*
+	 * size in bytes of the whole struct
+	 */
 	*bytecount = tag_offs;
 
-	/* bind struct desc to struct base type desc */
+	/*
+	 * bind struct desc to struct base type desc
+	 */
 	struct_base.struct_desc = (*sd_arg);
 	struct_base.is_struct = 1;
 
@@ -521,9 +551,9 @@ void dump_td_iter(typedesc_t td, int depth)
 typedesc_t deref_typeof(typedesc_t td)
 {
 	if (td.arr) {
-			--td.arr;
-			if (td.arr_dim)
-				++td.arr_dim;
+		--td.arr;
+		if (td.arr_dim)
+			++td.arr_dim;
 	}
 	else
 		--td.ptr;
@@ -621,7 +651,9 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	}
 
 	if (tp->head_type == STRUCT_MEMB || tp->head_type == DEREF_STRUCT_MEMB) {
-		/* find type of base */
+		/*
+		 * Find type of base
+		 */
 		struct_typ = tree_typeof(tp->child[0]);
 		strcpy(tag_name, get_tok_str(*(tp->child[1]->tok)));
 
@@ -645,14 +677,18 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 		#endif
 		#endif
 		
-		/* figure out the type of the tag and return it */
+		/*
+		 * Figure out the type of the tag and return it
+		 */
 		for (i = 0; i < struct_typ.struct_desc->cc; ++i) {
 			if (!strcmp(struct_typ.struct_desc->name[i], tag_name)) {
 				return *(struct_typ.struct_desc->typ[i]);
 			}
 		}
 
-		/* the tag doesn't even exist, come on !!! */
+		/*
+		 * The tag doesn't even exist, come on !!!
+		 */
 		sprintf(err_buf, "a structure of type `%s' has no tag `%s'",
 			struct_typ.struct_desc->snam,
 			tag_name);
@@ -759,9 +795,14 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	 * Array access
 	 */
 	if (tp->head_type == ARRAY || tp->head_type == ARRAY_ADR) {
-		/* type of base */
+		/*
+		 * Type of base
+		 */
 		td = tree_typeof_iter(td, tp->child[0]);
-		/* dereference by number of []  - 1*/
+
+		/*
+		 * Dereference by number of []  - 1
+		 */
 		for (i = 0; i < tp->child_count - 1; ++i)
 			td = deref_typeof(td);
 		return td;
@@ -818,12 +859,16 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	 * generator is currently designed.
 	 */
 	if (is_arith_op(tp->head_type)) {
-		/* initialize type with data from first member */
+		/*
+		 * Initialize type with data from first member
+		 */
 		max_siz = decl2siz((ctd = tree_typeof(tp->child[0])).ty);
 		max_decl = ctd.ty;
 		max_ptr = ctd.arr + ctd.ptr;
 
-		/* promote to pointer type if any */
+		/*
+		 * Promote to pointer type if any
+		 */
 		for (i = 0; i < tp->child_count; ++i) {
 			if ((siz = decl2siz((ctd = tree_typeof(tp->child[i])).ty))
 				&& siz >= max_siz
@@ -834,12 +879,16 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 			}
 		}
 
-		/* populate typedesc field */
+		/*
+		 * Populate typedesc field
+		 */
 		td.ty = max_decl;
 		td.arr = 0;
 		td.ptr = max_ptr;
 
-		/* handle pointer subtraction case */
+		/*
+		 * Handle pointer subtraction case
+		 */
 		if (tp->head_type == SUB && td.ptr && tp->child_count == 2
 			&& (tree_typeof(tp->child[0]).ptr || tree_typeof(tp->child[0]).arr)
 			&& (tree_typeof(tp->child[1]).ptr || tree_typeof(tp->child[1]).arr)) {
@@ -848,11 +897,15 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 			td.arr = td.ptr = 0;
 		}
 
-		/* promote char to int */
+		/*
+		 * Promote char to int
+		 */
 		if (td.ty == CHAR_DECL && td.arr == 0 && td.ptr == 0)
 			td.ty = INT_DECL;
 
-		/* warning on strange arithmetic */
+		/*
+		 * Error on strange arithmetic
+		 */
 		if (!(tp->head_type == ADD || tp->head_type == SUB) && td.ptr)
 			compiler_fail("please don't use pointers in incomprehensible ways",
 				findtok(tp), 0, 0);

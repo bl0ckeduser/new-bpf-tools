@@ -419,7 +419,7 @@ token_t* tokenize(char *buf)
 		}
 
 		/*
-		 * if inside a C comment, only look for
+		 * If inside a C comment, only look for
 		 * comment close tokens. (otherwise some
 		 * patterns will do nasty wrong things)
 		 */
@@ -462,15 +462,20 @@ token_t* tokenize(char *buf)
 			}
 
 			/*
-			 * Deal with comment stuff
+			 * And now: comment stuff
 			 */
-			/* Open a C comment if not already in one */
+
+			/*
+			 * Open a C comment if not already in one
+			 */
 			if (c.success == C_CMNT_OPEN) {
 				if (comstat == INSIDE_A_C_COMMENT)
 					TOK_FAIL("Please do not nest C comments");
 				comstat = INSIDE_A_C_COMMENT;
-			/* C comment closes are allowed if a C comment
-			 * has already been opened */
+			/* 
+			 * C comment closes are allowed if a C comment
+			 * has already been opened
+			 */
 			} else if (c.success == C_CMNT_CLOSE) {
 				if (comstat == INSIDE_A_C_COMMENT) {
 					comstat = NOT_INSIDE_A_COMMENT;
@@ -478,13 +483,17 @@ token_t* tokenize(char *buf)
 				} else {
 					TOK_FAIL("Dafuq is a */ doing there ?");
 				}
-			/* Start a C++ comment, unless already in a C comment
-			 * (the string // inside a C comment is legal) */
+			/* 
+			 * Start a C++ comment, unless already in a C comment
+			 * (the string // inside a C comment is legal)
+			 */
 			} else if (c.success == CPP_CMNT) {
 				if (comstat != INSIDE_A_C_COMMENT)
 					comstat = INSIDE_A_CPP_COMMENT;	
 			}
-			/* C++ comments end at the end of their line */
+			/* 
+			 * C++ comments end at the end of their line
+			 */
 			if (comstat == INSIDE_A_CPP_COMMENT
 				&& c.success == TOK_NEWLINE) {
 				comstat = NOT_INSIDE_A_COMMENT;

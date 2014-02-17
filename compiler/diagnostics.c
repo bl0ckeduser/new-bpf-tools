@@ -50,16 +50,20 @@ void compiler_fail_int(char *message, token_t *token,
 	int chr;
 	int i;
 
-	/* check for specific line/chr override
-	 * (used for special cases like end of line) */
+	/* 
+	 * Check for specific line/chr override
+	 * (used for special cases like end of line)
+	 */
 	line = !token ? in_line : token->from_line;
 	chr = !token ? in_chr : token->from_char;
 
 	fflush(stdout);
 	fflush(stderr);
 
-	/* copy the originating code line to a buffer,
-	 * then print this to stderr */
+	/* 
+	 * Copy the originating code line to a buffer,
+	 * then print this to stderr
+	 */
 	strncpy(buf, code_lines[line], 1024);
 	buf[1023] = 0;
 	for (i = 0; code_lines[line]; ++i)
@@ -69,8 +73,10 @@ void compiler_fail_int(char *message, token_t *token,
 		}
 	fprintf(stderr, "%s\n", buf);
 
-	/* put a little arrow under the offending
-	 * character */
+	/* 
+	 * Put a little arrow under the offending
+	 * character
+	 */
 	for (i = 1; i < chr; ++i)
 		if (buf[i - 1] == '\t')
 			fputc(buf[i - 1], stderr);
@@ -79,8 +85,10 @@ void compiler_fail_int(char *message, token_t *token,
 	fputc('^', stderr);
 	fputc('\n', stderr);
 
-	/* finally display line number and error
-	 * description */
+	/* 
+	 * Finally display line number and error
+	 * description
+	 */
 	if (mode == CF_DEBUG)
 		fprintf(stderr, "debug: ");
 	else if (mode == CF_ERROR)

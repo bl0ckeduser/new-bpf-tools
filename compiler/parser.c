@@ -98,10 +98,12 @@ token_t peek()
 	return tokens[indx];
 }
 
-/* generate a pretty error when parsing fails.
+/* 
+ * Generate a pretty error when parsing fails.
  * this is a hack-wrapper around the routine
  * in diagnostics.c that deals with certain
- * special cases special to the parser. */
+ * special cases special to the parser.
+ */
 void parse_fail(char *message)
 {
 	token_t tok;
@@ -139,7 +141,9 @@ token_t need(char type)
 		return tokens[indx - 1];
 }
 
-/* main parsing loop */
+/* 
+ * entry point; main parsing loop
+ */
 exp_tree_t parse(token_t *t)
 {
 	exp_tree_t program;

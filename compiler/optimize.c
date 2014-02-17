@@ -8,7 +8,7 @@
 
 int foldable(int ty)
 {
-	return 	ty == ADD
+	return 	   	   ty == ADD
 			|| ty == SUB
 			|| ty == MULT
 			|| ty == DIV

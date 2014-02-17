@@ -779,41 +779,48 @@ int create_array(int symty, exp_tree_t *dc,
 	 */
 
 	if (symty == SYMTYPE_GLOBALS) {
-		/* check name not already taken */	
+		/* Check name not already taken */	
 		glob_check(dc->child[0]->tok);
 
-		/* do a magic assembler instruction */
+		/* Do a magic assembler instruction */
 		printf(".comm %s,%d,32\n", 
 			get_tok_str(*(dc->child[0]->tok)),
 			objsiz);
 
-		/* XXX: can't do e.g. "int foo[] = {1, 2, 3}" declarations
-		 * for globals */
+		/* 
+		 * XXX: can't do e.g. "int foo[] = {1, 2, 3}" declarations
+		 * for globals
+		 */
 		if (checknode(dc, COMPLICATED_INITIALIZER))
 			compiler_fail("global complicated"
 				      " array-initializations unsupported",
 				      findtok(dc), 0, 0);
 
-		/* add symbol to the global symbol table
-		 * and return table index */
+		/* 
+		 * Add symbol to the global symbol table
+		 * and return table index
+		 */
 		return glob_add(dc->child[0]->tok);
 	}
 
 	/* Check that the array's variable name is not already taken */
 	sym_check(dc->child[0]->tok);
 
-	/* Make storage for all but the first entries 
+	/* 
+	 * Make storage for all but the first entries 
 	 * (the whole array is objsiz bytes, while one entry
 	 * has size base_size)
 	 */
 	symsiz[syms++] = objsiz - base_size;
 	symbytes += objsiz - base_size;
 
-	/* Clear the symbol name tag for the symbol table
+	/* 
+	 * Clear the symbol name tag for the symbol table
 	 * space taken over by the array entries -- otherwise
 	 * the symbol table lookup routines may give incorrect
 	 * results if there is some leftover stuff from another
-	 * procedure */
+	 * procedure
+	 */
 	*symtab[syms - 1] = 0;
 
 	/* 
@@ -1066,16 +1073,16 @@ void run_codegen(exp_tree_t *tree)
 	printf(".type echo, @function\n");
 #endif
 	printf("echo:\n");
-    printf("pushl $0\n");
-    printf("pushl 8(%%esp)\n");
-    printf("pushl $_echo_format\n");
+	printf("pushl $0\n");
+	printf("pushl 8(%%esp)\n");
+	printf("pushl $_echo_format\n");
 #ifdef MINGW_BUILD
-    printf("call _printf\n");
+	printf("call _printf\n");
 #else
-    printf("call printf\n");
+	printf("call printf\n");
 #endif
-    printf("addl $12, %%esp  # get rid of the printf args\n");
-    printf("ret\n");
+	printf("addl $12, %%esp  # get rid of the printf args\n");
+	printf("ret\n");
 
 	/*
 	 * Test/debug the type analyzer
@@ -1409,12 +1416,15 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			struct_base = struct_tree_2_typedesc(tree, &struct_bytes, &sd);
 			struct_base.struct_desc->bytes = struct_bytes;
 
-			/* register the struct's name (e.g. "bob" in 
+			/* 
+			 * Register the struct's name (e.g. "bob" in 
 			 * "struct bob { ... };"), because it might
 			 * be referred to simply by its name later on
 			 * (in fact that's what the else-clause below 
-			 * deals with) */
-			/* XXX: wait, what if it's anonymous ? */
+			 * deals with)
+			 * 
+			 * XXX: wait, what if it's anonymous ?
+			 */
 			named_struct[named_structs] = struct_base.struct_desc;
 			strcpy(named_struct_name[named_structs],
 				get_tok_str(*(tree->tok)));
@@ -1435,8 +1445,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		/* Discard the tree from further codegeneneration */
 		tree->head_type = NULL_TREE;
 
-		/* create initializers tree */
-		/* (initializers are actual code, so they must
+		/*
+		 * Create initializers tree
+		 * (initializers are actual code, so they must
 		 * be packaged together in an artificial syntax tree that
 		 * gets sent off to the main codegen routine.
 		 * The current part of the codegen doesn't do actual code,
@@ -1488,22 +1499,25 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			 */
 			if (dc->child_count - typedat.arr - typedat.ptr - 1) {
 				for (j = 1; j < dc->child_count; ++j)
-					/* if a declaration tree's node 
-					 * encountered at this depth
-					 * is not an array or pointer qualifier,
+					/* 
+					 * If a declaration tree's node encountered at
+					 * this depth is not an array or pointer qualifier,
 					 * it's automatically an initializer. it could
 					 * be of several types (number, variable, 
 					 * array literal, whatever), so that's why 
-					 * this check is a "negative" or "not" check */
+					 * this check is a "negative" or "not" check 
+					 */
 					if (!(dc->child[j]->head_type == ARRAY_DIM
 						|| dc->child[j]->head_type == DECL_STAR)) {
 						initializer_val = dc->child[j];
 						break;
 					}
 
-				/* synthesize an assignment node
+				/* 
+				 * Synthesize an assignment node
 				 * (so yeah, initializations are basically 
-				 * delayed assignments) */
+				 * delayed assignments)
+				 */
 				init_expr = new_exp_tree(ASGN, NULL);
 				add_child(&init_expr, dc->child[0]);
 				add_child(&init_expr, initializer_val);
@@ -1536,9 +1550,11 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				 */
 				objsiz = 4;
 			else
-				/* not a pointer: it's just the size of the struct */
-				/* (remember that right now we are dealing exclusively
-				 * with struct declarations) */
+				/* 
+				 * Not a pointer: it's just the size of the struct
+				 * (remember that right now we are dealing exclusively
+				 * with struct declarations)
+				 */
 				objsiz = struct_bytes;
 
 			if (typedat.arr) {
@@ -1548,6 +1564,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				 */
 				array_base_type = typedat;
 				array_base_type.arr = 0;
+
 				/*
 				 * There's some arithmetic computation involved in creating
 				 * array symbols, and create_array() deals with that
@@ -3285,18 +3302,22 @@ char* codegen(exp_tree_t* tree)
 		 * See K&R 2nd edition (ANSI C89), page 205-206, A7.7
 		 */
 		ptr_arith_mode = (tree->head_type == ADD
-						|| tree->head_type == SUB)
-						&& tree_typeof(tree).ptr;
+				  || tree->head_type == SUB)
+				  && tree_typeof(tree).ptr;
 
-		/* If the pointer type is char *, then the mulitplier,
+		/* 
+		 * If the pointer type is char *, then the mulitplier,
 		 * obj_siz = sizeof(char) -- make sure to deref
-		 * the type before asking for its size ! */
+		 * the type before asking for its size !
+		 */
 		if (ptr_arith_mode) 
 			obj_siz = type2offs(deref_typeof(tree_typeof(tree)));
 
-		/* Find out which of the operands is the pointer,
+		/* 
+		 * Find out which of the operands is the pointer,
 		 * so that it won't get multiplied. if there is
-		 * more than one pointer operand, complain and fail. */
+		 * more than one pointer operand, complain and fail.
+		 */
 		ptr_count = 0;
 		if (ptr_arith_mode) {
 			for (i = 0; i < tree->child_count; ++i) {
@@ -3305,8 +3326,8 @@ char* codegen(exp_tree_t* tree)
 					ptr_memb = i;
 					if (ptr_count++)
 						codegen_fail("please don't + or - several "
-									 " pointers",
-							tree->child[i]->tok);
+							     " pointers",
+							    tree->child[i]->tok);
 				}
 			}
 		}
@@ -3352,7 +3373,8 @@ char* codegen(exp_tree_t* tree)
 	}
 
 
-	/* division. division is special on x86.
+	/* 
+	 * division. division is special on x86.
 	 * I hope I got this right.
 	 *
 	 * This also implements % because they are
