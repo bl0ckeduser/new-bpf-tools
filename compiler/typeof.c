@@ -651,9 +651,11 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 		if (tp->head_type == DEREF_STRUCT_MEMB)
 			struct_typ = deref_typeof(struct_typ);
 
-		if (struct_typ.arr || struct_typ.ptr)
+		if (struct_typ.arr || struct_typ.ptr ||
+		    !((struct_typ.ty == NAMED_STRUCT_DECL 
+		      && struct_typ.is_struct_name_ref) || struct_typ.is_struct))
 			compiler_fail("you can't apply the `.' (or ->) operator on a"
-						 " non-structure (or non-pointer-to-structure)...",
+				      " non-structure (or non-pointer-to-structure)...",
 				findtok(tp->child[0]), 0, 0);
 
 		#if 0
