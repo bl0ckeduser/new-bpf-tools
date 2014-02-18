@@ -17,6 +17,7 @@
 /* ====================================================== */
 
 #define SYMLEN 256
+#define INIT_BUF_SIZ 32
 
 #include "hashtable.h"
 #include "tree.h"
@@ -72,7 +73,10 @@ enum {
 /*
  * XXX: all these stupid O(n) arrays
  * could and should be converted to use
- * the new hashtable
+ * the new hashtable.
+ * UPDATE: partly the code relies on arrays,
+ * so specifically the lookup part
+ * would be the thing to modify to use hashtables
  */
 
 /* Name of function currently being coded */
@@ -80,36 +84,49 @@ char current_proc[SYMLEN];
 
 /* Table of (current) local symbols */
 /* (only one procedure is ever being codegen'd at a given time) */ 
-char symtab[256][SYMLEN] = {""};
+char **symtab;
+int symtab_a = INIT_BUF_SIZ;
+
 int syms = 0;			/* count */
 int symbytes = 0;		/* stack size in bytes */
-int symsiz[256] = {0};		/* size of each object */
-typedesc_t symtyp[256];		/* type description of each object */
+int *symsiz;			/* size of each object */
+int symsiz_a = INIT_BUF_SIZ;
+
+typedesc_t *symtyp;		/* type description of each object */
+int symtyp_a = INIT_BUF_SIZ;
 
 /* Table of global symbols */
-char globtab[256][SYMLEN] = {""};
+char **globtab;
+int globtab_a = INIT_BUF_SIZ;
 int globs = 0;	/* count */
-typedesc_t globtyp[256];
+typedesc_t *globtyp;
+int globtyp_a = INIT_BUF_SIZ;
 
 /* Table of (current) function-argument symbols */
 /* (only one procedure is ever being codegen'd at a given time) */
-char arg_symtab[256][SYMLEN] = {""};
+char **arg_symtab;
+int arg_symtab_a = INIT_BUF_SIZ; 
 int arg_syms = 0;		/* count */
 int argbytes = 0;		/* total size in bytes */
-int argsiz[256] = {0};		/* size of each object */
-typedesc_t argtyp[256];		/* type description of each object */
+int *argsiz;		/* size of each object */
+int argsiz_a = INIT_BUF_SIZ;
+typedesc_t* argtyp;		/* type description of each object */
+int argtyp_a = INIT_BUF_SIZ;
 
 /* 
  * Table of argument and return type tables associated
  * to function names -- used for locally-declared
  * functions
  */
-struct {
+typedef struct {
 	typedesc_t argtyp[256];
 	typedesc_t ret_typ;
 	char name[SYMLEN];
 	int argc;
-} func_desc[256];
+} func_desc_t;
+
+func_desc_t *func_desc;
+int func_desc_a = INIT_BUF_SIZ;
 int funcdefs = 0;
 
 /* 
@@ -117,8 +134,10 @@ int funcdefs = 0;
  * (as in e.g. "struct bob { ... };" 
  * followed by "struct bob bob_variable;")
  */
-struct_desc_t* named_struct[256];
-char named_struct_name[256][64];
+struct_desc_t** named_struct;
+int named_struct_a = INIT_BUF_SIZ;
+char **named_struct_name;
+int named_struct_name_a = INIT_BUF_SIZ;
 int named_structs = 0;
 
 /* Table of string-constant symbols */
@@ -169,6 +188,14 @@ exp_tree_t *codegen_current_tree = NULL;
 int switch_maxlab[256];
 
 /* ====================================================== */
+
+void* checked_malloc(size_t s)
+{
+	void *ptr = malloc(s);
+	if (!ptr)
+		fail("malloc failed");
+	return ptr;
+}
 
 /*
  * Look up the struct description table
@@ -533,6 +560,26 @@ char* nameless_perm_storage(int siz)
 
 	symsiz[syms++] = siz;
 
+	/*
+	 * expand buffers if necessary
+	 */
+	if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
+		int old_size = symtab_a;
+		int i;
+		while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
+			symtab_a *= 2;
+			symsiz_a *= 2;
+			symtyp_a *= 2;
+		}
+		symtab = realloc(symtab, symtab_a * sizeof(char *));
+		for (i = old_size; i < symtab_a; ++i) {
+			symtab[i] = checked_malloc(256);
+			*symtab[i] = '\0';
+		}
+		symsiz = realloc(symsiz, symsiz_a * sizeof(int));
+		symtyp = realloc(symtyp, symtyp_a * sizeof(typedesc_t));
+	}
+
 	return symstack((symbytes += siz) - siz);
 }
 
@@ -548,7 +595,30 @@ int sym_add(token_t *tok, int size)
 	strcpy(symtab[syms], s);
 	symsiz[syms] = size;
 	symbytes += size;
-	return syms++; 
+
+	++syms;
+
+	/*
+	 * expand buffers if necessary
+	 */
+	if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
+		int old_size = symtab_a;
+		int i;
+		while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
+			symtab_a *= 2;
+			symsiz_a *= 2;
+			symtyp_a *= 2;
+		}
+		symtab = realloc(symtab, symtab_a * sizeof(char *));
+		for (i = old_size; i < symtab_a; ++i) {
+			symtab[i] = checked_malloc(256);
+			*symtab[i] = '\0';
+		}
+		symsiz = realloc(symsiz, symsiz_a * sizeof(int));
+		symtyp = realloc(symtyp, symtyp_a * sizeof(typedesc_t));
+	}
+
+	return syms - 1; 
 }
 
 /*
@@ -560,7 +630,27 @@ int glob_add(token_t *tok)
 	if (strlen(s) >= SYMLEN)
 		compiler_fail("symbol name too long", tok, 0, 0);
 	strcpy(globtab[globs], s);
-	return globs++; 
+	++globs;
+
+	/*
+	 * expand buffers if necessary
+	 */
+	if (globs >= globtab_a || globs >= globtyp_a) {
+		int old_size = globtab_a;
+		int i;
+		while (globs >= globtab_a || globs >= globtyp_a) {
+			globtab_a *= 2;
+			globtyp_a *= 2;
+		}
+		globtab = realloc(globtab, globtab_a * sizeof(char *));
+		for (i = old_size; i < globtab_a; ++i) {
+			globtab[i] = checked_malloc(256);
+			*globtab[i] = '\0';
+		}
+		globtyp = realloc(globtyp, globtyp_a * sizeof(typedesc_t));
+	}
+
+	return globs - 1; 
 }
 
 /*
@@ -814,6 +904,26 @@ int create_array(int symty, exp_tree_t *dc,
 	symsiz[syms++] = objsiz - base_size;
 	symbytes += objsiz - base_size;
 
+	/*
+	 * expand buffers if necessary
+	 */
+	if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
+		int old_size = symtab_a;
+		int i;
+		while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
+			symtab_a *= 2;
+			symsiz_a *= 2;
+			symtyp_a *= 2;
+		}
+		symtab = realloc(symtab, symtab_a * sizeof(char *));
+		for (i = old_size; i < symtab_a; ++i) {
+			symtab[i] = checked_malloc(256);
+			*symtab[i] = '\0';
+		}
+		symsiz = realloc(symsiz, symsiz_a * sizeof(int));
+		symtyp = realloc(symtyp, symtyp_a * sizeof(typedesc_t));
+	}
+
 	/* 
 	 * Clear the symbol name tag for the symbol table
 	 * space taken over by the array entries -- otherwise
@@ -864,6 +974,26 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 			compiler_fail("argument name too long", findtok(tree), 0, 0);
 		strcpy(arg_symtab[arg_syms], args[i]);
 		++arg_syms;
+
+		/*
+		 * expand buffers if necessary
+		 */
+		if (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
+			int old_size = arg_symtab_a;
+			int i;
+			while (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
+				arg_symtab_a *= 2;
+				argsiz_a *= 2;
+				argtyp_a *= 2;
+			}
+			arg_symtab = realloc(arg_symtab, arg_symtab_a * sizeof(char *));
+			for (i = old_size; i < arg_symtab_a; ++i) {
+				arg_symtab[i] = checked_malloc(256);
+				*arg_symtab[i] = '\0';
+			}
+			argsiz = realloc(argsiz, argsiz_a * sizeof(int));
+			argtyp = realloc(argtyp, argtyp_a * sizeof(typedesc_t));
+		}
 	}
 
 	/* Make the symbol and label for the procedure */
@@ -960,11 +1090,57 @@ void run_codegen(exp_tree_t *tree)
 	char *main_args[] = { NULL };
 	extern void deal_with_procs(exp_tree_t *tree);
 	extern void deal_with_str_consts(exp_tree_t *tree);
+	int i;
 
 	/*
 	 * set up hash table for string constants
 	 */
 	str_consts = new_hashtab();
+
+	/*
+	 * set up dynamic arrays
+	 */
+	symtab = checked_malloc(symtab_a * sizeof(char *));
+	for (i = 0; i < symtab_a; ++i) {
+		symtab[i] = checked_malloc(256);
+		*symtab[i] = 0;
+	}
+
+	symsiz = checked_malloc(symsiz_a * sizeof(int));
+	for (i = 0; i < symsiz_a; ++i)
+		symsiz[i] = 0;
+
+	symtyp = checked_malloc(symtyp_a * sizeof(typedesc_t));
+
+	globtab = checked_malloc(globtab_a * sizeof(char *));
+	for (i = 0; i < globtab_a; ++i) {
+		globtab[i] = checked_malloc(256);
+		*globtab[i] = 0;
+	}
+
+	globtyp = checked_malloc(globtyp_a * sizeof(typedesc_t));
+
+	arg_symtab = checked_malloc(arg_symtab_a * sizeof(char *));
+	for (i = 0; i < arg_symtab_a; ++i) {
+		arg_symtab[i] = checked_malloc(256);
+		*arg_symtab[i] = 0;
+	}
+
+	argsiz = checked_malloc(argsiz_a * sizeof(int));
+	for (i = 0; i < argsiz_a; ++i)
+		argsiz[i] = 0;
+	
+	argtyp = checked_malloc(argtyp_a * sizeof(typedesc_t));
+
+	func_desc = checked_malloc(func_desc_a * sizeof(func_desc_t));
+	
+	named_struct = checked_malloc(named_struct_a * sizeof(struct_desc_t*));
+
+	named_struct_name = checked_malloc(named_struct_name_a * sizeof(char *));
+	for (i = 0; i < named_struct_name_a; ++i) {
+		named_struct_name[i] = checked_malloc(256);
+		*named_struct_name[i] = 0;
+	}
 
 	/*
 	 * Define the format used for printf()
@@ -1088,7 +1264,6 @@ void run_codegen(exp_tree_t *tree)
 	 * Test/debug the type analyzer
 	 */
 	#ifdef DEBUG
-		int i;
 		exp_tree_t *child;
 		for (i = 0; i < tree->child_count; ++i) {
 			printout_tree(*(tree->child[i]));
@@ -1419,6 +1594,22 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			strcpy(named_struct_name[named_structs],
 				get_tok_str(*(tree->tok)));
 			++named_structs;
+			/*
+			 * expand buffers if necessary
+			 */
+			if (named_structs >= named_struct_a || named_structs >= named_struct_name_a) {
+				int old_size = named_struct_name_a;
+				while (named_structs >= named_struct_a || named_structs >= named_struct_name_a) {
+					named_struct_a *= 2;
+					named_struct_name_a *= 2;
+				}
+				named_struct = realloc(named_struct, named_struct_a * sizeof(struct_desc_t *));
+				named_struct_name = realloc(named_struct_name, named_struct_name_a * sizeof(char *));
+				for (i = old_size; i < named_struct_name_a; ++i) {
+					named_struct_name[i] = checked_malloc(64);
+					*named_struct_name[i] = '\0';
+				}
+			}
 			children_offs = sd->cc;
 		} else {
 			/* NAMED_STRUCT_DECL -- named reference case */
@@ -2481,6 +2672,28 @@ char* codegen(exp_tree_t* tree)
 			argl->child_count = 0;
 
 		argbytes = 0;
+
+		/*
+		 * expand buffers if necessary
+		 */
+		arg_syms = argl->child_count;
+		if (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
+			int old_size = arg_symtab_a;
+			int i;
+			while (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
+				arg_symtab_a *= 2;
+				argsiz_a *= 2;
+				argtyp_a *= 2;
+			}
+			arg_symtab = realloc(arg_symtab, arg_symtab_a * sizeof(char *));
+			for (i = old_size; i < arg_symtab_a; ++i) {
+				arg_symtab[i] = checked_malloc(256);
+				*arg_symtab[i] = '\0';
+			}
+			argsiz = realloc(argsiz, argsiz_a * sizeof(int));
+			argtyp = realloc(argtyp, argtyp_a * sizeof(typedesc_t));
+		}
+
 		if (argl->child_count) {
 			for (i = 0; argl->child[i]; ++i) {
 				/* 
@@ -2558,6 +2771,15 @@ char* codegen(exp_tree_t* tree)
 		}
 
 		funcdefs++;
+
+		/*
+		 * expand buffer if necessary
+		 */
+		if (funcdefs >= func_desc_a) {
+			while (funcdefs >= func_desc_a)
+				func_desc_a *= 2;
+			func_desc = realloc(func_desc, func_desc_a * sizeof(func_desc_t));
+		}
 
 		/* prevent nested procedure defs */
 		if (tree->head_type == PROC)

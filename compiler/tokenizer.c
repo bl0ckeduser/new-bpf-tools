@@ -358,7 +358,7 @@ token_t* tokenize(char *buf)
 {
 	match_t m;
 	match_t c;
-	char buf2[1024];
+	char buf2[1024]; /* XXX: assumes no token is >1023 chars */
 	char fail_msg[1024] = "";
 	char *p;
 	char *old;
