@@ -1,0 +1,28 @@
+0.2 - March 3, 2014
+
+- implemented a wcc command that acts like the "cc" command
+- lexer: consume \r characters
+- parser: support "char *foo[]" syntax in function arguments
+- parser: support "char foo[] = "XXX"" syntax in declarations
+- parser: improved handling of typedefs
+- parser: implement unary +
+- added more/better comments to the whole codebase
+- x86: add support for function prototypes
+- tour: added a tour.pdf document that talks about the code internals
+- x86: implemented compilation of &(a->b) syntax
+- test: added AVL tree test code
+- test: added square roots test code
+- x86: added support for switch statements
+- x86: improved struct-within-struct support
+- parser: add support for enums
+- parser: implement adjacent string concatenation
+- tokenizer: improve speed using a hash table
+- parser: track typedef tags using a hash table
+- x86: allow symbol tables and other buffers to expand if necessary
+
+-----------------------------------------------------------------------
+0.1 - December 18, 2013
+
+0.1 is the first tagged "release". I made it because I fixed most of
+the serious bugs I know of at this point, tested it on BSD/Linux/Windows,
+and because it's been exactly one year since the first commit.
