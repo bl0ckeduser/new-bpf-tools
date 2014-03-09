@@ -426,8 +426,6 @@ elements are C syntax.
 		   words that point to some stuff; you can
 		   dereference them and depack them and pass them around
 		   as single words on the stack, etc)
-		- struct assignments (e.g. a = b) are unsupported,
-		  but I guess maybe you can use memcpy and pointers for now
 		- no struct literals of any kind are supported,
 		  so e.g. no constant struct initializers
 

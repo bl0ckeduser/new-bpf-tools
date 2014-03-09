@@ -82,6 +82,7 @@ enum {		/* head_type */
 	SWITCH_DEFAULT,
 	SWITCH_BREAK,
 	ENUM_DECL,
+	PROC_CALL_MEMCPY,
 	/* special */
 	NULL_TREE
 };
@@ -165,6 +166,7 @@ static char* tree_nam[] = {
 	"SWITCH_DEFAULT",
 	"SWITCH_BREAK",
 	"ENUM_DECL",
+	"PROC_CALL_MEMCPY",
 	"NULL_TREE"
 };
 

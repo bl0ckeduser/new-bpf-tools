@@ -678,6 +678,30 @@ int offs(int *sizes, int ndx)
 }
 
 /* 
+ * Find the address of a symbol on the stack
+ */
+int sym_stack_offs(token_t *tok)
+{
+	char buf[1024];
+	char *s = get_tok_str(*tok);
+	int i = 0;
+
+	/* Try stack locals */
+	for (i = 0; i < syms; i++)
+		if (!strcmp(symtab[i], s)) {
+			return offs(symsiz, i);
+		}
+
+	/* Try arguments */
+	for (i = 0; i < arg_syms; i++)
+		if (!strcmp(arg_symtab[i], s))
+			return -2*4 - offs(argsiz, i);
+
+	compiler_fail("could not find stack address for this symbol", tok, 0, 0);
+	return 0;
+}
+
+/* 
  * Find the GAS syntax for the address of 
  * a symbol, which could be a local stack
  * symbol, a global, or a function argument
@@ -1260,6 +1284,48 @@ void run_codegen(exp_tree_t *tree)
 	printf("addl $12, %%esp  # get rid of the printf args\n");
 	printf("ret\n");
 
+
+	/*
+
+		void ___mymemcpy(char *dest, char *src, int size)
+		{
+			while (size--)
+				*dest++ = *src++;
+		}
+	
+	   $ cat memcpycode.s | sed 's/^/puts("/g' | sed 's/$/");/g' 
+
+	*/
+	#ifndef MINGW_BUILD
+		puts(".type ___mymemcpy, @function");
+	#endif
+	puts("___mymemcpy:");
+	puts("# set up stack space");
+	puts("pushl %ebp");
+	puts("movl %esp, %ebp");
+	puts("subl $68, %esp");
+	puts("___mymemcpy_IL0: ");
+	puts("movl 16(%ebp), %esi");
+	puts("decl 16(%ebp)");
+	puts("movl $0, %edi");
+	puts("cmpl %esi, %edi");
+	puts("je ___mymemcpy_IL1");
+	puts("movl 8(%ebp), %esi");
+	puts("addl $1, 8(%ebp)");
+	puts("movl %esi, %eax");
+	puts("movl 12(%ebp), %esi");
+	puts("addl $1, 12(%ebp)");
+	puts("movl %esi, %ebx");
+	puts("movsbl (%ebx), %ecx");
+	puts("movb %cl, (%eax) #ptra");
+	puts("jmp ___mymemcpy_IL0");
+	puts("___mymemcpy_IL1: ");
+	puts("addl $68, %esp");
+	puts("movl %ebp, %esp");
+	puts("popl %ebp");
+	puts("ret");
+	puts("");
+
 	/*
 	 * Test/debug the type analyzer
 	 */
@@ -1574,7 +1640,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		/* the full thing */
 		if (tree->head_type == STRUCT_DECL) {
 			#ifdef DEBUG
-				printf("struct variable with base struct %s...\n", 
+				fprintf(stderr, "struct variable with base struct %s...\n", 
 					get_tok_str(*(tree->tok)));
 			#endif
 			/* parse the struct declaration syntax tree */
@@ -2046,6 +2112,7 @@ char* codegen(exp_tree_t* tree)
 	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
 	token_t fakenum = { TOK_INTEGER, "0", 1, 0, 0 };
 	token_t fakenum2 = { TOK_INTEGER, "0", 1, 0, 0 };
+	token_t faketok;
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	exp_tree_t fake_tree;
 	exp_tree_t fake_tree_2;
@@ -2484,7 +2551,8 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* procedure call */
-	if (tree->head_type == PROC_CALL) {
+	if (tree->head_type == PROC_CALL 
+		|| tree->head_type == PROC_CALL_MEMCPY) {
 		/* 
 		 * Push all the temporary registers
 		 * that are currently in use
@@ -2527,9 +2595,11 @@ char* codegen(exp_tree_t* tree)
 		 */
 		if (!callee_argtyp) {
 			/* default is int */
-			compiler_warn("no declaration found, "
-				      "assuming all arguments are 32-bit int",
-				findtok(tree), 0, 0);
+			if (tree->head_type != PROC_CALL_MEMCPY) {
+				compiler_warn("no declaration found, "
+					      "assuming all arguments are 32-bit int",
+					findtok(tree), 0, 0);
+			}
 			/* sizeof(int) = 4 on 32-bit x86 */
 			callee_argbytes = tree->child_count * 4;
 		}
@@ -3257,10 +3327,45 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* simple variable assignment */
-	/* XXX: TODO: struct assignments */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == VARIABLE) {
+
+		if (type2siz(tree_typeof(tree->child[0])) > 4) {
+			/* 
+			 * Rewrite large assignments as:
+			 *
+			 * (PROC_CALL:___mymemcpy 
+			 *     (ADDR (VARIABLE:b))
+			 *     (ADDR (VARIABLE:a))
+			 *     (SIZEOF (VARIABLE:a)))
+			 *
+			 * Where ___mymemcpy is a custom routine
+			 * autoincluded in the compiled output.
+			 * This should deal with struct assignments.
+			 */
+
+			faketok.type = TOK_IDENT;
+			buf = newstr("___mymemcpy");
+			faketok.start = buf;
+			faketok.len = strlen(buf);
+			faketok.from_line = 0;
+			faketok.from_line = 1;
+
+			fake_tree = new_exp_tree(PROC_CALL_MEMCPY, &faketok);
+			fake_tree_2 = new_exp_tree(ADDR, NULL);
+			add_child(&fake_tree_2, tree->child[0]);
+			fake_tree_3 = new_exp_tree(ADDR, NULL);
+			add_child(&fake_tree_3, tree->child[1]);
+			fake_tree_4 = new_exp_tree(SIZEOF, NULL);
+			add_child(&fake_tree_4, tree->child[0]);
+			add_child(&fake_tree, alloc_exptree(fake_tree_2));
+			add_child(&fake_tree, alloc_exptree(fake_tree_3));
+			add_child(&fake_tree, alloc_exptree(fake_tree_4));
+			return codegen(alloc_exptree(fake_tree));
+		}
+
 		sym_s = sym_lookup(tree->child[0]->tok);
+
 		/* 
 		 * XXX: might not handle some complicated cases
 		 * properly yet
