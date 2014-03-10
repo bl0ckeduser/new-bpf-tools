@@ -1284,6 +1284,8 @@ void run_codegen(exp_tree_t *tree)
 	printf("addl $12, %%esp  # get rid of the printf args\n");
 	printf("ret\n");
 
+	puts("");
+
 
 	/*
 
