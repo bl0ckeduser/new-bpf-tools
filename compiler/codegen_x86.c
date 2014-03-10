@@ -2887,10 +2887,10 @@ char* codegen(exp_tree_t* tree)
 
 	/* TCO return ? */
 	if (tree->head_type == RET
-	&& tree->child_count
-	&& tree->child[0]->head_type == PROC_CALL
-	&& !strcmp(get_tok_str(*(tree->child[0]->tok)),
-		current_proc)) {
+	    && tree->child_count
+	    && tree->child[0]->head_type == PROC_CALL
+	    && !strcmp(get_tok_str(*(tree->child[0]->tok)),
+		       current_proc)) {
 		/* aha ! I can TCO this */
 		printf("# TCO'd self-call\n");
 
