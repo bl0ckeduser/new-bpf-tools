@@ -2920,6 +2920,9 @@ char* codegen(exp_tree_t* tree)
 		/* code the return expression (if there is one) */
 		if (tree->child_count)
 			sto = codegen(tree->child[0]);
+		/*
+		 * XXX: struct returns TODO here
+		 */
 		/* 
 		 * Put the return expression's value
 		 * in EAX and jump to the end of the
@@ -3618,7 +3621,8 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
-	/* variable retrieval
+	/* 
+	 * variable retrieval
 	 * (array variables get handled earlier as a special case)
 	 * -- converts char to int
 	 */
@@ -3628,6 +3632,17 @@ char* codegen(exp_tree_t* tree)
 		membsiz = type2siz(sym_lookup_type(tree->tok));
 		compiler_debug("variable retrieval -- trying conversion",
 			findtok(tree), 0, 0);
+
+		/*
+		 * Special case for big-ass structs.
+		 * They can't be fitted into a single
+		 * word register, so just return their
+		 * stack address (or core symbol for
+		 * globals)
+		 */
+		if (membsiz > 4)
+			return sym_lookup(tree->tok);
+
 		printf("%s %s, %s\n",
 			move_conv_to_long(membsiz),
 			sym_s, sto);
