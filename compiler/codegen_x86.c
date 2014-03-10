@@ -105,15 +105,15 @@ int globtyp_a = INIT_BUF_SIZ;
 /* Table of (current) function-argument symbols */
 /* (only one procedure is ever being codegen'd at a given time) */
 char **arg_symtab;
-int arg_symtab_a = INIT_BUF_SIZ; 
+int arg_symtab_a = INIT_BUF_SIZ;
 int arg_syms = 0;		/* count */
 int argbytes = 0;		/* total size in bytes */
-int *argsiz;		/* size of each object */
+int *argsiz;			/* size of each object */
 int argsiz_a = INIT_BUF_SIZ;
 typedesc_t* argtyp;		/* type description of each object */
 int argtyp_a = INIT_BUF_SIZ;
 
-/* 
+/*
  * Table of argument and return type tables associated
  * to function names -- used for locally-declared
  * functions
@@ -129,9 +129,9 @@ func_desc_t *func_desc;
 int func_desc_a = INIT_BUF_SIZ;
 int funcdefs = 0;
 
-/* 
+/*
  * Table used for tracking named structs
- * (as in e.g. "struct bob { ... };" 
+ * (as in e.g. "struct bob { ... };"
  * followed by "struct bob bob_variable;")
  */
 struct_desc_t** named_struct;
@@ -170,9 +170,9 @@ char buf[1024];			/* general use */
 
 int switch_count = 0;		/* index of a switch statement */
 				/* (counts; used for building jump tables) */
-/* 
+/*
  * Stuff for `break' (and `continue')
- * labels in WHILEs. Note that the parser 
+ * labels in WHILEs. Note that the parser
  * turns FORs into equivalent WHILEs so effectively
  * this only applies to WHILE nodes
  */
@@ -2436,7 +2436,8 @@ char* codegen(exp_tree_t* tree)
 	/* array variable load */
 	if (tree->head_type == VARIABLE
 		&& sym_lookup_type(tree->tok).arr) {
-		/* When arrays are evaluated, the result is a
+		/*
+		 * When arrays are evaluated, the result is a
 		 * pointer to their first element (see earlier
 		 * comments about the paper called 
 		 * "The Development of the C Language"
@@ -2701,7 +2702,7 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* 
-	 * This deal with a procedure definition, 
+	 * This deals with a procedure definition, 
 	 * or with a prototype, for which a work to be done
 	 * is a subset of a work to be done for
 	 * procedure definitions.
@@ -3203,8 +3204,10 @@ char* codegen(exp_tree_t* tree)
 		return sym_s;
 	}
 
-	/* pre-increment, pre-decrement of array lvalue
-	 * -- has been tested for array of char, int, char*  */
+	/*
+	 * Pre-increment, pre-decrement of array lvalue
+	 * -- has been tested for array of char, int, char* 
+	 */
 	if ((tree->head_type == INC
 		|| tree->head_type == DEC)
 		&& tree->child[0]->head_type == ARRAY) {
@@ -3805,8 +3808,10 @@ char* codegen(exp_tree_t* tree)
 				free_temp_mem(str);
 			}
 		}
-		/* move result (in EAX or EDX depending on operation)
-		 * to some temporary storage */
+		/*
+		 * move result (in EAX or EDX depending on operation)
+		 * to some temporary storage 
+		 */
 		printf("movl %s, %s\n", 
 			tree->head_type == MOD ? "%edx" : "%eax",
 			sto);
