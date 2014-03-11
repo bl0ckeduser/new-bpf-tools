@@ -589,6 +589,10 @@ char* nameless_perm_storage(int siz)
  */ 
 int sym_add(token_t *tok, int size)
 {
+	/*
+	 * XXX: this is incorrect for large structs !
+	 * check the array-adding hack
+	 */
 	char *s = get_tok_str(*tok);
 	if (strlen(s) >= SYMLEN)
 		compiler_fail("symbol name too long", tok, 0, 0);

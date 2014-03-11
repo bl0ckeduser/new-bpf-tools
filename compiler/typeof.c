@@ -409,9 +409,12 @@ struct_pass_iter:
 		 * the offset should be the ending
 		 * address, because the stack grows
 		 * backwards
+		 * XXX: this is actually an incorrect hack i think
 		 */
+		/*
 		if (objsiz > 4)
 			(*sd_arg)->offs[i] = tag_offs + objsiz;
+		*/
 
 		/*
 		 * (gotta *copy* the tag type data to heap because it's stack 
