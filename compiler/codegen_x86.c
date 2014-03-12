@@ -3766,6 +3766,9 @@ char* codegen(exp_tree_t* tree)
 	/* 
 	 * Array retrieval -- works for int, char, char *
 	 * char data gets converted to an int register
+	 * 
+	 * XXX: TODO: this doesn't work for arrays of struct
+	 * yet, probably a trivial fix though.
 	 */
 	if (tree->head_type == ARRAY
 		 && tree->child_count == 2) {
