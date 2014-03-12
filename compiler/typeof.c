@@ -405,18 +405,6 @@ struct_pass_iter:
 		strcpy((*sd_arg)->name[i], tag_name);
 
 		/*
-		 * for big tags larger than a word:
-		 * the offset should be the ending
-		 * address, because the stack grows
-		 * backwards
-		 * XXX: this is actually an incorrect hack i think
-		 */
-		/*
-		if (objsiz > 4)
-			(*sd_arg)->offs[i] = tag_offs + objsiz;
-		*/
-
-		/*
 		 * (gotta *copy* the tag type data to heap because it's stack 
 		 * -- otherwise funny things happen when you try to 
 		 * read it outside of this function)
@@ -532,6 +520,8 @@ void dump_td_iter(typedesc_t td, int depth)
 		fprintf(stderr, "** struct **\n");
 		indent(depth);
 		fprintf(stderr, "struct_desc ptr = %p\n", td.struct_desc);
+		indent(depth);
+		fprintf(stderr, "(struct_desc ptr)->bytes = %d\n", td.struct_desc->bytes);
 		indent(depth);
 		fprintf(stderr, "tags: %d\n", td.struct_desc->cc);
 		for (i = 0; i < td.struct_desc->cc; ++i) {
