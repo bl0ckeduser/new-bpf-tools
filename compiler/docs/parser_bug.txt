@@ -9,3 +9,5 @@ mis-parses:
      (NUMBER:0))
   (DEREF_STRUCT_MEMB 
      (VARIABLE:tok) (VARIABLE:start)))
+
+FIXED 2014-03-12

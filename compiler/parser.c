@@ -51,6 +51,7 @@ exp_tree_t e0();
 exp_tree_t e0_2();
 exp_tree_t e0_3();
 exp_tree_t e0_4();
+exp_tree_t e0_2_fixup();
 exp_tree_t int_const();
 exp_tree_t initializer();
 exp_tree_t enum_decl();
@@ -1670,7 +1671,7 @@ exp_tree_t e0()
 {
 	exp_tree_t tree0, tree1, tree2, new_tree;
 
-	tree0 = e0_2();
+	tree0 = e0_2_fixup();
 	if (!valid_tree(tree0))
 		return null_tree;
 
@@ -1692,6 +1693,37 @@ exp_tree_t e0()
 
 	/* e0_2 as-is */
 	return tree0;
+}
+
+int run_fixup(exp_tree_t *ptr)
+{
+	exp_tree_t *new;
+	exp_tree_t *old;
+	int i;
+	int check = 0;
+	if (ptr->head_type == DEREF_STRUCT_MEMB
+	    && ptr->child_count
+	    && ptr->child[1]->head_type == DEREF_STRUCT_MEMB) {
+		old = alloc_exptree(copy_tree(*(ptr->child[1])));
+		ptr->child[1] = alloc_exptree(copy_tree(*(old->child[0])));
+		new = alloc_exptree(new_exp_tree(DEREF_STRUCT_MEMB, NULL));
+		add_child(new, alloc_exptree(copy_tree(*ptr)));
+		add_child(new, alloc_exptree(copy_tree(*(old->child[1]))));
+		memcpy(ptr, new, sizeof(exp_tree_t));
+		return 1;
+	} else {
+		for (i = 0; i < ptr->child_count; ++i)
+			check |= run_fixup(ptr->child[i]);
+	}
+	return check;
+}
+
+exp_tree_t e0_2_fixup()
+{
+	exp_tree_t et = e0_2();
+	while (run_fixup(&et))
+		;
+	return et;
 }
 
 /*
