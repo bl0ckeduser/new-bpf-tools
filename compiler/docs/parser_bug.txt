@@ -1,0 +1,11 @@
+strncpy(buf_a, b->child[0]->tok->start, b->child[0]->tok->len);
+
+mis-parses:
+
+(DEREF_STRUCT_MEMB 
+  (ARRAY 
+     (DEREF_STRUCT_MEMB 
+        (VARIABLE:b) (VARIABLE:child)) 
+     (NUMBER:0))
+  (DEREF_STRUCT_MEMB 
+     (VARIABLE:tok) (VARIABLE:start)))
