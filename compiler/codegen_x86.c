@@ -113,6 +113,16 @@ int argsiz_a = INIT_BUF_SIZ;
 typedesc_t* argtyp;		/* type description of each object */
 int argtyp_a = INIT_BUF_SIZ;
 
+/* same thing but for prototypes */
+char **proto_arg_symtab;
+int proto_arg_symtab_a = INIT_BUF_SIZ;
+int proto_arg_syms = 0;		/* count */
+int proto_argbytes = 0;		/* total size in bytes */
+int *proto_argsiz;			/* size of each object */
+int proto_argsiz_a = INIT_BUF_SIZ;
+typedesc_t* proto_argtyp;		/* type description of each object */
+int proto_argtyp_a = INIT_BUF_SIZ;
+
 /*
  * Table of argument and return type tables associated
  * to function names -- used for locally-declared
@@ -1211,6 +1221,18 @@ void run_codegen(exp_tree_t *tree)
 	
 	argtyp = checked_malloc(argtyp_a * sizeof(typedesc_t));
 
+	proto_arg_symtab = checked_malloc(proto_arg_symtab_a * sizeof(char *));
+	for (i = 0; i < proto_arg_symtab_a; ++i) {
+		proto_arg_symtab[i] = checked_malloc(256);
+		*proto_arg_symtab[i] = 0;
+	}
+
+	proto_argsiz = checked_malloc(proto_argsiz_a * sizeof(int));
+	for (i = 0; i < proto_argsiz_a; ++i)
+		proto_argsiz[i] = 0;
+	
+	proto_argtyp = checked_malloc(proto_argtyp_a * sizeof(typedesc_t));
+
 	func_desc = checked_malloc(func_desc_a * sizeof(func_desc_t));
 	
 	named_struct = checked_malloc(named_struct_a * sizeof(struct_desc_t*));
@@ -2211,9 +2233,11 @@ char* codegen(exp_tree_t* tree)
 	codegen_current_tree = tree;
 
 /*
-	if (findtok(tree))
-		compiler_debug("trying to compile this line",
-			findtok(tree), 0, 0);		
+	#ifdef DEBUG
+		if (findtok(tree))
+			fprintf(stderr, "trying to compile line %d\n",
+				findtok(tree)->from_line);
+	#endif
 */
 
 	/* 
@@ -2791,14 +2815,153 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* 
-	 * This deals with a procedure definition, 
-	 * or with a prototype, for which a work to be done
-	 * is a subset of a work to be done for
-	 * procedure definitions.
+	 * This deals with a prototype.
 	 * XXX: check if a proc def conflicts with an
 	 * existing prototype
 	 */
-	if (tree->head_type == PROC || tree->head_type == PROTOTYPE) {
+	if (tree->head_type == PROTOTYPE) {
+		/* 
+		 * Put the list of arguments in char *proc_args,
+		 * and also populate the argument type descriptions table
+		 */
+		custom_return_type = 0;
+		if (tree->child[0]->head_type == CAST_TYPE) {
+			custom_return_type = 1;
+			argl = tree->child[1];
+			compiler_warn("only int- or char- sized return types work",
+					findtok(tree),
+					0, 0);
+		}
+		else
+			argl = tree->child[0];
+
+		/*
+		 * Special case: (void) means exactly zero arguments
+		 */
+		if (argl->child_count == 1
+			&& argl->child[0]->child_count == 1
+			&& argl->child[0]->child[0]->child_count == 1
+			&& argl->child[0]->child[0]->child[0]->child_count == 1
+			&& argl->child[0]->child[0]->child[0]->child[0]->head_type == VOID_DECL)
+			argl->child_count = 0;
+
+		argbytes = 0;
+
+		/*
+		 * expand buffers if necessary
+		 */
+		proto_arg_syms = argl->child_count;
+		if (proto_arg_syms >= proto_arg_symtab_a || proto_arg_syms >= proto_argsiz_a || proto_arg_syms >= proto_argtyp_a) {
+			int old_size = proto_arg_symtab_a;
+			int i;
+			while (proto_arg_syms >= proto_arg_symtab_a || proto_arg_syms >= proto_argsiz_a || proto_arg_syms >= proto_argtyp_a) {
+				proto_arg_symtab_a *= 2;
+				proto_argsiz_a *= 2;
+				proto_argtyp_a *= 2;
+			}
+			proto_arg_symtab = realloc(proto_arg_symtab, proto_arg_symtab_a * sizeof(char *));
+			for (i = old_size; i < proto_arg_symtab_a; ++i) {
+				proto_arg_symtab[i] = checked_malloc(256);
+				*proto_arg_symtab[i] = '\0';
+			}
+			proto_argsiz = realloc(proto_argsiz, proto_argsiz_a * sizeof(int));
+			proto_argtyp = realloc(proto_argtyp, proto_argtyp_a * sizeof(typedesc_t));
+		}
+
+		if (argl->child_count) {
+			for (i = 0; argl->child[i]; ++i) {
+				/* 
+				 * Copy this argument's variable name to proc_args[i],
+				 * unless it's a prototype, because prototypes may not
+				 * have identifier names in all arguments. (as in e.g.
+				 * "int donald(int, char*)")
+				 */
+				if (tree->head_type == PROC) {
+					buf = malloc(64);
+					strcpy(buf, get_tok_str
+						(argvartok(argl->child[i])));
+					proc_args[i] = buf;
+
+					#ifdef DEBUG
+						/* debug-print argument type info */
+						fprintf(stderr, "%s: \n",
+							get_tok_str(argvartok(argl->child[i])));
+						dump_td(tree_typeof(argl->child[i]));
+					#endif
+				}
+
+				/* Obtain and store argument type data */
+				proto_argtyp[i] = tree_typeof(argl->child[i]);
+
+				/* If no type specified, default to int */
+				if (proto_argtyp[i].ty == TO_UNK)
+					proto_argtyp[i].ty = INT_DECL;
+
+				/* Calculate byte offsets */
+				proto_argsiz[i] = type2siz(argtyp[i]);
+				proto_argbytes += argsiz[i];
+
+			}
+			proc_args[i] = NULL;
+		} else
+			*proc_args = NULL;
+
+		/* 
+		 * Register function typing info
+		 */
+
+		#ifdef DEBUG
+			fprintf(stderr, "Registering function `%s'...\n", get_tok_str(*(tree->tok)));
+			fprintf(stderr, "Its return type description is: \n");
+			dump_td(tree_typeof(tree));
+		#endif
+
+		/* argument types */
+		for (i = 0; i < argl->child_count; ++i)
+			func_desc[funcdefs].argtyp[i] = proto_argtyp[i];
+		/* name */
+		strcpy(func_desc[funcdefs].name, get_tok_str(*(tree->tok)));
+		/* arg count */
+		func_desc[funcdefs].argc = argl->child_count;
+		/* return type */
+		if (custom_return_type)
+			func_desc[funcdefs].ret_typ = tree_typeof(tree);
+		else
+			/* default return type is "int" */
+			func_desc[funcdefs].ret_typ = mk_typedesc(INT_DECL, 0, 0);
+
+		/*
+		 * Special case: prototypes like foo(void)
+		 * mean that the function takes exactly zero
+		 * arguments.
+		 */
+		if (func_desc[funcdefs].argc == 1
+		    && func_desc[funcdefs].argtyp[0].arr == 0
+		    && func_desc[funcdefs].argtyp[0].ptr == 0
+		    && func_desc[funcdefs].argtyp[0].is_struct == 0
+		    && func_desc[funcdefs].argtyp[0].is_struct_name_ref == 0
+		    && func_desc[funcdefs].argtyp[0].ty == VOID_DECL) {
+			func_desc[funcdefs].argc = 0;
+		}
+
+		funcdefs++;
+
+		/*
+		 * expand buffer if necessary
+		 */
+		if (funcdefs >= func_desc_a) {
+			while (funcdefs >= func_desc_a)
+				func_desc_a *= 2;
+			func_desc = realloc(func_desc, func_desc_a * sizeof(func_desc_t));
+		}
+
+		return NULL;
+	}
+
+	/* 
+	 * This deals with a procedure definition
+	 */
+	if (tree->head_type == PROC) {
 		/*
 		 * Can't nest procedure definitions, not in C, anyway
 		 */
