@@ -726,6 +726,7 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 					&sd);
 				td.is_struct = 1;
 				td.struct_desc = sd;
+				td.struct_desc->bytes = bc;
 			}
 			if (td.ty == NAMED_STRUCT_DECL) {
 				td.is_struct = 1;

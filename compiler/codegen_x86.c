@@ -1747,6 +1747,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			struct_base.is_struct_name_ref = 0;
 			sd = struct_base.struct_desc = 
 				find_named_struct_desc(get_tok_str(*(tree->tok)));
+
 			children_offs = 0;
 			struct_bytes = struct_base.struct_desc->bytes;
 		}
