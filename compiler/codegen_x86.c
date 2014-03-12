@@ -2685,8 +2685,10 @@ char* codegen(exp_tree_t* tree)
 		for (i = 0; i < tree->child_count; ++i) {
 			/* Find out the type of the current argument */
 			if (!callee_argtyp) {
-				/* Default to int if no declaration 
-				 * provided */
+				/* 
+				 * Default to int if no declaration 
+				 * provided
+				 */
 				typedat.ty = INT_DECL;
 				typedat.ptr = typedat.arr = 0;
 				typedat.is_struct = 0;
@@ -2702,15 +2704,39 @@ char* codegen(exp_tree_t* tree)
 			/* Get byte size of current argument */
 			membsiz = type2siz(typedat);
 
-			/* XXX: might have to convert args to 
-			 * function's arg type */
-			sto = registerize(codegen(tree->child[i]));
-			/* XXX: use movb et al ? */
-			printf("movl %s, %d(%%esp)\t",
-				sto, offset);
-			printf("# argument %d to %s\n",
-				i, get_tok_str(*(tree->tok)));
-			free_temp_reg(sto);
+			/* 
+			 * XXX: might have to convert args to 
+			 * function's arg type
+			 */
+			if (membsiz > 4) { 
+				/*
+				 * Big thinks like big structs
+			 	 * need special handling
+				 */
+				#ifdef DEBUG
+					fprintf(stderr, "big arg: %d, %d bytes\n", i, membsiz);
+				#endif
+				sto = codegen(tree->child[i]);
+				printf("leal %s, %%eax\n", sto);
+				printf("leal %d(%%esp), %%ebx\n", offset);
+				printf("subl $12, %%esp\n");
+				printf("movl %%ebx, 0(%%esp)	# argument 0 to ___mymemcpy\n");
+				printf("movl %%eax, 4(%%esp)	# argument 1 to ___mymemcpy\n");
+				printf("movl $%d, %%esi\n", membsiz);
+				printf("movl %%esi, 8(%%esp)	# argument 2 to ___mymemcpy\n");
+				printf("call ___mymemcpy\n");
+				printf("addl $12, %%esp		# throw off args\n");
+				printf("leal __return_buffer, %%eax\n");
+			} else {
+				sto = registerize(codegen(tree->child[i]));
+				/* XXX: use movb et al ? */
+				printf("movl %s, %d(%%esp)\t",
+					sto, offset);
+				printf("# argument %d to %s\n",
+					i, get_tok_str(*(tree->tok)));
+				free_temp_reg(sto);
+			}
+
 
 			if (callee_argtyp)
 				offset += type2siz(callee_argtyp[i]);
