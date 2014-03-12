@@ -412,20 +412,17 @@ elements are C syntax.
 	however the parser has gotten pretty good at dealing with them.
 	In any event, they properly codegen for the existing tests.
 
+	structs as function argument and return types are supported
+	since March 11, 2014 -- see test files:
+
+			 test/x86/struct-args.c
+		         test/x86/struct-ret.c
+
 	Current known pitfalls (as of writing) that I can remember:
 
 		- you probably can't have a struct inside a struct yet
 		  UPDATE: that's a work in progress. 
 		  see test/x86/meta-struct.c 
-		- structs cannot be used as function argument types
-		  or function return types. note however that pointers 
-		  to struct, arrays of pointers to struct, pointers 
-		  to pointers to struct, etc. -- any kind of pointer --
-	          should work.
-	          (pointers are much easier to deal with, they're just
-		   words that point to some stuff; you can
-		   dereference them and depack them and pass them around
-		   as single words on the stack, etc)
 		- no struct literals of any kind are supported,
 		  so e.g. no constant struct initializers
 
