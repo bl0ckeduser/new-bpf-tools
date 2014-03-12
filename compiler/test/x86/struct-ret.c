@@ -1,6 +1,6 @@
 /*
  * struct-type routine returns
- * not supported yet
+ * supported since 2014-03-11
  */
 
 typedef struct foo {

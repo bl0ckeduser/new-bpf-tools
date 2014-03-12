@@ -589,16 +589,65 @@ char* nameless_perm_storage(int siz)
  */ 
 int sym_add(token_t *tok, int size)
 {
-	/*
-	 * XXX: this is incorrect for large structs !
-	 * check the array-adding hack
-	 */
 	char *s = get_tok_str(*tok);
+
+	/*
+	 * when it's a large struct,
+	 * add all but last 4 bytes
+	 * first, then after that add
+	 * the last 4 bytes. all this
+	 * because the stack grows
+	 * downwards
+	 */
+	if (size > 4) {
+
+		/* Check that the variable name is not already taken */
+		sym_check(tok);
+
+		/* 
+		 * Make storage for all but the first entries 
+		 * (the whole array is objsiz bytes, while one entry
+		 * has size base_size)
+		 */
+		symsiz[syms++] = size - 4;
+		symbytes += size - 4;
+
+		/*
+		 * expand buffers if necessary
+		 */
+		if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
+			int old_size = symtab_a;
+			int i;
+			while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
+				symtab_a *= 2;
+				symsiz_a *= 2;
+				symtyp_a *= 2;
+			}
+			symtab = realloc(symtab, symtab_a * sizeof(char *));
+			for (i = old_size; i < symtab_a; ++i) {
+				symtab[i] = checked_malloc(256);
+				*symtab[i] = '\0';
+			}
+			symsiz = realloc(symsiz, symsiz_a * sizeof(int));
+			symtyp = realloc(symtyp, symtyp_a * sizeof(typedesc_t));
+		}
+
+		/* 
+		 * Clear the symbol name tag for the symbol table
+		 * space taken over by the array entries -- otherwise
+		 * the symbol table lookup routines may give incorrect
+		 * results if there is some leftover stuff from another
+		 * procedure
+		 */
+		*symtab[syms - 1] = 0;
+
+	}
+
 	if (strlen(s) >= SYMLEN)
 		compiler_fail("symbol name too long", tok, 0, 0);
 	strcpy(symtab[syms], s);
-	symsiz[syms] = size;
-	symbytes += size;
+	symsiz[syms] = 4;
+	symbytes += 4;
 
 	++syms;
 
@@ -624,6 +673,7 @@ int sym_add(token_t *tok, int size)
 
 	return syms - 1; 
 }
+
 
 /*
  * Create a new global symbol
@@ -1059,6 +1109,7 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	 * moving down the stack pointer to make
 	 * space for the local variables 
 	 */
+
 	printf("# set up stack space\n");
 	printf("pushl %%ebp\n");
 	printf("movl %%esp, %%ebp\n");
@@ -1212,6 +1263,11 @@ void run_codegen(exp_tree_t *tree)
 	if (main_defined) {
 		printf("# start globals =============\n");
 		printf(".section .data\n");
+		/*
+		 * some space for big struct-typed return values
+		 * 1024 bytes maximum
+		 */
+		printf(".comm __return_buffer,1024,32\n");
 		setup_symbols(tree, SYMTYPE_GLOBALS);
 		printf(".section .text\n");
 
@@ -2927,16 +2983,30 @@ char* codegen(exp_tree_t* tree)
 		/* code the return expression (if there is one) */
 		if (tree->child_count)
 			sto = codegen(tree->child[0]);
-		/*
-		 * XXX: struct returns TODO here
-		 */
+
 		/* 
 		 * Put the return expression's value
 		 * in EAX and jump to the end of the
 		 * routine
 		 */
 		printf("# return value\n");
-		if (tree->child_count && strcmp(sto, "%eax"))
+		/*
+		 * big things (like structs): copy to buffer in core
+		 * and return pointer
+		 */
+		if (tree->child_count && type2siz(tree_typeof(tree->child[0])) > 4) {
+			printf("leal %s, %%eax\n", sto);
+			printf("leal __return_buffer, %%ebx\n");
+			printf("subl $12, %%esp\n");
+			printf("movl %%ebx, 0(%%esp)	# argument 0 to ___mymemcpy\n");
+			printf("movl %%eax, 4(%%esp)	# argument 1 to ___mymemcpy\n");
+			printf("movl $%d, %%esi\n", type2siz(tree_typeof(tree->child[0])));
+			printf("movl %%esi, 8(%%esp)	# argument 2 to ___mymemcpy\n");
+			printf("call ___mymemcpy\n");
+			printf("addl $12, %%esp		# throw off args\n");
+			printf("leal __return_buffer, %%eax\n");
+		}
+		else if (tree->child_count && strcmp(sto, "%eax"))
 			/* 
 			 * XXX: this assumes an int return value
 			 * (which is the default, anyway) 
@@ -3349,6 +3419,8 @@ char* codegen(exp_tree_t* tree)
 			fake_tree = new_exp_tree(PROC_CALL_MEMCPY, &faketok);
 			if (tree->child[1]->head_type == DEREF) {
 				fake_tree_3 = *(tree->child[1]->child[0]);
+			} else if (tree->child[1]->head_type == PROC_CALL) {
+				fake_tree_3 = *(tree->child[1]);
 			} else {
 				fake_tree_3 = new_exp_tree(ADDR, NULL);
 				add_child(&fake_tree_3, tree->child[1]);
@@ -3404,6 +3476,8 @@ char* codegen(exp_tree_t* tree)
 			add_child(&fake_tree_2, tree->child[0]);
 			if (tree->child[1]->head_type == DEREF) {
 				fake_tree_3 = *(tree->child[1]->child[0]);
+			} else if (tree->child[1]->head_type == PROC_CALL) {
+				fake_tree_3 = *(tree->child[1]);
 			} else {
 				fake_tree_3 = new_exp_tree(ADDR, NULL);
 				add_child(&fake_tree_3, tree->child[1]);
