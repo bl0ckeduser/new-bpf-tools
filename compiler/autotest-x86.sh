@@ -26,9 +26,7 @@ do
 	then
 		echo "int main(int argc, char **argv) {" >>$SRC_FILE
 	fi
-	# paste code, converting procedures syntax ("proc")
-	# to standard C "int"
-	cat $x | sed 's/proc/int/g' >>$SRC_FILE
+	cat $x >>$SRC_FILE
 	# gcc doesn't allow labels at the end of a codeblock,
 	# but I do, so stick in a dummy statement for compatibility.
 	# (see e.g. test/goto.c)
