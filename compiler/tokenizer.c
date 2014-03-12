@@ -435,6 +435,15 @@ token_t* tokenize(char *buf)
 			if (comstat != NOT_INSIDE_A_COMMENT) {
 				/* It's okay to have non-tokens in comments,
 				 * so just go forward and suck it up */
+				if (*p == '\n') {
+					code_lines[line] = line_start;
+					++line;
+					if (line >= cl_alloc) {
+						cl_alloc += 64;
+						code_lines = realloc(code_lines, cl_alloc * sizeof(char *));
+					}
+					line_start = p;
+				}
 				++p;
 				continue;
 			}
