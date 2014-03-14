@@ -3347,8 +3347,11 @@ char* codegen(exp_tree_t* tree)
 				printf("jt%d_def:\n", jumptab);
 			} else {
 				/*
-				 * Normal code
+				 * Normal code -- statement,
+				 * so clear temp registers
 				 */
+				new_temp_mem();
+				new_temp_reg();
 				(void)codegen(tree->child[i]);
 			}
 		}
