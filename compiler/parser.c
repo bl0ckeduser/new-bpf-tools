@@ -1360,7 +1360,7 @@ exp_tree_t parse_left_assoc(
 
 /*
 	ternary-expr := ccor_expr 
-	                | expr '?' ccor_expr ':' expr
+	                | ccor_expr '?' expr0 ':' expr0
 */
 exp_tree_t ternary_expr()
 {
@@ -1371,10 +1371,10 @@ exp_tree_t ternary_expr()
 	if (peek().type ==  TOK_QMARK) {
 		adv();
 		full = new_exp_tree(TERNARY, NULL);
-		if (!valid_tree(tree1 = expr()))
+		if (!valid_tree(tree1 = expr0()))
 			parse_fail("expression expected after ternary `?'");
 		need(TOK_COLON);
-		if (!valid_tree(tree2 = expr()))
+		if (!valid_tree(tree2 = expr0()))
 			parse_fail("expression expected after ternary `:'");
 		add_child(&full, alloc_exptree(tree0));
 		add_child(&full, alloc_exptree(tree1));

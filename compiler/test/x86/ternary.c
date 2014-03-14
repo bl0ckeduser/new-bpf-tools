@@ -1,3 +1,8 @@
+test(int a, int b)
+{
+	printf("%d%d\n", a, b);
+}
+
 main()
 {
 	int arr[5], i;
@@ -17,4 +22,6 @@ main()
 			}
 		}
 	}
+
+	test(1 ? 123 : 0, 456);
 }
