@@ -3205,10 +3205,6 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == RET) {
 		new_temp_reg();
 		new_temp_mem();
-		/* code the return expression (if there is one) */
-		if (tree->child_count)
-			sto = codegen(tree->child[0]);
-
 		/* 
 		 * Put the return expression's value
 		 * in EAX and jump to the end of the
@@ -3220,7 +3216,13 @@ char* codegen(exp_tree_t* tree)
 		 * and return pointer
 		 */
 		if (tree->child_count && type2siz(tree_typeof(tree->child[0])) > 4) {
-			printf("leal %s, %%eax\n", sto);
+			if (tree->child[0]->head_type == DEREF) {
+				sto = codegen(tree->child[0]->child[0]);
+				printf("movl %s, %%eax\n", sto);
+			} else {
+				sto = codegen(tree->child[0]);	
+				printf("leal %s, %%eax\n", sto);
+			}
 			printf("leal __return_buffer, %%ebx\n");
 			printf("subl $12, %%esp\n");
 			printf("movl %%ebx, 0(%%esp)	# argument 0 to ___mymemcpy\n");
@@ -3230,13 +3232,19 @@ char* codegen(exp_tree_t* tree)
 			printf("call ___mymemcpy\n");
 			printf("addl $12, %%esp		# throw off args\n");
 			printf("leal __return_buffer, %%eax\n");
+		} else {
+			/* code the return expression (if there is one) */
+			if (tree->child_count)
+				sto = codegen(tree->child[0]);
+
+			if (tree->child_count && strcmp(sto, "%eax")) {
+				/* 
+				 * XXX: this assumes an int return value
+				 * (which is the default, anyway) 
+				 */
+				printf("movl %s, %%eax # ret\n", sto);
+			}
 		}
-		else if (tree->child_count && strcmp(sto, "%eax"))
-			/* 
-			 * XXX: this assumes an int return value
-			 * (which is the default, anyway) 
-			 */
-			printf("movl %s, %%eax # ret\n", sto);
 		printf("jmp _ret_%s\n", current_proc);
 		return NULL;
 	}

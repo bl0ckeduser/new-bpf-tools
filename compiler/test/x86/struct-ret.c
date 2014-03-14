@@ -14,8 +14,17 @@ thing routine(void) {
 	return bob;
 }
 
+thing routine2(void) {
+	thing bob;
+	thing *ptr = &bob;
+	bob.a[0] = 456;
+	return *ptr;
+}
+
 main()
 {
 	thing foo = routine();
+	thing bar = routine2();
 	printf("%d\n", foo.a[0]);
+	printf("%d\n", bar.a[0]);
 }
