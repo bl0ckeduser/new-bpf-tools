@@ -2741,8 +2741,13 @@ char* codegen(exp_tree_t* tree)
 				#ifdef DEBUG
 					fprintf(stderr, "big arg: %d, %d bytes\n", i, membsiz);
 				#endif
-				sto = codegen(tree->child[i]);
-				printf("leal %s, %%eax\n", sto);
+				if (tree->child[i]->head_type == DEREF) {
+					sto = codegen(tree->child[i]->child[0]);
+					printf("movl %s, %%eax\n", sto);
+				} else {
+					sto = codegen(tree->child[i]);
+					printf("leal %s, %%eax\n", sto);
+				}
 				printf("leal %d(%%esp), %%ebx\n", offset);
 				printf("subl $12, %%esp\n");
 				printf("movl %%ebx, 0(%%esp)	# argument 0 to ___mymemcpy\n");
