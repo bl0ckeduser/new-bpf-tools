@@ -3783,13 +3783,59 @@ char* codegen(exp_tree_t* tree)
 	 */
 	if (tree->head_type == ASGN && tree->child_count == 2
 		&& tree->child[0]->head_type == ARRAY) {
-		/* get base ptr */
-		sym_s = codegen(tree->child[0]->child[0]);
+
 		/* member size */
 		membsiz = type2siz(
 			deref_typeof(tree_typeof(tree->child[0]->child[0])));
 		offs_siz = type2offs(
 			deref_typeof(tree_typeof(tree->child[0]->child[0])));
+
+		if (membsiz > 4) {
+			/* 
+			 * Rewrite large assignments as:
+			 *
+			 * (PROC_CALL:___mymemcpy 
+			 *     (VARIABLE:b)
+			 *     (ADDR (VARIABLE:a))
+			 *     (SIZEOF (VARIABLE:a)))
+			 *
+			 * Where ___mymemcpy is a custom routine
+			 * autoincluded in the compiled output.
+			 * This should deal with struct assignments.
+			 */
+
+			faketok.type = TOK_IDENT;
+			buf = newstr("___mymemcpy");
+			faketok.start = buf;
+			faketok.len = strlen(buf);
+			faketok.from_line = 0;
+			faketok.from_line = 1;
+
+			fake_tree = new_exp_tree(PROC_CALL_MEMCPY, &faketok);
+			if (tree->child[1]->head_type == DEREF) {
+				fake_tree_3 = *(tree->child[1]->child[0]);
+			} else if (tree->child[1]->head_type == PROC_CALL) {
+				fake_tree_3 = *(tree->child[1]);
+			} else {
+				fake_tree_3 = new_exp_tree(ADDR, NULL);
+				add_child(&fake_tree_3, tree->child[1]);
+			}
+
+			fake_tree_2 = new_exp_tree(ADDR, NULL);
+			add_child(&fake_tree_2, tree->child[0]);
+
+			fake_tree_4 = new_exp_tree(SIZEOF, NULL);
+			add_child(&fake_tree_4, tree->child[0]);
+			add_child(&fake_tree, alloc_exptree(fake_tree_2));
+			add_child(&fake_tree, alloc_exptree(fake_tree_3));
+			add_child(&fake_tree, alloc_exptree(fake_tree_4));
+
+			return codegen(alloc_exptree(fake_tree));
+		}
+
+		/* get base ptr */
+		sym_s = codegen(tree->child[0]->child[0]);
+
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
 		sto2 = registerize_siz(str, membsiz);
