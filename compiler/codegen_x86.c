@@ -163,9 +163,6 @@ char tm_used[TEMP_MEM];
 int proc_ok = 1;		/* this is used to prevent nested procedure defs
 			   	 * it is raised whenever a procedure is not being coded */
 
-int else_ret;			/* a flag raised when the "else return"
-				 * pattern is detected and can be optimized */
-
 int main_defined = 0;		/* this is set if user-defined main() exists */
 				/* (otherwise the main lexical body is treated
 				 * as "main", as in templeOS) */
@@ -4174,6 +4171,8 @@ char* codegen(exp_tree_t* tree)
 	 * but perhaps shouldn't
 	 */
 	if (tree->head_type == IF) {
+		int else_ret;			/* a flag raised when the "else return"
+						 * pattern is detected and can be optimized */
 		lab1 = intl_label++;
 		lab2 = intl_label++;
 		/* codegen the conditional */
@@ -4373,6 +4372,8 @@ char* cheap_relational(exp_tree_t* tree, char *oppcheck)
  */
 char* optimized_if(exp_tree_t* tree, char *oppcheck)
 {
+	int else_ret;			/* a flag raised when the "else return"
+					 * pattern is detected and can be optimized */
 	char *str, *str2, *sto, *sto2;
 	int lab1 = intl_label++;
 	int lab2 = intl_label++;
