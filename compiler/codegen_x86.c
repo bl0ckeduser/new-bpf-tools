@@ -2574,6 +2574,25 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
+	/* address-of assigned variable -- &(a = b) */
+	if (tree->head_type == ADDR
+		&& tree->child_count == 1
+		&& tree->child[0]->head_type == ASGN
+		&& tree->child[0]->child[0]->head_type == VARIABLE) {
+		
+		/* code the assignment */
+		codegen(tree->child[0]);
+
+		sto = get_temp_reg_siz(4);
+
+		/* LEA: load effective address */
+		printf("leal %s, %s\n",
+				sym_lookup(tree->child[0]->child[0]->tok),
+				sto);
+
+		return sto;
+	}
+
 	/* &(a[v]) = a + membsiz * v 
 	 * -- this works for `a' of type int, char, char **,
 	 * (and probably anything else at this point),
