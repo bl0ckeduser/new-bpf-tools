@@ -2413,10 +2413,21 @@ char* codegen(exp_tree_t* tree)
 		membsiz = type2siz(tree_typeof(tree));
 
 		/* get base adr */
-		if (tree->child[0]->head_type != VARIABLE)
-			sym_s = registerize(codegen(tree->child[0]));
-		else
+		if (tree->child[0]->head_type != VARIABLE) {
+			if (tree->child[0]->head_type == ADDR
+				&& tree->child[0]->child[0]->head_type == PROC_CALL) {
+				/*
+				 * struct-returning procedures are
+				 * coded as actually returning pointers,
+				 * so disregard the ADDR node.
+				 */
+				sym_s = registerize(codegen(tree->child[0]->child[0]));
+			} else {
+				sym_s = registerize(codegen(tree->child[0]));
+			}
+		} else {
 			sym_s = sym_lookup(tree->child[0]->tok);
+		}
 
 		sto2 = get_temp_reg();
 
