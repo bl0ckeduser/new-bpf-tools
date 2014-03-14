@@ -2768,7 +2768,11 @@ char* codegen(exp_tree_t* tree)
 				#ifdef DEBUG
 					fprintf(stderr, "big arg: %d, %d bytes\n", i, membsiz);
 				#endif
-				if (tree->child[i]->head_type == DEREF) {
+				if (tree->child[i]->head_type == PROC_CALL) {
+					/* procedure calls already give pointers */
+					sto = codegen(tree->child[i]);
+					printf("movl %s, %%eax\n", sto);
+				} else if (tree->child[i]->head_type == DEREF) {
 					sto = codegen(tree->child[i]->child[0]);
 					printf("movl %s, %%eax\n", sto);
 				} else {
@@ -3213,7 +3217,11 @@ char* codegen(exp_tree_t* tree)
 		 * and return pointer
 		 */
 		if (tree->child_count && type2siz(tree_typeof(tree->child[0])) > 4) {
-			if (tree->child[0]->head_type == DEREF) {
+			/* procedure calls already give pointers */
+			if (tree->child[0]->head_type == PROC_CALL) {
+				sto = codegen(tree->child[0]);
+				printf("movl %s, %%eax\n", sto);
+			} else if (tree->child[0]->head_type == DEREF) {
 				sto = codegen(tree->child[0]->child[0]);
 				printf("movl %s, %%eax\n", sto);
 			} else {

@@ -6,11 +6,13 @@
 typedef struct foo {
 	int a[10];
 	int b[20];
+	char *foo;
 } thing;
 
 thing routine(void) {
 	thing bob;
 	bob.a[0] = 123;
+	bob.foo = "hahah";
 	return bob;
 }
 
@@ -26,5 +28,6 @@ main()
 	thing foo = routine();
 	thing bar = routine2();
 	printf("%d\n", foo.a[0]);
+	printf("%s\n", foo.foo);
 	printf("%d\n", bar.a[0]);
 }
