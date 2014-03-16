@@ -1,0 +1,2 @@
+log(sqrt(u)) = log(u) / 2
+ln(sqrt(u)) = ln(u) / 2

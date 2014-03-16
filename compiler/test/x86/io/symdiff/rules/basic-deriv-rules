@@ -1,0 +1,20 @@
+% Basic derivative rules, based on those presented in SICP,
+% section 2.3. The syntax is not the same.
+%
+% Syntax:
+% D(VARIABLE, EXPRESSION) => derivative of EXPRESSION with
+%			     respect to VARIABLE.
+%
+%
+% Syntax notes:
+% -------------
+% e|x means "any expression e without any occurence
+% of x in it"
+%
+% @x means a non-number symbol x
+% #n means a number n
+
+D(x, e|x) = 0
+D(@x, x) = 1
+D(@x, u * v) = u * D(x, v) + v * D(x, u)
+D(@x, -(u:x)) = -D(x, u)

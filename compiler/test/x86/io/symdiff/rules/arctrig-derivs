@@ -1,0 +1,16 @@
+% Source for the first four: http://www.themathpage.com/acalc/inverse-trig.htm
+
+D(x, arcsin(x)) = 1/sqrt(1-x^2)
+D(x, arccos(x)) = -(1/sqrt(1-x^2))
+D(x, arctan(x)) = 1/(1 + x^2)
+D(x, arccot(x)) = -(1/(1+x^2))
+
+% http://www.proofwiki.org/wiki/Derivative_of_Arcsecant_Function
+% http://mathworld.wolfram.com/InverseSecant.html
+% http://en.wikipedia.org/wiki/Inverse_trigonometric_functions#Derivatives_of_inverse_trigonometric_functions
+D(x, arcsec(x)) = 1/(sqrt(1-1/x^2) * x^2)
+
+% http://mathworld.wolfram.com/InverseCosecant.html
+% http://en.wikipedia.org/wiki/Inverse_trigonometric_functions#Derivatives_of_inverse_trigonometric_functions
+D(x, arccsc(x)) = -1/(sqrt(1-1/x^2) * x^2)
+
