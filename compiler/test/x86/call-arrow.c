@@ -9,6 +9,12 @@ typedef struct {
 	int b;
 } thing;
 
+int getb(thing t)
+{
+	printf("b: %d\n", t.b);
+	return t.b;
+}
+
 thing routine()
 {
 	thing u;
@@ -29,7 +35,9 @@ main()
 	thing t;
 	printf("%d\n", routine().stuff[10]);
 	printf("%d\n", routine().b);
+	printf("%d\n", getb(routine()));
 	printf("%d\n", (t = routine()).b);
+	printf("%d\n", getb((t = routine())));
 	printf("%d\n", t.b);
 	printf("%d\n", routine2()->b);
 }

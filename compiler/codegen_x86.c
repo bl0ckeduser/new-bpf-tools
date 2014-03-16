@@ -196,6 +196,20 @@ int switch_maxlab[256];
 
 /* ====================================================== */
 
+int check_proc_call(exp_tree_t *et)
+{
+	int i;
+	if (!et)
+		return 0;
+	if (et->head_type == PROC_CALL)
+		return 1;
+	if (et->head_type == ASGN && et->child[0]->head_type == VARIABLE)
+		for (i = 0; i < et->child_count; ++i)
+			if (check_proc_call(et->child[i]))
+				return 1;
+	return 0;
+}
+
 void* checked_malloc(size_t s)
 {
 	void *ptr = malloc(s);
@@ -1366,12 +1380,14 @@ void run_codegen(exp_tree_t *tree)
 	puts("");
 
 
-	/*
+/*
 
-		void ___mymemcpy(char *dest, char *src, int size)
+		char* ___mymemcpy(char *dest, char *src, int size)
 		{
+			char *orig = dest;
 			while (size--)
 				*dest++ = *src++;
+			return orig;
 		}
 	
 	   $ cat memcpycode.s | sed 's/^/puts("/g' | sed 's/$/");/g' 
@@ -1381,16 +1397,18 @@ void run_codegen(exp_tree_t *tree)
 		puts(".type ___mymemcpy, @function");
 	#endif
 	puts("___mymemcpy:");
-	puts("# set up stack space");
 	puts("pushl %ebp");
 	puts("movl %esp, %ebp");
-	puts("subl $68, %esp");
-	puts("___mymemcpy_IL0: ");
+	puts("subl $72, %esp");
+	puts("movl 8(%ebp), %esi");
+	puts("movl %esi, %edi");
+	puts("movl %edi, -4(%ebp)");
+	puts("___mymemcpyIL0: ");
 	puts("movl 16(%ebp), %esi");
 	puts("decl 16(%ebp)");
 	puts("movl $0, %edi");
 	puts("cmpl %esi, %edi");
-	puts("je ___mymemcpy_IL1");
+	puts("je ___mymemcpyIL1");
 	puts("movl 8(%ebp), %esi");
 	puts("addl $1, 8(%ebp)");
 	puts("movl %esi, %eax");
@@ -1399,13 +1417,15 @@ void run_codegen(exp_tree_t *tree)
 	puts("movl %esi, %ebx");
 	puts("movsbl (%ebx), %ecx");
 	puts("movb %cl, (%eax) #ptra");
-	puts("jmp ___mymemcpy_IL0");
-	puts("___mymemcpy_IL1: ");
-	puts("addl $68, %esp");
+	puts("jmp ___mymemcpyIL0");
+	puts("___mymemcpyIL1: ");
+	puts("# return value");
+	puts("movl -4(%ebp), %esi");
+	puts("movl %esi, %eax # ret");
+	puts("addl $72, %esp");
 	puts("movl %ebp, %esp");
 	puts("popl %ebp");
 	puts("ret");
-	puts("");
 
 	/*
 	 * Test/debug the type analyzer
@@ -2412,7 +2432,7 @@ char* codegen(exp_tree_t* tree)
 		/* get base adr */
 		if (tree->child[0]->head_type != VARIABLE) {
 			if (tree->child[0]->head_type == ADDR
-				&& tree->child[0]->child[0]->head_type == PROC_CALL) {
+				&& check_proc_call(tree->child[0]->child[0])) {
 				/*
 				 * struct-returning procedures are
 				 * coded as actually returning pointers,
@@ -2768,7 +2788,7 @@ char* codegen(exp_tree_t* tree)
 				#ifdef DEBUG
 					fprintf(stderr, "big arg: %d, %d bytes\n", i, membsiz);
 				#endif
-				if (tree->child[i]->head_type == PROC_CALL) {
+				if (check_proc_call(tree->child[i])) {
 					/* procedure calls already give pointers */
 					sto = codegen(tree->child[i]);
 					printf("movl %s, %%eax\n", sto);
@@ -3218,7 +3238,7 @@ char* codegen(exp_tree_t* tree)
 		 */
 		if (tree->child_count && type2siz(tree_typeof(tree->child[0])) > 4) {
 			/* procedure calls already give pointers */
-			if (tree->child[0]->head_type == PROC_CALL) {
+			if (check_proc_call(tree->child[0])) {
 				sto = codegen(tree->child[0]);
 				printf("movl %s, %%eax\n", sto);
 			} else if (tree->child[0]->head_type == DEREF) {
@@ -3660,7 +3680,7 @@ char* codegen(exp_tree_t* tree)
 			fake_tree = new_exp_tree(PROC_CALL_MEMCPY, &faketok);
 			if (tree->child[1]->head_type == DEREF) {
 				fake_tree_3 = *(tree->child[1]->child[0]);
-			} else if (tree->child[1]->head_type == PROC_CALL) {
+			} else if (check_proc_call(tree->child[1])) {
 				fake_tree_3 = *(tree->child[1]);
 			} else {
 				fake_tree_3 = new_exp_tree(ADDR, NULL);
@@ -3717,7 +3737,7 @@ char* codegen(exp_tree_t* tree)
 			add_child(&fake_tree_2, tree->child[0]);
 			if (tree->child[1]->head_type == DEREF) {
 				fake_tree_3 = *(tree->child[1]->child[0]);
-			} else if (tree->child[1]->head_type == PROC_CALL) {
+			} else if (check_proc_call(tree->child[1])) {
 				fake_tree_3 = *(tree->child[1]);
 			} else {
 				fake_tree_3 = new_exp_tree(ADDR, NULL);
@@ -3814,7 +3834,7 @@ char* codegen(exp_tree_t* tree)
 			fake_tree = new_exp_tree(PROC_CALL_MEMCPY, &faketok);
 			if (tree->child[1]->head_type == DEREF) {
 				fake_tree_3 = *(tree->child[1]->child[0]);
-			} else if (tree->child[1]->head_type == PROC_CALL) {
+			} else if (check_proc_call(tree->child[1])) {
 				fake_tree_3 = *(tree->child[1]);
 			} else {
 				fake_tree_3 = new_exp_tree(ADDR, NULL);
