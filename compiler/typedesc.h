@@ -26,7 +26,7 @@
  */
 typedef struct {
 	int arr;		/* e.g. 3 for "int [12][34][56]" */
-	int *arr_dim;	/* e.g. {12, 34, 56} for "int [12][34][56]" */
+	int *arr_dim;		/* e.g. {12, 34, 56} for "int [12][34][56]" */
 
 	int ptr;		/* e.g. 2 for "int **" */
 
@@ -50,12 +50,12 @@ typedef struct {
  * "grand recursive order" badges ready
  */
 typedef struct struct_desc_s {
-	int cc;					/* number of tags */
+	int cc;				/* number of tags */
 	char snam[128];			/* structure name */
 	char *name[128];		/* tag names */
-	typedesc_t* typ[128];	/* tag types */
+	typedesc_t* typ[128];		/* tag types */
 	int offs[128];			/* tag byte offsets */
-	int bytes;				/* byte size of the whole thing */
+	int bytes;			/* byte size of the whole thing */
 } struct_desc_t;
 
 extern typedesc_t tree_typeof(exp_tree_t *tp);
