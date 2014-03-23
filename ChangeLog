@@ -1,3 +1,27 @@
+0.3 - March 23, 2014
+
+- real-life: i feel like i might be quite busy with "real life" soon
+- x86: implement struct assignment
+- x86: implement struct-type function return values
+- x86: implement struct-typed function arguments
+- x86: implement struct-pointer-typed function arguments
+- x86: implement expressions like foo()->u, foo().u
+- x86: fix array tags in structs
+- parser: fix parsing of expressions similar to "b->child[0]->tok->start"
+- parser: fix a conflict with the ternary (?:) and sequencing (,) operators
+- x86: various fixes to structs
+- tokenizer: slightly better line-counting (it was quite broken)
+- x86: implement expressions like &(a = b)
+- x86: fixed a register leak in switch() statement coding
+- x86: fixed a bug in if() statement coding
+- test: added symdiff sample code
+- fixed the indentation of some comments (the damages done by my
+  the use of a misconfigured editor over the past year are slowly
+  being repared...)
+- tour: slightly tweaked the tour.pdf document
+
+-----------------------------------------------------------------------
+
 0.2 - March 3, 2014
 
 - implemented a wcc command that acts like the "cc" command
@@ -21,6 +45,7 @@
 - x86: allow symbol tables and other buffers to expand if necessary
 
 -----------------------------------------------------------------------
+
 0.1 - December 18, 2013
 
 0.1 is the first tagged "release". I made it because I fixed most of
