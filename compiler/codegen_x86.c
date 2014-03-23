@@ -1631,9 +1631,11 @@ void deal_with_procs(exp_tree_t *tree)
 		/* code the arguments and body */
 		codegen(tree);
 
-		/* discard the func def tree, it's
+		/* 
+		 * Discard the func def tree, it's
 		 * over with being coded now and nobody else
-		 * wants to see it */
+		 * wants to see it
+		 */
 		(*tree).head_type = NULL_TREE;
 	}
 
