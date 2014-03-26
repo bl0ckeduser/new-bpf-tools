@@ -196,6 +196,15 @@ int switch_maxlab[256];
 
 /* ====================================================== */
 
+/*
+ * Check for an expression that is either:
+ * - a procedure call
+ * - an assignment of a procedure call to a variable
+ *
+ * This is needed because the implementation is designed
+ * in such a way procedure calls need special
+ * treatment when used as expressions.
+ */
 int check_proc_call(exp_tree_t *et)
 {
 	int i;
@@ -2333,6 +2342,11 @@ char* codegen(exp_tree_t* tree)
 					sprintf(sbuf2, "0");	/* null terminator */
 				else
 					sprintf(sbuf2, "%d", tree->child[1]->tok->start[i + 1]);
+				/*
+			 	 * We artificially create a bunch of assignment
+				 * statement parse trees, bob[0] = 'h', bob[1] = 'e', etc.
+				 * and codegen them one-by-one.
+				 */
 				fakenum2.start = &sbuf2[0];
 				fakenum2.len = strlen(sbuf2);
 				fake_tree_3 = new_exp_tree(NUMBER, &fakenum);

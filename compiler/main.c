@@ -84,7 +84,10 @@ int main(int argc, char** argv)
 			dump_ast = 1;
 	#endif
 
-	/* Read code from stdin */
+	/* 
+	 * Default mode: read code from stdin
+	 * into a variable-sized buffer
+	 */
 	if (!(buf = malloc(alloc)))
 		fail("alloc program buffer");
 	for (i = 0 ;; ++i) {
@@ -104,11 +107,16 @@ int main(int argc, char** argv)
 		buf[i] = c;
 	}
 
+	/*
+	 * Tokenize the inputted code
+	 */
 	setup_tokenizer();
 	tokens = tokenize(buf);
 
 #ifdef DEBUG
-	/* display the tokens */
+	/*
+	 * Debug mode: display the tokens
+	 */
 	for (int i = 0; tokens[i].start; i++) {
 		fprintf(stderr, "%d: %s: ", i, tok_nam[tokens[i].type]);
 		tok_display(tokens[i]);
@@ -116,6 +124,9 @@ int main(int argc, char** argv)
 	}
 #endif
 
+	/*
+	 * Run the parser
+	 */
 	tree = parse(tokens);
 
 	/* --ast flag: dump ast to stdout */
@@ -127,13 +138,22 @@ int main(int argc, char** argv)
 	}
 
 #ifdef DEBUG
+	/*
+	 * Debug mode: display the parse-tree
+	 */
 	printout_tree(tree);
 	fputc('\n', stderr);
 #endif
 
+	/*
+	 * Optimize the parse-tree
+	 */
 	optimize(&tree);
 	
 #ifdef DEBUG
+	/*
+	 * Debug mode: display the (optimized) parse-tree
+	 */
 	printout_tree(tree);
 	fputc('\n', stderr);
 #endif
@@ -148,14 +168,18 @@ int main(int argc, char** argv)
 		freopen(tempf, "w", stdout);
 	#endif
 
+	/* 
+	 * Finally, run the codegen and write out the 
+	 * final compiled assembly
+	 */
 	run_codegen(&tree);
-
-	/* Write out the final compiled assembly */
 	print_code();
 
 	/*
-	 * wcc (wannabe c compiler) command
-	 * for unixlikes running x86
+	 * `wcc' (wannabe C compiler) command
+	 * for unixlikes running x86: the output
+	 * is redirected to a temporary .s file,
+	 * then assembled using gcc.
  	 */
 	#ifdef WCC
 		fflush(stdout);

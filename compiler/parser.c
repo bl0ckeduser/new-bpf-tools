@@ -66,6 +66,9 @@ int check_typedef(char *str)
 	return hashtab_lookup(typedef_tags, str) != NULL;
 }
 
+/*
+ * Deep(i.e. recursive)-copy a tree object
+ */
 exp_tree_t copy_tree(exp_tree_t src_a)
 {
 	exp_tree_t *src = &src_a;
@@ -88,12 +91,17 @@ int indx_bound(int indx)
 	return indx;
 }
 
+/*
+ * Get the index of the next token,
+ * clipped to the highest token number
+ * to avoid overflow.
+ */
 int adv()
 {
 	return indx_bound(++indx);
 }
 
-/* give the current token */
+/* Give the current token */
 token_t peek()
 {
 	return tokens[indx];

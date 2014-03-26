@@ -102,6 +102,14 @@ int type2siz(typedesc_t ty)
 	return ty.ptr || ty.arr ? 4 : decl2siz(ty.ty);
 }
 
+/*
+ * Product of the array dimensions
+ * of an array declaration, e.g.
+ * for int foo[2][3][4], 2 * 3 * 4.
+ * This is needed to calculate the size
+ * in bytes of the array for memory
+ * offset calculations etc.
+ */
 int arr_dim_prod(typedesc_t ty)
 {
 	int prod, i;
@@ -272,6 +280,9 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 		}
 	}
 
+	/*
+	 * Populate the struct name field, if any.
+	 */
 	if (decl == NAMED_STRUCT_DECL) {
 		typedat->is_struct_name_ref = 1;
 		typedat->struct_name_ref = malloc(128);
