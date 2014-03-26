@@ -1380,8 +1380,7 @@ void run_codegen(exp_tree_t *tree)
 	puts("");
 
 
-/*
-
+	/*
 		char* ___mymemcpy(char *dest, char *src, int size)
 		{
 			char *orig = dest;

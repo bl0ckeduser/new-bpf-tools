@@ -16,6 +16,14 @@ void sanity_requires(int exp)
 		fail("that doesn't make any sense");
 }
 
+/*
+ * Try to find a token pointer somewhere
+ * in a tree. This is used to trace errors
+ * in the parse trees to their originating tokens,
+ * and from there to the originating line,
+ * so that the fancy error messages showing
+ * line number etc. can be printed.
+ */
 token_t *findtok(exp_tree_t *et)
 {
 	int i;

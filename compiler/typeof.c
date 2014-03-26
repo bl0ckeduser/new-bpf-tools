@@ -17,6 +17,9 @@
  * oh I hit a struct. well, ronald the clown, 
  * it's a pointer to array of struct." 
  * -- something like that.)
+ * 
+ * This main tree recursion occurs in the
+ * routine `tree_typeof_iter'.
  */
 
 #include "tree.h"
