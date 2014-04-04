@@ -1,0 +1,19 @@
+This is not an x86 assembler.
+
+This is an "assembler" for a special graphics virtual machine target,
+(called "BPF"), which is no longer the main focus of the compiler.
+
+This compiler originally targeted this "BPF" virtual machine which I 
+(terribly) designed when I was about 13 years old. Later it was
+adapted to target x86.
+
+bpfasm.c is an "assembler" for this virtual machine. It converts 
+"assembly code" (text instructions) to "executable files" for 
+this virtual machine.
+
+The focus of this project is now the x86 version.
+
+In ../bpf-test/ are games programmed for that virtual machine,
+to be compiled using the compiler.
+
+See also: ../README-BPF, ../README
