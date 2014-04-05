@@ -1,0 +1,64 @@
+On April 4, 2014, a link to the repository was posted to the programming
+discussion page on reddit.com. (for those who don't know it, reddit.com 
+is basically like a forum).
+
+(http://www.reddit.com/r/programming/comments/2277wu/i_wrote_a_c_compiler_as_a_hobby_currently_targets/)
+
+Quickly, I received lots of improvement suggestions messages.
+I make a list here.
+
+- Improving the style of the massive run-on `codegen' routine
+  in codegen_x86.c
+
+- Reading the C standard ! unofficial pre-publication draft:
+  http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf
+
+- Avoiding conditional compilation (ex-Borland guy)
+  Can do:
+
+	#ifdef SOMETHING
+		#define something 1
+	#else
+		#define something 0
+	#endif
+
+  then:
+
+	if (something) {
+		...
+	}
+
+- Emitting object code directly is harder but much faster. (from Mr. Bright
+  who did the D compiler)
+
+- Targeting 64-bit instead of 32-bit. Better instruction set,
+  and most computers are 64-bit now.
+
+- Reading the AMD documentation. Apparently more readable than Intel
+
+- Always using meaningful variable names.
+
+- Avoid using gcc extensions in the compiler source.
+  (I don't think it does)
+
+- "unit tests" (?)
+
+- doing more fun things with my life than this. (well  "fun" is subjective)
+
+- code style (direct dump of a message I got from "mumbel" on reddit):
+
+	- you might get some performance increase if you passed 
+	  all those structs by reference instead of as a parameter 
+	  to save the copy.
+	- consider putting using the heap more (alloc vs stack variable).
+	- label 'const' to parameters that are read-only.
+	- use header files for function prototypes, instead of having 
+	  to extern each time.
+	- declare functions as (void) instead of ().
+	- compile with "-Wall -Wextra" to see if any of those are 
+	  important, looks like mostly signed/unsigned comparisons, 
+	  unused variables, and no returns (should go away by 
+	  adding "__attribute__((noreturn))" to the function 
+	  prototypes that call exit() if they really dont return)
+
+
