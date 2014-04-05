@@ -22,6 +22,9 @@ The 32-bit x86 code generator outputs GAS assembly and the run / test scripts
 assemble this using gcc. clang also works; you can modify the scripts to
 use clang if desired.
 
+Note: there is now also a script to build a standalone "wcc" command,
+see docs/wcc.txt
+
 			   ------------
 			      Syntax
 			   ------------
