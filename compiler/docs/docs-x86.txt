@@ -20,7 +20,11 @@ Quick example:
 
 The 32-bit x86 code generator outputs GAS assembly and the run / test scripts
 assemble this using gcc. clang also works; you can modify the scripts to
-use clang if desired.
+use clang if desired. It is worth noting that 32-bit C libraries must be
+installed for all this to work. Otherwise, errors like this happen:
+
+	/usr/bin/ld: cannot find -lgcc_s
+	collect2: error: ld returned 1 exit status
 
 Note: there is now also a script to build a standalone "wcc" command,
 see docs/wcc.txt
