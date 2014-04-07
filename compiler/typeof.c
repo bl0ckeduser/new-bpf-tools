@@ -27,6 +27,8 @@
 #include "typedesc.h"
 #include <string.h>
 #include <stdio.h>
+#include "general.h"
+#include "diagnostics.h"
 
 char err_buf[1024];
 
@@ -46,15 +48,7 @@ extern int int_type_decl(char ty);
 extern int decl2siz(int);
 extern typedesc_t func_ret_typ(char *func_nam);
 extern char* get_tok_str(token_t t);
-extern void fail(char *);
 extern struct_desc_t *find_named_struct_desc(char *s);
-
-/* hook to error printout code */
-void compiler_fail(char *message, token_t *token,
-	int in_line, int in_chr);
-
-/* hook to token finder */
-extern token_t *findtok(exp_tree_t *et);
 
 /* 
  * Build a type-description structure

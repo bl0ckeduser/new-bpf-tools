@@ -23,7 +23,9 @@
 #include "tokens.h"
 #include "tree.h"
 #include "parser.h"
+#include "general.h"
 #include "typedesc.h"
+#include "optimize.h"
 #include <unistd.h>	/* XXX: for dup2; i guess windows might choke on it */
 
 #ifdef WCC
@@ -35,11 +37,9 @@ int main(int argc, char** argv)
 	char* buf, *nbuf;
 	token_t* tokens;
 	exp_tree_t tree;
-	extern void optimize(exp_tree_t *et);
 	extern void run_codegen(exp_tree_t* tree);
 	extern void push_line(char *lin);
 	extern void print_code(void);
-	extern void fail(char*);
 	int i, c;
 	int alloc = 1024;
 	int dump_ast = 0;

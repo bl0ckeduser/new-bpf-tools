@@ -9,8 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
-extern void fail(char* mesg);
+#include "general.h"
 
 exp_tree_t *alloc_exptree(exp_tree_t et)
 {

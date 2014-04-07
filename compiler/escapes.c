@@ -7,7 +7,7 @@
  * with
  */
 
-extern void fail(char*);
+#include "general.h"
 
 int escape_code(char c)
 {

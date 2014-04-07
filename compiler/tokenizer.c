@@ -36,17 +36,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "general.h"
+#include "diagnostics.h"
 
 hashtab_t *keywords;
 int *iptr;
 char **code_lines;
 int cl_alloc = 0;
-extern void fail(char* mesg);
-extern void sanity_requires(int exp);
-extern void compiler_fail(char *message, token_t *token,
-	int in_line, int in_chr);
-extern void compiler_warn(char *message, token_t *token,
-	int in_line, int in_chr);
 
 enum {
 	NOT_INSIDE_A_COMMENT,

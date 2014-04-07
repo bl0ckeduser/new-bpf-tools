@@ -5,8 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hashtable.h"
-
-extern void fail(char *);
+#include "general.h"
 
 /* ======================================================== */
 

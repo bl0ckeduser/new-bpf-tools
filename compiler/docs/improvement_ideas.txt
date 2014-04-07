@@ -54,6 +54,9 @@ I make a list here.
 	- label 'const' to parameters that are read-only.
 	- use header files for function prototypes, instead of having 
 	  to extern each time.
+
+		=> mostly addressed as of 2014-04-07
+
 	- declare functions as (void) instead of ().
 	- compile with "-Wall -Wextra" to see if any of those are 
 	  important, looks like mostly signed/unsigned comparisons, 

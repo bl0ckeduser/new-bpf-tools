@@ -7,10 +7,12 @@
 #define EXPR_STACK_SIZE 32
 
 #include "tree.h"
+#include "general.h"
 #include "tokens.h"
 #include "codegen_bpf.h"
 #include <string.h>
 #include <stdio.h>
+#include "diagnostics.h"
 
 int temp_register = 255 - EXPR_STACK_SIZE;
 char symtab[256][32] = {""};
@@ -24,10 +26,6 @@ int program_ptr;
 char **code_text;
 int code_toks = 0;
 int code_toks_alloc = 0;
-
-extern void fail(char*);
-extern void compiler_fail(char *message, token_t *token,
-	int in_line, int in_chr);
 
 /* number = mult * 255 + mod 
  * range of possible values: 0 to 65280 */

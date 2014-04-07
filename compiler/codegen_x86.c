@@ -24,17 +24,11 @@
 #include "tokens.h"
 #include "typedesc.h"
 #include "codegen_x86.h"
+#include "general.h"
 #include <string.h>
 #include <stdio.h>
+#include "diagnostics.h"
 
-extern void fail(char*);
-extern void compiler_fail(char *message, token_t *token,
-	int in_line, int in_chr);
-extern void compiler_warn(char *message, token_t *token,
-	int in_line, int in_chr);
-extern void compiler_debug(char *message, token_t *token,
-	int in_line, int in_chr);
-extern token_t *findtok(exp_tree_t *et);
 extern int type2siz(typedesc_t);
 extern typedesc_t mk_typedesc(int bt, int ptr, int arr);
 extern int is_arith_op(char);

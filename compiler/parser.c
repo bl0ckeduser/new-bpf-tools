@@ -14,6 +14,8 @@
 #include "tokenizer.h"
 #include "tokens.h"
 #include "tree.h"
+#include "general.h"
+#include "diagnostics.h"
 #include <string.h>
 
 extern int escape_code(char c);
@@ -59,7 +61,6 @@ exp_tree_t enum_tag_decl();
 int decl_dispatch(char type);
 
 void printout(exp_tree_t et);
-extern void fail(char* mesg);
 
 int check_typedef(char *str)
 {
@@ -117,8 +118,6 @@ void parse_fail(char *message)
 {
 	token_t tok;
 	int line, chr;
-	extern void compiler_fail(char *message,
-		 token_t *token, int in_line, int in_chr);
 
 	if (tokens[indx].from_line
 		!= tokens[indx - 1].from_line) {
