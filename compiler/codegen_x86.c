@@ -2207,6 +2207,16 @@ char* registerize_siz(char *stor, int siz)
  * the precious x86 assembler code along the way. 
  * In a better world this would be a switch() statement,
  * I guess.
+ *
+ * Several people have told me that this routine is too long.
+ * To this, I answer that careful inspection reveals
+ * that it consists in a chain of several mutually-exclusive
+ * if-statements, which are each not much longer than about
+ * 100 lines, and which each deal with one specific 
+ * syntax-tree head-type. Furthermore, it is not easily possible
+ * to massage this into a different code structure (e.g. a 
+ * switch statement) since in some cases the if statements 
+ * have several &&'d conditions as their predicate.
  */
 char* codegen(exp_tree_t* tree)
 {
