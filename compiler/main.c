@@ -57,7 +57,13 @@ int main(int argc, char** argv)
 	#ifdef WCC
 		sprintf(opt, "");
 		for (i = 1; i < argc; ++i) {
-			if (!strcmp(argv[i], "--ast")) {
+			if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "--version")) {
+				printf("This is the wannabe C compiler command\n");
+				printf("programmed by bl0ckeduser, 2014-2014\n");
+				printf("<https://github.com/bl0ckeduser/new-bpf-tools>\n\n");
+				printf("Usage: wcc filename.c [-o target]\n\n");
+				exit(0);
+			} else if (!strcmp(argv[i], "--ast")) {
 				dump_ast = 1;
 			/* unique (for now) source file */
 			} else if(strstr(argv[i], ".c")) {
