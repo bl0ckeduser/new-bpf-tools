@@ -1191,10 +1191,6 @@ restart:
 //#include <stdio.h>
 //#include <string.h>	/* memcpy */
 
-#ifdef DEBUG
-	#define return(X) { printf("leaving optimizer at line %d\n", \
-					 		__LINE__); return(X); }
-#endif
 
 int tok2int(token_t *t);
 int sametree(exp_tree_t *a, exp_tree_t *b);

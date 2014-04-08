@@ -350,13 +350,15 @@ int tc = 0;
 #define TOK_FAIL(msg)	\
 	{ strcpy(fail_msg, msg); goto tok_fail; }
 
-token_t* tokenize(char *buf)
+token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 {
 	match_t m;
 	match_t c;
 	char buf2[1024]; /* XXX: assumes no token is >1023 chars */
 	char fail_msg[1024] = "";
 	char *p;
+	char *substitution;
+	token_t *sub_toks;
 	char *old;
 	int max;
 	int i;
@@ -458,12 +460,24 @@ token_t* tokenize(char *buf)
 			 * hashing in the matching routine, a hack 
 			 * to save time) to discriminate them from
 			 * identifiers.
+			 *
+			 * The same method is now used for preprocessor
+			 * defines.
 			 */
 			if (c.success == TOK_IDENT) {
 				strncpy(buf2, p, max);
 				buf2[max] = 0;
+				/* keywords */
 				if ((iptr = hashtab_lookup_with_hash(keywords, buf2, c.hash)))
 					c.success = *iptr;
+				/* preprocessor defines */
+				else if ((substitution = hashtab_lookup_with_hash(cpp_defines, buf2, c.hash))) {
+					/* tokenize the substitution string separately then splice it in */
+					sub_toks = tokenize(substitution, cpp_defines);
+					for (i = 0; sub_toks[i].start != NULL; ++i)
+						toks[tok_count++] = sub_toks[i];
+					goto advance;
+				}
 			}
 
 			/*

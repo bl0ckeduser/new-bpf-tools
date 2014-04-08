@@ -26,10 +26,12 @@
 #include "general.h"
 #include "typedesc.h"
 #include "optimize.h"
+#include "preprocess.h"
 #include <unistd.h>	/* XXX: for dup2; i guess windows might choke on it */
 
 #ifdef WCC
 	#include <errno.h>	/* that's business with .NET */
+	extern char *tempnam(const char *dir, const char *pfx);
 #endif
 
 int main(int argc, char** argv)
@@ -43,6 +45,7 @@ int main(int argc, char** argv)
 	int i, c;
 	int alloc = 1024;
 	int dump_ast = 0;
+	hashtab_t* cpp_defines;
 #ifdef WCC
 	char *inf = NULL;
 	char opt[1024];
@@ -114,10 +117,16 @@ int main(int argc, char** argv)
 	}
 
 	/*
+	 * Run preprocessor
+	 */
+
+	cpp_defines = preprocess(&buf);
+
+	/*
 	 * Tokenize the inputted code
 	 */
 	setup_tokenizer();
-	tokens = tokenize(buf);
+	tokens = tokenize(buf, cpp_defines);
 
 #ifdef DEBUG
 	/*

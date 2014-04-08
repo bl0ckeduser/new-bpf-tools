@@ -1,6 +1,8 @@
 #ifndef TOKENIZER_H
 #define TOKENIZER_H
 
+#include "hashtable.h"
+
 typedef struct token {
 	char type;
 	char* start;
@@ -13,7 +15,7 @@ typedef struct token {
 
 extern char **code_lines;
 
-extern token_t* tokenize(char *string);
+extern token_t* tokenize(char *string, hashtab_t *cpp_defines);
 extern void setup_tokenizer();
 
 #endif
