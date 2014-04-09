@@ -4,10 +4,21 @@ a compiler for a subset of C, targeting 32-bit x86 (via GNU assembler).
 This 32-bit x86 compiler is tested on FreeBSD, GNU / Linux, and Windows
 (via the MinGW toolchain).
 
-Please go in the "compiler" directory and read
+	---------------------- X86 QUICKSTART -----------------------
+
+		$ cd compiler/
+		$ ./build-x86.sh
+		$ ./compile-run-x86.sh test/x86/recursive-fib.c 
+
+	  Note that 32-bit C libraries must be installed.
+
+	-------------------------------------------------------------
+
+For further info: please go in the "compiler" directory and read
 "compiler/docs/docs-x86.txt" for info about the supported C features,
 how to build the program, etc.  (There is some other useful information
-in the "compiler/docs" directory.)
+in the "compiler/docs" directory, for example docs/wcc.txt tells you
+how to build a standalone "wcc" command).
 
 The test programs "compiler/test/x86/*.c" should give an idea of the
 subset of C accepted at this point. Highlights include: pointers and
