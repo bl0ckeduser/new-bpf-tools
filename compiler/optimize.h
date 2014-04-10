@@ -3,6 +3,6 @@
 
 #include "tree.h"
 
-extern void optimize(exp_tree_t *et);
+void optimize(exp_tree_t *et);
 
 #endif

@@ -3,8 +3,8 @@
 
 #include "tree.h"
 
-extern void fail(char* mesg);
-extern void sanity_requires(int exp);
-extern token_t *findtok(exp_tree_t *et);
+void fail(char* mesg);
+void sanity_requires(int exp);
+token_t *findtok(exp_tree_t *et);
 
 #endif

@@ -13,9 +13,9 @@ typedef struct token {
 	int from_char;	/* originating offset in that line */
 } token_t;
 
-extern char **code_lines;
+char **code_lines;
 
-extern token_t* tokenize(char *string, hashtab_t *cpp_defines);
-extern void setup_tokenizer();
+token_t* tokenize(char *string, hashtab_t *cpp_defines);
+void setup_tokenizer();
 
 #endif

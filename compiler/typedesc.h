@@ -58,8 +58,8 @@ typedef struct struct_desc_s {
 	int bytes;			/* byte size of the whole thing */
 } struct_desc_t;
 
-extern typedesc_t tree_typeof(exp_tree_t *tp);
-extern void dump_td(typedesc_t);
-extern typedesc_t deref_typeof(typedesc_t tp);
+typedesc_t tree_typeof(exp_tree_t *tp);
+void dump_td(typedesc_t);
+typedesc_t deref_typeof(typedesc_t tp);
 
 #endif

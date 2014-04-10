@@ -50,6 +50,24 @@ void create_jump_tables(exp_tree_t*);
 
 /* ====================================================== */
 
+/* General-purpose 32-bit x86 registers.
+ * Did I forget any ? */
+#define TEMP_REGISTERS 6
+char* temp_reg[TEMP_REGISTERS] = {
+	"%eax",
+	"%ebx",
+	"%ecx",
+	"%edx",
+	"%esi",
+	"%edi" 
+};
+
+#define TEMP_MEM 16
+char* temp_mem[TEMP_MEM];
+
+
+/* ====================================================== */
+
 /*
  * Modes for the symbol setup
  * routine which populates the

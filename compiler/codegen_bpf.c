@@ -14,6 +14,17 @@
 #include <stdio.h>
 #include "diagnostics.h"
 
+bpf_instr_t instr_info[] = {
+	{ "echo", "Echo", 1, { 1 }},
+	{ "draw", "vDraw", 8, { 1, 1, 0, 0, 0, 0, 0, 0 }},
+	{ "wait", "Wait", 2, { 0, 0 }},
+	{ "cmx", "cmx", 1, { 2 }},
+	{ "cmy", "cmy", 1, { 2 }},
+	{ "mx", "mx", 1, { 2 }},
+	{ "my", "my", 1, { 2 }},
+	{ "outputdraw", "OutputDraw", 0, { 0 }}
+};
+
 int temp_register = 255 - EXPR_STACK_SIZE;
 char symtab[256][32] = {""};
 char *instr_arg[32];
