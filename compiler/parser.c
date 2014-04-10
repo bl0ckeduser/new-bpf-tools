@@ -119,12 +119,14 @@ void parse_fail(char *message)
 	token_t tok;
 	int line, chr;
 
-	if (tokens[indx].from_line
+	if (0 && tokens[indx].from_line
 		!= tokens[indx - 1].from_line) {
 		/* end of the line */
+/*
 		line = tokens[indx - 1].from_line;
 		chr = strstr(code_lines[line], "\n")
 			- code_lines[line] + 1;
+*/
 	} else {
 		line = tokens[indx].from_line;
 		chr = tokens[indx].from_char;

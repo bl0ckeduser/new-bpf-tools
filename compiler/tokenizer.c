@@ -41,8 +41,6 @@
 
 hashtab_t *keywords;
 int *iptr;
-char **code_lines;
-int cl_alloc = 0;
 
 enum {
 	NOT_INSIDE_A_COMMENT,
@@ -369,10 +367,6 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 	int tok_count = 0;
 	int comstat = NOT_INSIDE_A_COMMENT;
 
-	cl_alloc = 64;
-	code_lines = malloc(cl_alloc * sizeof(char *));
-	*code_lines = buf;
-
 	/*
 	 * Build the keywords hash table
 	 */
@@ -434,12 +428,7 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 				/* It's okay to have non-tokens in comments,
 				 * so just go forward and suck it up */
 				if (*p == '\n') {
-					code_lines[line] = line_start;
 					++line;
-					if (line >= cl_alloc) {
-						cl_alloc += 64;
-						code_lines = realloc(code_lines, cl_alloc * sizeof(char *));
-					}
 					line_start = p;
 				}
 				++p;
@@ -555,7 +544,6 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 				 * and still fake C compatibility
 				 */
 				if (c.success == TOK_CPP) {
-					code_lines[line] = line_start;
 					compiler_warn("preprocessor directive consumed and ignored",
 						&toks[tok_count - 1], 0, 0);
 					--tok_count;
@@ -576,12 +564,7 @@ advance:
 		 	 * pretty parse-fail diagnostics)
 			 */
 			if (c.success == TOK_NEWLINE || c.success == TOK_CPP) {
-				code_lines[line] = line_start;
 				++line;
-				if (line >= cl_alloc) {
-					cl_alloc += 64;
-					code_lines = realloc(code_lines, cl_alloc * sizeof(char *));
-				}
 				line_start = p;
 			}
 		}
@@ -592,12 +575,10 @@ advance:
 	toks[tok_count].len = 0;
 	toks[tok_count].from_line = line;
 	toks[tok_count].from_char = p - line_start;
-	code_lines[line] = line_start;
 
 	return toks;
 
 tok_fail:
-	code_lines[line] = line_start;
 	compiler_fail(fail_msg,
 		NULL,
 		line, p - line_start + 1);
