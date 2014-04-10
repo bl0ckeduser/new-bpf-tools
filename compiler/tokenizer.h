@@ -13,7 +13,7 @@ typedef struct token {
 	int from_char;	/* originating offset in that line */
 } token_t;
 
-char **code_lines;
+extern char **code_lines;
 
 token_t* tokenize(char *string, hashtab_t *cpp_defines);
 void setup_tokenizer();
