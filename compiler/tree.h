@@ -83,6 +83,7 @@ enum {		/* head_type */
 	SWITCH_BREAK,
 	ENUM_DECL,
 	PROC_CALL_MEMCPY,
+	EXTERN_DECL,
 	/* special */
 	NULL_TREE
 };
@@ -167,6 +168,7 @@ static char* tree_nam[] = {
 	"SWITCH_BREAK",
 	"ENUM_DECL",
 	"PROC_CALL_MEMCPY",
+	"EXTERN_DECL",
 	"NULL_TREE"
 };
 

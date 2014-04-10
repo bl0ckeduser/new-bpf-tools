@@ -92,7 +92,8 @@ enum {
 	TOK_CASE,
 	TOK_DEFAULT,
 	TOK_VOID,
-	TOK_ENUM
+	TOK_ENUM,
+	TOK_EXTERN
 };
 
 static char* tok_nam[] = {
@@ -180,7 +181,8 @@ static char* tok_nam[] = {
 	"TOK_CASE",
 	"TOK_DEFAULT",
 	"TOK_VOID",
-	"TOK_ENUM"
+	"TOK_ENUM",
+	"TOK_EXTERN"
 };
 
 static char* tok_desc[] = {
@@ -263,7 +265,8 @@ static char* tok_desc[] = {
 	"switch case label",
 	"switch default label",
 	"void type",
-	"enum"
+	"enum",
+	"extern"
 };
 
 /* keywords */
@@ -273,7 +276,7 @@ struct bpf_kw {
 	char tok;
 };
 
-#define KW_COUNT 27
+#define KW_COUNT 28
 
 static struct bpf_kw kw_tab[] = 
 {
@@ -303,7 +306,8 @@ static struct bpf_kw kw_tab[] =
 	{ "switch", TOK_SWITCH },
 	{ "case", TOK_CASE },
 	{ "default", TOK_DEFAULT },
-	{ "enum", TOK_ENUM }
+	{ "enum", TOK_ENUM },
+	{ "extern", TOK_EXTERN }
 };
 
 /* routines */

@@ -42,12 +42,12 @@ exp_tree_t bor_expr();
 exp_tree_t bxor_expr();
 exp_tree_t band_expr();
 exp_tree_t comp_expr();
-exp_tree_t decl();
-exp_tree_t decl2();
+exp_tree_t decl(int);
+exp_tree_t decl2(int);
 exp_tree_t cast();
 exp_tree_t cast_type();
 exp_tree_t arg();
-exp_tree_t struct_decl();
+exp_tree_t struct_decl(int);
 exp_tree_t e1();
 exp_tree_t e0();
 exp_tree_t e0_2();
@@ -284,7 +284,7 @@ cast_typedef_2:
 		while (peek().type == TOK_MUL)
 			adv(), add_child(&ct, alloc_exptree(star));
 		return ct;
-	} else if(valid_tree((btt = struct_decl())))
+	} else if(valid_tree((btt = struct_decl(0))))
 		return btt;
 
 	return null_tree;
@@ -329,7 +329,7 @@ int decl_dedispatch(char type)
 		break;
 	}
 }
-exp_tree_t decl()
+exp_tree_t decl(int is_extern)
 {
 	token_t tok = peek();
 	exp_tree_t tree, subtree;
@@ -339,6 +339,19 @@ exp_tree_t decl()
 	int td_decl = 0;
 	int stars = 0;
 	exp_tree_t *tdtree;
+
+	/*
+	 * ['extern']
+	 */
+	if (tok.type == TOK_EXTERN) {
+		if (is_extern)
+			parse_fail("you said `extern' twice");
+		tree = new_exp_tree(EXTERN_DECL, &tok);
+		adv();
+		subtree = decl(1);
+		add_child(&tree, alloc_exptree(subtree));
+		return tree;
+	}
 
 	/* 
 	 * (basic-type|struct-decl|enum-decl
@@ -397,7 +410,7 @@ exp_tree_t decl()
 		goto int_decl;
 	}
 
-	if (valid_tree((tree = struct_decl())))
+	if (valid_tree((tree = struct_decl(is_extern))))
 		if (tree.head_type == STRUCT_DECL)
 			goto decl_decl2;
 		else
@@ -414,7 +427,7 @@ decl_decl2:
 			return tree;
 
 		while (1) {
-			if (!valid_tree(subtree = decl2()))
+			if (!valid_tree(subtree = decl2(is_extern)))
 				parse_fail("bad declaration syntax");
 			/*
 			 * pointer stars from typedef tag
@@ -437,7 +450,7 @@ decl_decl2:
  * struct-decl := 'struct' [ident] '{' decl ';' { decl ';' } '}'
  *		 | 'struct' [ident] decl2 { ','  decl2 } ';'
  */
-exp_tree_t struct_decl()
+exp_tree_t struct_decl(int is_extern)
 {
 	exp_tree_t tree, subtree;
 	token_t name;
@@ -455,7 +468,7 @@ exp_tree_t struct_decl()
 			adv();
 			tree = new_exp_tree(STRUCT_DECL, &name);
 			while (peek().type != TOK_RBRACE) {
-				subtree = decl();
+				subtree = decl(0);
 				if (!valid_tree(subtree))
 					parse_fail("member declaration expected in struct declaration");
 				add_child(&tree, alloc_exptree(subtree));
@@ -467,7 +480,7 @@ exp_tree_t struct_decl()
 			need(TOK_RBRACE);
 			return tree;
 		/* 'struct' [ident] decl2 { ','  decl2 } ';' */
-		} else if (valid_tree((subtree = decl2()))) {
+		} else if (valid_tree((subtree = decl2(is_extern)))) {
 			tree = new_exp_tree(NAMED_STRUCT_DECL, &name);
 			add_child(&tree, alloc_exptree(subtree));
 			/* XXX: TODO: { , decl2 } repetition */
@@ -481,7 +494,7 @@ exp_tree_t struct_decl()
 /*
  * decl2 := { '*' } ident [ { ('[' [integer] ']') } ] ['=' initializer]
  */
-exp_tree_t decl2()
+exp_tree_t decl2(int is_extern)
 {
 	token_t tok = peek();
 	exp_tree_t tree, subtree, subtree2;
@@ -543,7 +556,10 @@ multi_array_decl:
 			goto multi_array_decl;
 	}
 	
-	/* initializer */
+	if (is_extern && peek().type == TOK_ASGN)
+		parse_fail("you can't initialize an extern declaration");
+
+	/* initializer (not allowed for extern) */
 	if (peek().type == TOK_ASGN) {
 		adv();	/* eat = */
 		if (!valid_tree(subtree2 = initializer()))
@@ -918,7 +934,7 @@ not_proc:
 		else --indx;
 	}
 	/* decl ';' */
-	if (valid_tree(tree = decl())) {
+	if (valid_tree(tree = decl(0))) {
 		need(TOK_SEMICOLON);
 		return tree;
 	}

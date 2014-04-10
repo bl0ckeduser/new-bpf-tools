@@ -14,7 +14,8 @@ basic-type := 'int'
 /* declaration stuff */
 
 /* e.g. int a, b, c; */
-decl := (basic-type | struct-decl | enum-decl | 'enum' identifier) decl2 { ','  decl2 } 
+decl := ['extern']
+	(basic-type | struct-decl | enum-decl | 'enum' identifier) decl2 { ','  decl2 } 
 	| struct-decl
 	| enum-decl
 
