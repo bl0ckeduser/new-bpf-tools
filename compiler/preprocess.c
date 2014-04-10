@@ -11,7 +11,7 @@
 #include "preprocess.h"
 
 /* gnu/linux is being stupid today */
-extern char *strdup(const char *s);
+extern char *strdup(/* const */ char *s);
 
 typedef struct {
 	char *buf;
