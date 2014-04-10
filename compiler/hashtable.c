@@ -19,22 +19,22 @@
  * to save time. the tokenizer uses a hash table to distinguish
  * keywords like "int" from identifiers)
  */
-unsigned int hashtab_hash_mode(char *key, int nbuck, int mode, char prev, unsigned int prev_hash);
+/*unsigned*/ int hashtab_hash_mode(char *key, int nbuck, int mode, char prev, /*unsigned*/ int prev_hash);
 
-unsigned int hashtab_hash(char *key, int nbuck)
+/*unsigned*/ int hashtab_hash(char *key, int nbuck)
 {
 	return hashtab_hash_mode(key, nbuck, 0, 0, 0);
 }
 
-unsigned int hashtab_hash_char(char c, char prev, int nbuck, unsigned int prev_hash)
+/*unsigned*/ int hashtab_hash_char(char c, char prev, int nbuck, /*unsigned*/ int prev_hash)
 {
 	return hashtab_hash_mode(&c, nbuck, 1, prev, prev_hash);
 }
 
-unsigned int hashtab_hash_mode(char *key, int nbuck, int single_char_mode, char prev, unsigned int prev_hash)
+/*unsigned*/ int hashtab_hash_mode(char *key, int nbuck, int single_char_mode, char prev, /*unsigned*/ int prev_hash)
 {
-	unsigned int hash = prev_hash;
-	unsigned int prev_key = *key;
+	/*unsigned*/ int hash = prev_hash;
+	/*unsigned*/ int prev_key = *key;
 	if (single_char_mode)
 		prev_key = prev;
 	while (*key) {
@@ -80,7 +80,7 @@ void* hashtab_lookup(hashtab_t* htab, char* key)
 			hashtab_hash(key, htab->nbuck));
 }
 
-void* hashtab_lookup_with_hash(hashtab_t* htab, char* key, unsigned int hash)
+void* hashtab_lookup_with_hash(hashtab_t* htab, char* key, /*unsigned*/ int hash)
 {
 	hashtab_entry_t *ptr = htab->buck[hash];
 
@@ -101,7 +101,7 @@ void* hashtab_lookup_with_hash(hashtab_t* htab, char* key, unsigned int hash)
 
 void hashtab_insert(hashtab_t* htab, char* key, void* val)
 {
-	unsigned int hash = hashtab_hash(key, htab->nbuck);
+	/*unsigned*/ int hash = hashtab_hash(key, htab->nbuck);
 	hashtab_entry_t **ptr = &(htab->buck[hash]);
 
 	while (*ptr)

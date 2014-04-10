@@ -25,7 +25,7 @@ int valid_tree(exp_tree_t et)
 	return et.head_type != NULL_TREE;
 }
 
-exp_tree_t new_exp_tree(unsigned int type, token_t* tok)
+exp_tree_t new_exp_tree(/*unsigned*/ int type, token_t* tok)
 {
 	token_t* tok_copy = NULL;
 

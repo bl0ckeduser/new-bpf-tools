@@ -62,7 +62,7 @@ typedef struct match_struct {
 	char* pos;
 
 	/* hash of match */
-	unsigned int hash;
+	/*unsigned*/ int hash;
 } match_t;
 
 /*
@@ -269,7 +269,7 @@ match_t match(nfa* t, char* full_tok, char* tok)
 	int prev = -1;
 	match_t m;
 	int str_const = 0;
-	unsigned int hash = 0;
+	/*unsigned*/ int hash = 0;
 
 	/* 
 	 * Iterate the matching loop as long as there are
