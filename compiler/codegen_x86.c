@@ -208,6 +208,44 @@ int switch_maxlab[256];
 
 /* ====================================================== */
 
+void register_structs(exp_tree_t *tree)
+{
+	typedesc_t struct_base;
+	int struct_bytes;
+	int i;
+	struct_desc_t* sd;
+
+	for (i = 0; i < tree->child_count; ++i)
+		if (tree->child[i]->head_type == BLOCK ||
+		    tree->child[i]->head_type == STRUCT_DECL) {
+		register_structs(tree->child[i]);
+	}
+
+	if (tree->head_type == STRUCT_DECL) {
+		#ifdef DEBUG
+			fprintf(stderr, "struct variable with base struct %s...\n", 
+				get_tok_str(*(tree->tok)));
+		#endif
+		/* parse the struct declaration syntax tree */
+		struct_base = struct_tree_2_typedesc(tree, &struct_bytes, &sd);
+		struct_base.struct_desc->bytes = struct_bytes;
+
+		/* 
+		 * Register the struct's name (e.g. "bob" in 
+		 * "struct bob { ... };"), because it might
+		 * be referred to simply by its name later on
+		 * (in fact that's what the else-clause below 
+		 * deals with)
+		 * 
+		 * XXX: wait, what if it's anonymous ?
+		 */
+		named_struct[named_structs] = struct_base.struct_desc;
+		strcpy(named_struct_name[named_structs],
+			get_tok_str(*(tree->tok)));
+		++named_structs;
+	}
+}
+
 /*
  * Check for an expression that is either:
  * - a procedure call
@@ -1307,43 +1345,41 @@ void run_codegen(exp_tree_t *tree)
 	main_defined = look_for_main(tree);
 
 	/*
-	 * If there is a main() defined,
-	 * the variables at the same lexical
-	 * scope as functions are globals
-	 * (otherwise the main lexical scope
-	 * is treated as `main' and they are
-	 * actually `main'-locals, see lower down)
+	 * Do struct declarations in global lexical scope
 	 */
-	if (main_defined) {
-		printf("# start globals =============\n");
-		printf(".section .data\n");
-		/*
-		 * some space for big struct-typed return values
-		 * 1024 bytes maximum
-		 */
-		printf(".comm __return_buffer,1024,32\n");
-		setup_symbols(tree, SYMTYPE_GLOBALS);
-		printf(".section .text\n");
+	register_structs(tree);
 
-		/*
-		 * On FreeBSD 9.0 i386, the symbol for stdin 
-		 * is __stdinp (on linux it's just stdin)
-		 * (It's even funkier on MinGW, so much so
-		 * that this kind of symbol hack isn't enough
-		 * and several instructions are necessary,
-		 * which is why the MinGW version of this hack
-		 * is in the main codegen routine and not here).
-		 */
-		#ifdef __FreeBSD__
-			printf("\n");
-			printf("# ------ macro hack to get stdin/stdout symbols on freebsd --- # \n");
-			printf(".set stdin, __stdinp\n");
-			printf(".set stdout,  __stdoutp\n");
-			printf(".set stderr, __stderrp\n");
-			printf("# ------------------------------------------------------------ #\n");
-		#endif
-		printf("# end globals =============\n\n");
-	}
+	/*
+	 * Do globals
+	 */
+	printf("# start globals =============\n");
+	printf(".section .data\n");
+	/*
+	 * some space for big struct-typed return values
+	 * 1024 bytes maximum
+	 */
+	printf(".comm __return_buffer,1024,32\n");
+	setup_symbols(tree, SYMTYPE_GLOBALS);
+	printf(".section .text\n");
+
+	/*
+	 * On FreeBSD 9.0 i386, the symbol for stdin 
+	 * is __stdinp (on linux it's just stdin)
+	 * (It's even funkier on MinGW, so much so
+	 * that this kind of symbol hack isn't enough
+	 * and several instructions are necessary,
+	 * which is why the MinGW version of this hack
+	 * is in the main codegen routine and not here).
+	 */
+	#ifdef __FreeBSD__
+		printf("\n");
+		printf("# ------ macro hack to get stdin/stdout symbols on freebsd --- # \n");
+		printf(".set stdin, __stdinp\n");
+		printf(".set stdout,  __stdoutp\n");
+		printf(".set stderr, __stderrp\n");
+		printf("# ------------------------------------------------------------ #\n");
+	#endif
+	printf("# end globals =============\n\n");
 
 	/* 
 	 * Don't ask me why this tidbit here is necessary.

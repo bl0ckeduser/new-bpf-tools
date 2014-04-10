@@ -1,4 +1,6 @@
-int x = 1 + 2 * 3;	// proper precedence !
+int x;
+
+x = 1 + 2 * 3;	// proper precedence !
 
 x *= 3 + 4;
 
