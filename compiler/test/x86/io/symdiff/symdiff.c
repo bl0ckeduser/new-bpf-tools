@@ -10,8 +10,6 @@
  * Sun Mar 16 11:44:13 EDT 2014
  */
 
-long NULL = 0x0;
-
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>

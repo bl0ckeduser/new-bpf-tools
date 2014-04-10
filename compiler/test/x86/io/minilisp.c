@@ -53,7 +53,6 @@
 
  */
 
-int NULL = 0;
 int SYMBOL = 0;
 int NUMBER = 1;
 int LIST = 2;
