@@ -1387,9 +1387,11 @@ void run_codegen(exp_tree_t *tree)
 	 */
 	printf(".section .text\n");
 #ifdef MINGW_BUILD
-	printf(".globl _main\n\n");
+	if (main_defined)
+		printf(".globl _main\n\n");
 #else
-	printf(".globl main\n\n");
+	if (main_defined)
+		printf(".globl main\n\n");
 #endif
 
 	/* 
@@ -1406,14 +1408,6 @@ void run_codegen(exp_tree_t *tree)
 	proc_ok = 1;
 	deal_with_procs(tree);
 	proc_ok = 0;	/* no further procedures shall be allowed */
-
-	/*
-	 * If the user code contains no main(),
-	 * compile the main lexical body as the
-	 * the main-code.
-	 */
-	if (!main_defined)
-		codegen_proc("main", tree, main_args);
 
 	/*
 	 * Code a builtin echo(int n) utility routine

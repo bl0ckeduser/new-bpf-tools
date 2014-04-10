@@ -15,7 +15,7 @@ passes=""
 fail=0
 fails=""
 
-for x in test/*.c test/x86/*.c
+for x in test/x86/*.c
 do
 	rm -rf autotest-tmp
 	mkdir autotest-tmp
