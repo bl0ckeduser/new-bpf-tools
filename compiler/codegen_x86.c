@@ -1327,16 +1327,10 @@ void run_codegen(exp_tree_t *tree)
 	}
 
 	/*
-	 * Define the format used for printf()
-	 * in the echo() code, then code the
-	 * user's string constants.
-	 * (echo is a builtin procedure that just
-	 * does a printf("%d\n", n), don't ask
-	 * why it's included)
+	 * Code the user's string constants.
 	 */
 	printf(".section .rodata\n");
 	printf("# start string constants ========\n");
-	printf("_echo_format: .string \"%%d\\n\"\n");
 	deal_with_str_consts(tree);
 	printf("# end string constants ==========\n\n");
 
@@ -1414,27 +1408,6 @@ void run_codegen(exp_tree_t *tree)
 	proc_ok = 1;
 	deal_with_procs(tree);
 	proc_ok = 0;	/* no further procedures shall be allowed */
-
-	/*
-	 * Code a builtin echo(int n) utility routine
-	 * (don't ask why this exists)
-	 */
-#ifndef MINGW_BUILD
-	printf(".type echo, @function\n");
-#endif
-	printf("echo:\n");
-	printf("pushl $0\n");
-	printf("pushl 8(%%esp)\n");
-	printf("pushl $_echo_format\n");
-#ifdef MINGW_BUILD
-	printf("call _printf\n");
-#else
-	printf("call printf\n");
-#endif
-	printf("addl $12, %%esp  # get rid of the printf args\n");
-	printf("ret\n");
-
-	puts("");
 
 
 	/*

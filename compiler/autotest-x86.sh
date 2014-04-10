@@ -41,22 +41,7 @@ for x in test/x86/*.c
 do
 	rm -rf autotest-tmp
 	mkdir autotest-tmp
-	SRC_FILE=autotest-tmp/test-temp.c
-	echo "#include <stdio.h>" >$SRC_FILE
-	/bin/echo "void echo(int n) { printf(\"%d\\n\", n); }" >>$SRC_FILE
-	if ! grep -q main $x;
-	then
-		echo "int main(int argc, char **argv) {" >>$SRC_FILE
-	fi
-	cat $x >>$SRC_FILE
-	# gcc doesn't allow labels at the end of a codeblock,
-	# but I do, so stick in a dummy statement for compatibility.
-	# (see e.g. test/goto.c)
-	if ! grep -q main $x;
-	then
-		echo 'argc = argc; ' >>$SRC_FILE
-		echo "}" >>$SRC_FILE
-	fi
+	SRC_FILE=$x
 	$C_COMPILER $SRC_FILE -o ./autotest-tmp/exec 2>/dev/null
 	good_result=$(./autotest-tmp/exec | $SUM_TOOL)
 	blok_result=$(./compile-run-x86.sh $x 2>/dev/null | $SUM_TOOL)

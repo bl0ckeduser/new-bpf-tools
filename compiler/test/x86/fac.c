@@ -1,3 +1,6 @@
+#include <stdio.h>
+void echo_int(int n) { printf("%d\n", n); }
+
 main() {
 int x = 1;
 int f;
@@ -9,6 +12,6 @@ while (m++ < 10) {
 loop:	x *= f++;
 	if (f < m)
 		goto loop;
-	echo(x);
+	echo_int(x);
 }
 }

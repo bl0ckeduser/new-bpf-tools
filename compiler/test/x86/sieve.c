@@ -1,3 +1,6 @@
+#include <stdio.h>
+void echo_int(int n) { printf("%d\n", n); }
+
 main() {
 /*
  * Support for sequenced declarations like this one
@@ -22,7 +25,7 @@ while(k++ < MAX){
 k = 0;
 while(k++ < MAX){
     if(sieve[k] < 1){
-        echo(k);
+        echo_int(k);
     }
 }
 

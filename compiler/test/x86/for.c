@@ -1,8 +1,11 @@
+#include <stdio.h>
+void echo_int(int n) { printf("%d\n", n); }
+
 main() {
 int i = 3;
 
 for (;;) {
-	echo(i--);
+	echo_int(i--);
 	if (i < 0)
 		goto hahaha;
 }
@@ -10,7 +13,7 @@ for (;;) {
 hahaha:
 
 for (i = 0; ;++i) {
-	echo(i);
+	echo_int(i);
 	if (i > 5)
 		goto hohoho;
 }
@@ -18,6 +21,6 @@ for (i = 0; ;++i) {
 hohoho:
 
 for (i = 0; i < 5; ++i)
-	echo(++i);
+	echo_int(++i);
 
 }

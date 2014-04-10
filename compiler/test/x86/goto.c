@@ -1,11 +1,14 @@
+#include <stdio.h>
+void echo_int(int n) { printf("%d\n", n); }
+
 main() {
-	echo(12);
+	echo_int(12);
 	goto hax;
 bob:
-	echo(56);
+	echo_int(56);
 	goto end;
 hax:
-	echo(34);
+	echo_int(34);
 	goto bob;
 end:
 	;;;
