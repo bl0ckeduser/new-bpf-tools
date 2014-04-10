@@ -1030,6 +1030,10 @@ int create_array(int symty, exp_tree_t *dc,
 		/* Check name not already taken */	
 		glob_check(dc->child[0]->tok);
 
+		/* register as global (needed for multifile) */
+		printf(".globl %s\n", 
+			get_tok_str(*(dc->child[0]->tok)));
+
 		/* Do a magic assembler instruction */
 		printf(".comm %s,%d,32\n", 
 			get_tok_str(*(dc->child[0]->tok)),
@@ -1183,6 +1187,15 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 		strcpy(buf2, nameless_perm_storage(4));
 		temp_mem[i] = buf2;
 	}
+
+	/*
+	 * export symbol
+	 */
+#ifdef MINGW_BUILD
+	printf(".globl _%s\n", name);
+#else
+	printf(".globl %s\n", name);
+#endif
 
 	/* 
 	 * Do the usual x86 function entry process,
@@ -1386,13 +1399,6 @@ void run_codegen(exp_tree_t *tree)
  	 * I probably pasted it from an assembly tutorial. 
 	 */
 	printf(".section .text\n");
-#ifdef MINGW_BUILD
-	if (main_defined)
-		printf(".globl _main\n\n");
-#else
-	if (main_defined)
-		printf(".globl main\n\n");
-#endif
 
 	/* 
 	 * We deal with the procedures separately
@@ -1992,6 +1998,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				 */
 				if (symty == SYMTYPE_GLOBALS) {
 					if (!is_extern) {
+						/* register as global (needed for multifile) */
+						printf(".globl %s\n", 
+							get_tok_str(*(dc->child[0]->tok)));
 						printf(".comm %s,%d,32\n",
 							get_tok_str(*(dc->child[0]->tok)), objsiz);
 					}
@@ -2131,10 +2140,12 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 							 * the initial value.
 							 */
 							/* XXX: change .long for types other than `int' */
-							printf(".long %s\n.globl x\n\n",
+							printf(".long %s\n",
 								dc->child_count == 2 ?
 									get_tok_str(*(dc->child[1]->tok))
 									: "0");
+							printf(".globl %s\n\n",
+								get_tok_str(*(dc->child[0]->tok)));
 						}
 						break;
 					default:
