@@ -150,7 +150,7 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 					include_file = include_file_buffer;
 				}
 
-				if (INCLUDE_PATH_SYSTEM) {
+				if (include_type == INCLUDE_PATH_SYSTEM) {
 					fprintf(stderr, "warning: ignoring <%s> system include\n",
 						include_file);
 					goto skip_include;
