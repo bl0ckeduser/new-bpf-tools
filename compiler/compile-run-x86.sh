@@ -22,7 +22,10 @@ do
 	asmfiles="$asmfiles$asmfile "
 done
 
-$COMPILER -m32 $asmfiles -lc -o $TEST_PROG
+if ! $COMPILER -m32 $asmfiles -lc -o $TEST_PROG
+then
+	exit 1
+fi
 
 ./$TEST_PROG
 
