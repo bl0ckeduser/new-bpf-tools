@@ -3,6 +3,7 @@ Features used but not compiled by the x86 compiler
 
 - function pointers (used in parser.c) (!)
 - multiple files (presumably largely the linker's job)
+	UPDATE: currently WIP
 - preprocessor: #define #else #endif #ifdef #ifndef #include
 	UPDATE: basic #define is implemented. local file #include
 	        with recursion implemented.

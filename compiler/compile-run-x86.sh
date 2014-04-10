@@ -1,20 +1,31 @@
+MY_COMPILER="./a.out"
+TEST_PROG="test_prog"
+
 if [ $(uname | grep MINGW) ];
 then
-
-# MinGW
-
-./compiler.exe <$1 >compiler_temp.s && gcc compiler_temp.s -o test_prog.exe && ./test_prog.exe
-rm -f compiler_temp.s test_prog.exe
-
-else
-
-# Unix / GNU / Linux 
+	TEST_PROG="testprog.exe"
+	MY_COMPILER="./compiler.exe"
+fi
 
 # clang on FreeBSD has also been tested
 COMPILER=gcc
 
-./a.out <$1 >compiler_temp.s && $COMPILER -m32 compiler_temp.s -lc -o test_prog && ./test_prog
-rm -f compiler_temp.s test_prog
+asmfiles=""
+for file in $@
+do
+	asmfile="$(basename $(echo $file)).s"
+	if ! $MY_COMPILER <$file >$asmfile
+	then
+		echo "Failed to compile file: $file"
+		exit 1
+	fi
+	asmfiles="$asmfiles$asmfile "
+done
+
+$COMPILER -m32 $asmfiles -lc -o $TEST_PROG
+
+./$TEST_PROG
+
+rm -f $asmfiles $TEST_PROG
 
 
-fi

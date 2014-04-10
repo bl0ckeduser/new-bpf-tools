@@ -4,7 +4,7 @@
 # to that from C_COMPILER, which is considered valid.
 
 # clang also works
-C_COMPILER=c99
+C_COMPILER=cc
 
 # I like to use `md5sum' on Linux but some un*xes only
 # have `sum', so yeah...
@@ -14,6 +14,28 @@ pass=0
 passes=""
 fail=0
 fails=""
+
+# multifile
+for mf_dir in `ls test/x86/multifile/`
+do
+	rm -rf autotest-tmp
+	mkdir autotest-tmp
+	x="test/x86/multifile/$mf_dir/*.c"
+	$C_COMPILER test/x86/multifile/$mf_dir/*.c -o ./autotest-tmp/exec 2>/dev/null
+	good_result=$(./autotest-tmp/exec | $SUM_TOOL)
+	blok_result=$(./compile-run-x86.sh test/x86/multifile/$mf_dir/*.c 2>/dev/null | $SUM_TOOL)
+	if [ "$good_result" = "$blok_result" ];
+	then
+		echo "$x - PASS"
+		pass=$(expr $pass + 1)
+		passes="$passes $x"
+	else
+		echo "$x - FAIL"
+		fail=$(expr $fail + 1)
+		fails="$fails $x"
+	fi
+	rm -rf autotest-tmp/
+done
 
 for x in test/x86/*.c
 do
