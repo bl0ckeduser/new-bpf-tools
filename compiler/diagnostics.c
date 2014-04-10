@@ -64,6 +64,7 @@ void compiler_fail_int(char *message, token_t *token,
 	 * Copy the originating code line to a buffer,
 	 * then print this to stderr
 	 */
+/*
 	strncpy(buf, code_lines[line], 1024);
 	buf[1023] = 0;
 	for (i = 0; code_lines[line]; ++i)
@@ -72,11 +73,13 @@ void compiler_fail_int(char *message, token_t *token,
 			break;
 		}
 	fprintf(stderr, "%s\n", buf);
+*/
 
 	/* 
 	 * Put a little arrow under the offending
 	 * character
 	 */
+/*
 	for (i = 1; i < chr; ++i)
 		if (buf[i - 1] == '\t')
 			fputc(buf[i - 1], stderr);
@@ -84,6 +87,7 @@ void compiler_fail_int(char *message, token_t *token,
 			fputc(' ', stderr);
 	fputc('^', stderr);
 	fputc('\n', stderr);
+*/
 
 	/* 
 	 * Finally display line number and error
