@@ -719,10 +719,23 @@ exp_tree_t block()
 	int sav_indx, ident_indx, arg_indx;
 	int must_be_proto = 0;
 	int deflab;
-	exp_tree_t tag;	
+	int sav_indx_extern;
+	exp_tree_t tag;
+	int is_extern = 0;	
+
+	sav_indx = indx;
+
+	/* 
+	 * 'extern' before a procedure prototype is presumably
+	 * meaningless. also presumably illegal before a procedure
+	 * definition!
+	 */
+	if (peek().type == TOK_EXTERN) {
+		adv();
+		is_extern = 1;
+	}
 	
 	/* return-value type before a procedure */
-	sav_indx = indx;
 	if (valid_tree(proctyp = cast_type()))
 		typed_proc = 1;
 
@@ -811,13 +824,17 @@ is_proc:
 			adv();
 			tree.head_type = PROTOTYPE;
 			return tree;
-		} else if (must_be_proto)
+		} else if (must_be_proto) {
 			/* 
 			 * Cases like "int *", as noted earlier.
 			 * FYI test case `test/x86/error/proto-arg.c' triggers this.
 			 */
 			parse_fail("declaration without an identifier "
 				   "in a function definition's arguments list");
+		} else if (is_extern) {
+			parse_fail("an extern function definition ? what ?\n "
+				   "\t\t(or perhaps you forgot a semicolon ?)");
+		}
 		subtree = block();
 		if (!valid_tree(subtree))
 			parse_fail("block expected");
