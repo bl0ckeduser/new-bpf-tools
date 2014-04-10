@@ -2,15 +2,22 @@ Features used but not compiled by the x86 compiler
 ==================================================
 
 - "extern" prototypes
-- function pointers (used in parser.c)
-- multiple files
+	UPDATE: done for functions, todo for other things like ints
+- function pointers (used in parser.c) (!)
+- multiple files (presumably largely the linker's job)
 - preprocessor: #define #else #endif #ifdef #ifndef #include
-  well it just ignores it for now. it mostly works for #include,
-  but not for others
+	UPDATE: basic #define is implemented. local file #include
+	        with recursion implemented.
 - external constants: NULL (for now can say "long NULL = 0x0" but 
-			    that makes real C angry)
-- "static" qualifier
-- "unsigned" qualifier
+			    that makes real C angry because it conflits
+			    with the standard headers...)
+   (wait, isn't NULL a #define ?) (doesn't this fall under "extern" ?)
+
+- "static" qualifier (!!!) -- and to make things worse, I think 
+   it has multiple meanings
+
+- "unsigned" qualifier -- I commented these out, not really needed
+
 - complicated struct-array-initializations (used by kw_tab)
  (e.g. struct foo bob[] = {{"a",0},...... etc)
   either fails with a message saying it's unsupported in global scope,
