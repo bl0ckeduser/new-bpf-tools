@@ -38,7 +38,7 @@
 	if (single_char_mode)
 		prev_key = prev;
 	while (*key) {
-		hash += (*key - prev_key) * 100;
+		hash += abs(*key - prev_key) * 100;
 		hash += (prev_key = *key);
 		hash %= nbuck;
 		if (single_char_mode)
