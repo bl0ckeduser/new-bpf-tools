@@ -1776,6 +1776,18 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 	exp_tree_t init_expr;
 	exp_tree_t *initializer_val;
 	int children_offs;
+	int is_extern = 0;
+
+	/*
+	 * Externs are added to the global symbols list
+	 */
+	if (tree->head_type == EXTERN_DECL) {
+		symty = SYMTYPE_GLOBALS;
+		tree->head_type = NULL_TREE;
+		tree = tree->child[0];
+		decl = tree->head_type;
+		is_extern = 1;
+	}
 
 	/*
 	 * Handle structs in the second pass
@@ -1985,8 +1997,10 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				 * the appropriate symbol table.
 				 */
 				if (symty == SYMTYPE_GLOBALS) {
-					printf(".comm %s,%d,32\n",
-						get_tok_str(*(dc->child[0]->tok)), objsiz);
+					if (!is_extern) {
+						printf(".comm %s,%d,32\n",
+							get_tok_str(*(dc->child[0]->tok)), objsiz);
+					}
 					sym_num = glob_add(dc->child[0]->tok);
 				}
 				else
@@ -2041,10 +2055,12 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			 * And anyway this is just a toy project,
 			 * innit ?
 			 */
-			if (first_pass && check_array(dc))
-				continue;
-			if (!first_pass && !check_array(dc))
-				continue;
+			if (!is_extern) {
+				if (first_pass && check_array(dc))
+					continue;
+				if (!first_pass && !check_array(dc))
+					continue;
+			}
 
 			/* 
 			 * Get some type information about the object
@@ -2108,6 +2124,10 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 							 * Make the symbol and write out the label
 							 */
 							sym_num = glob_add(dc->child[0]->tok);
+
+							if (is_extern)
+								break;
+
 							printf("%s: ",
 								get_tok_str(*(dc->child[0]->tok)));
 
@@ -2168,6 +2188,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		if (tree->child[i]->head_type == BLOCK
 		||  tree->child[i]->head_type == IF
 		||  tree->child[i]->head_type == WHILE
+		||  tree->child[i]->head_type == EXTERN_DECL
 		||  int_type_decl(tree->child[i]->head_type)
 		||  (!first_pass && tree->child[i]->head_type == STRUCT_DECL)
 		||  (!first_pass && tree->child[i]->head_type == NAMED_STRUCT_DECL))
