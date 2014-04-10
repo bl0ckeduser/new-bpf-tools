@@ -1,8 +1,6 @@
 Features used but not compiled by the x86 compiler
 ==================================================
 
-- "extern" prototypes
-	UPDATE: done for functions, todo for other things like ints
 - function pointers (used in parser.c) (!)
 - multiple files (presumably largely the linker's job)
 - preprocessor: #define #else #endif #ifdef #ifndef #include
@@ -52,3 +50,6 @@ Features used but not compiled by the x86 compiler
   UPDATE: added 2014-03-11
 - structs as function arguments
   UPDATE: added 2014-03-11
+
+- "extern" prototypes
+	UPDATE: done for functions, done for variables
