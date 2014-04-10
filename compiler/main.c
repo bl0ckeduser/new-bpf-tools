@@ -121,6 +121,13 @@ int main(int argc, char** argv)
 	 */
 
 	cpp_defines = preprocess(&buf);
+	
+	/*
+	 * (!!!) Compatibility hacks for
+	 * some commonly-used things
+	 */
+	hashtab_insert(cpp_defines, "NULL", strdup("(void *)0"));
+	hashtab_insert(cpp_defines, "FILE", strdup("void"));
 
 	/*
 	 * Tokenize the inputted code
