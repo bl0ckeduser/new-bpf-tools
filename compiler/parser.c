@@ -117,22 +117,24 @@ token_t peek()
 void parse_fail(char *message)
 {
 	token_t tok;
-	int line, chr;
+	char* line;
+	int chr;
 
-	if (0 && tokens[indx].from_line
+	if (tokens[indx].from_line
 		!= tokens[indx - 1].from_line) {
 		/* end of the line */
-/*
+
+		tok = tokens[indx - 1];
 		line = tokens[indx - 1].from_line;
-		chr = strstr(code_lines[line], "\n")
-			- code_lines[line] + 1;
-*/
+		chr = strstr(tok.lineptr, "\n")
+			- tok.lineptr + 1;
 	} else {
+		tok = tokens[indx];
 		line = tokens[indx].from_line;
 		chr = tokens[indx].from_char;
 	}
 
-	compiler_fail(message, NULL, line, chr);
+	compiler_fail(message, &tok, line, chr);
 }
 
 /*

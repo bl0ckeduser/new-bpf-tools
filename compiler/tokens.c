@@ -93,7 +93,7 @@ void init_tokens()
 		"TOK_SIZEOF",
 		"TOK_LONG",
 		"TOK_QMARK",
-		"TOK_CPP",
+		"TOK_LINEMARK",
 		"TOK_CARET",
 		"TOK_PIPE",
 		"TOK_LSHIFT",
@@ -242,7 +242,7 @@ void tok_display(token_t t)
 	char buf[1024];
 	strncpy(buf, t.start, t.len);
 	buf[t.len] = 0;
-	fprintf(stderr, "%s", buf);
+	fprintf(stderr, "%s, from %s", buf, t.from_line);
 }
 
 int is_add_op(char type)

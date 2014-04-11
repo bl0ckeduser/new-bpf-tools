@@ -10,6 +10,8 @@
 #include "general.h"
 #include "preprocess.h"
 
+extern char* current_file;
+
 typedef struct {
 	char *buf;
 	int len;
@@ -36,17 +38,30 @@ void extensible_buffer_putchar(extensible_buffer_t* eb, char c)
 	eb->buf[eb->len - 1] = c;
 }
 
+void linemarker(extensible_buffer_t *dest, int line_number, char *current_file)
+{
+	char buf[1024];
+	char *p;
+	sprintf(buf, "@linemark %s %d\n", current_file, line_number);
+	for (p = buf; *p; ++p)
+		extensible_buffer_putchar(dest, *p);
+}
+
 void preprocess(char **src, hashtab_t* defines)
 {
-	extern int iterate_preprocess(hashtab_t*, char**);
+	extern int iterate_preprocess(hashtab_t*, char**, int);
+	int first = 1;
 
 	/*
 	 * XXX: No do-while compilation implemented yet
 	 * and I really want to make it selfcompilation
 	 */
 	preprocessor_loop:
-	if(iterate_preprocess(defines, src))
+	if(iterate_preprocess(defines, src, first)) {
+		if (first)
+			first = !first;
 		goto preprocessor_loop;
+	}
 
 	return defines;	
 }
@@ -73,11 +88,12 @@ void readtoken(char *dest, char **p)
 	*q = 0;
 }
 
-int iterate_preprocess(hashtab_t *defines, char **src)
+int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 {
 	int needs_further_preprocessing = 0;
 	char *p;
 	char *q;
+	char *old_p;
 	char *src_copy = my_strdup(*src);
 	char directive[128];
 	char error_message_buffer[256];
@@ -91,6 +107,12 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 	if (!src_copy)
 		fail("failed to copy string");
 
+	/*
+	 * Line marker for first line
+	 */
+	if (first_pass)
+		linemarker(new_src, line_number, current_file);
+
 	for (p = src_copy; *p;) {
 		/* consume whitespace at beginning of line */
 		eatwhitespace(&p);
@@ -98,6 +120,9 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 		/* check for a directive */
 		if (*p == '#') {
 			++p;	/* eat # */
+
+			if (first_pass)
+				linemarker(new_src, line_number, current_file);
 
 			/* get the directive part */
 			readtoken(directive, &p);
@@ -173,12 +198,15 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 						include_file);
 				#endif
 
+				linemarker(new_src, 1, include_file);
 				for (;;) {
 					int c = fgetc(include_file_ptr);
 					if (c < 0)
 						break;
 					extensible_buffer_putchar(new_src, c);
 				}
+				if (first_pass)
+					linemarker(new_src, line_number, current_file);
 				fclose(include_file_ptr);
 
 				skip_include:;
@@ -224,6 +252,9 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 					if (*p == '#') {
 						++p;	/* eat # */
 
+						if (first_pass)
+							linemarker(new_src, line_number, current_file);
+
 						/* get the directive part */
 						readtoken(directive, &p);
 
@@ -264,8 +295,8 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 						if (keep)
 							extensible_buffer_putchar(new_src, *p);
 						++p;
+						++line_number;
 					}
-					++line_number;
 				}
 
 			} else {
@@ -283,9 +314,10 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 		/* eat up till end of line */
 		while (*p && *p != '\n')
 			extensible_buffer_putchar(new_src, *p++);
-		if (*p == '\n')
+		if (*p == '\n') {
 			extensible_buffer_putchar(new_src, *p++);
-		++line_number;
+			++line_number;
+		}
 	}
 
 	extensible_buffer_putchar(new_src, '\0');

@@ -52,6 +52,8 @@ struct cli_define_s {
 } *cli_defines;
 int cli_defines_count = 0;
 
+char *current_file;
+
 /*
  * Factored-out core tasks: read from stdin into a buffer;
  * preprocess the buffer, gathering defines; inject
@@ -205,6 +207,8 @@ int main(int argc, char** argv)
 		int len;
 	#endif
 
+	current_file = "<stdin>";
+
 	init_tokens();
 	init_tree();
 
@@ -228,7 +232,7 @@ int main(int argc, char** argv)
 				dump_ast();
 			/* source file(s) */
 			} else if(strstr(argv[i], ".c")) {
-				inf = argv[i];
+				current_file = inf = argv[i];
 				tempf = tempnam("/tmp", "wcc");
 				strcat(tempf, ".s");
 				freopen(tempf, "w", stdout);

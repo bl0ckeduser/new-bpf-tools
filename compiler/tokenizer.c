@@ -354,20 +354,25 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 {
 	match_t m;
 	match_t c;
+	char buf_2[1024];
 	char buf2[1024]; /* XXX: assumes no token is >1023 chars */
 	char fail_msg[1024] = "";
 	char *p;
+	char linemark[256];
+	char *current_linemark = "";
+	char tokfile[1024];
+	int linemark_index;
 	char *substitution;
 	token_t *sub_toks;
 	char *old;
 	int max;
 	int i;
-	int line = 1;
 	char *line_start = buf;
 	token_t *toks = malloc(4096 * sizeof(token_t));
 	int tok_alloc = 64;
 	int tok_count = 0;
 	int comstat = NOT_INSIDE_A_COMMENT;
+	int lineno = 1;
 
 	/*
 	 * Build the keywords hash table
@@ -430,8 +435,10 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 				/* It's okay to have non-tokens in comments,
 				 * so just go forward and suck it up */
 				if (*p == '\n') {
-					++line;
-					line_start = p;
+					++lineno;
+					sprintf(buf_2, "%s:%d", tokfile, lineno);
+					current_linemark = my_strdup(buf_2);
+					line_start = p + 1;
 				}
 				++p;
 				continue;
@@ -469,6 +476,24 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 						toks[tok_count++] = sub_toks[i];
 					goto advance;
 				}
+			}
+
+			/*
+			 * Line marks
+			 */
+			if (c.success == TOK_LINEMARK) {
+				p += max + 1;
+				linemark_index = 0;
+				while (*p && *p != '\n')
+					linemark[linemark_index++] = *p++;
+				linemark[linemark_index] = 0;
+				if (*p == '\n')
+					++p;
+				line_start = p;
+				sscanf(linemark, "%s %d", tokfile, &lineno);
+				sprintf(buf_2, "%s:%d", tokfile, lineno);
+				current_linemark = my_strdup(buf_2);
+				continue;
 			}
 
 			/*
@@ -535,21 +560,17 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 				toks[tok_count - 1].type = c.success;
 				toks[tok_count - 1].start = p;
 				toks[tok_count - 1].len = max;
-				toks[tok_count - 1].from_line = line;
+				toks[tok_count - 1].lineptr = line_start;
+				toks[tok_count - 1].from_line = current_linemark;
 				toks[tok_count - 1].from_char = p - 
 					line_start + 1;
+			}
 
-				/*
-				 * Ignore preprocessor directives,
-				 * like http://bellard.org/otcc/ does
-				 * in order to have "stdout" and "stderr"
-				 * and still fake C compatibility
-				 */
-				if (c.success == TOK_CPP) {
-					compiler_warn("preprocessor directive consumed and ignored",
-						&toks[tok_count - 1], 0, 0);
-					--tok_count;
-				}
+			if (c.success == TOK_NEWLINE) {
+				++lineno;
+				sprintf(buf_2, "%s:%d", tokfile, lineno);
+				current_linemark = my_strdup(buf_2);
+				line_start = p + 1;
 			}
 
 advance:
@@ -560,22 +581,14 @@ advance:
 			p += max;
 			if (max == 0)
 				++p;
-
-			/* 
-			 * Line accounting (useful for
-		 	 * pretty parse-fail diagnostics)
-			 */
-			if (c.success == TOK_NEWLINE || c.success == TOK_CPP) {
-				++line;
-				line_start = p;
-			}
 		}
 	}
 
 	/* the final token is a bit special */
 	toks[tok_count].start = NULL;
 	toks[tok_count].len = 0;
-	toks[tok_count].from_line = line;
+	toks[tok_count].from_line = current_linemark;
+	toks[tok_count].lineptr = line_start;
 	toks[tok_count].from_char = p - line_start;
 
 	return toks;
@@ -583,7 +596,7 @@ advance:
 fail:
 	compiler_fail(fail_msg,
 		NULL,
-		line, p - line_start + 1);
+		current_linemark, p - line_start + 1);
 }
 
 /* 
@@ -637,7 +650,7 @@ void setup_tokenizer()
 	 * e.g. maybe something like
 	 * "#defineW*AB*W*.*N" for defines
 	 */
-	add_token(t[1], "#.*N", TOK_CPP);
+	add_token(t[1], "@linemark", TOK_LINEMARK);
 
 	/* A: letter; B: letter or digit */
 	add_token(t[0], "AB*", TOK_IDENT);
