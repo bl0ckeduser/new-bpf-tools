@@ -65,6 +65,8 @@ char* temp_reg[TEMP_REGISTERS] = {
 #define TEMP_MEM 16
 char* temp_mem[TEMP_MEM];
 
+char symstack_buf[128];
+char tokstr_buf[1024];
 
 /* ====================================================== */
 
@@ -561,14 +563,13 @@ void free_temp_mem(char *reg) {
  * for a stack byte offset
  */
 char *symstack(int id) {
-	static char buf[128];
 	if (!id)
-		sprintf(buf, "(%%ebp)");
+		sprintf(symstack_buf, "(%%ebp)");
 	else if (id < 0)
-		sprintf(buf, "%d(%%ebp)", -id);
+		sprintf(symstack_buf, "%d(%%ebp)", -id);
 	else
-		sprintf(buf, "-%d(%%ebp)", id);
-	return buf;
+		sprintf(symstack_buf, "-%d(%%ebp)", id);
+	return symstack_buf;
 }
 
 /* 
@@ -577,10 +578,9 @@ char *symstack(int id) {
  */
 char* get_tok_str(token_t t)
 {
-	static char buf[1024];
-	strncpy(buf, t.start, t.len);
-	buf[t.len] = 0;
-	return buf;
+	strncpy(tokstr_buf, t.start, t.len);
+	tokstr_buf[t.len] = 0;
+	return tokstr_buf;
 }
 
 /* 
