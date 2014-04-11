@@ -41,9 +41,13 @@ hashtab_t* preprocess(char **src)
 	hashtab_t *defines = new_hashtab();
 	extern int iterate_preprocess(hashtab_t*, char**);
 
-	do 
-		;
-	while(iterate_preprocess(defines, src));
+	/*
+	 * XXX: No do-while compilation implemented yet
+	 * and I really want to make it selfcompilation
+	 */
+	preprocessor_loop:
+	if(iterate_preprocess(defines, src))
+		goto preprocessor_loop;
 
 	return defines;	
 }
