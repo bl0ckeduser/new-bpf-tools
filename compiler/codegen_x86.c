@@ -1770,7 +1770,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 	 * finer details of x86)
 	 */
 	if ((tree->head_type == STRUCT_DECL
-		|| tree->head_type == NAMED_STRUCT_DECL) && !first_pass) {
+		|| tree->head_type == NAMED_STRUCT_DECL) && (!first_pass || is_extern)) {
 
 		/*
 		 * The first part of handling a struct declaration (e.g.
