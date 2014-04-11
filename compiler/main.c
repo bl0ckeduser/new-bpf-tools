@@ -103,7 +103,6 @@ exp_tree_t run_core_tasks()
 	 * defines in `cpp_defines' hash table.
 	 */
 	preprocess(&buf, cpp_defines);
-	fputs(buf, stderr);
 
 	/*
 	 * (!!!) Compatibility hacks for
