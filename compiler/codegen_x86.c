@@ -53,14 +53,7 @@ void create_jump_tables(exp_tree_t*);
 /* General-purpose 32-bit x86 registers.
  * Did I forget any ? */
 #define TEMP_REGISTERS 6
-char* temp_reg[TEMP_REGISTERS] = {
-	"%eax",
-	"%ebx",
-	"%ecx",
-	"%edx",
-	"%esi",
-	"%edi" 
-};
+char* temp_reg[TEMP_REGISTERS];
 
 #define TEMP_MEM 16
 char* temp_mem[TEMP_MEM];
@@ -271,7 +264,7 @@ int check_proc_call(exp_tree_t *et)
 	return 0;
 }
 
-void* checked_malloc(size_t s)
+void* checked_malloc(long s)
 {
 	void *ptr = malloc(s);
 	if (!ptr)
@@ -1265,6 +1258,17 @@ void run_codegen(exp_tree_t *tree)
 	extern void deal_with_procs(exp_tree_t *tree);
 	extern void deal_with_str_consts(exp_tree_t *tree);
 	int i;
+
+	char* temp_reg_tmp[TEMP_REGISTERS] = {
+		"%eax",
+		"%ebx",
+		"%ecx",
+		"%edx",
+		"%esi",
+		"%edi" 
+	};
+	for (i = 0; i < sizeof(temp_reg_tmp)/sizeof(char*); ++i)
+		temp_reg[i] = temp_reg_tmp[i];
 
 	/*
 	 * re-initialize global counters
