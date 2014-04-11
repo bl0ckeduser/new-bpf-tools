@@ -17,6 +17,7 @@ do
 	if ! $MY_COMPILER <$file >$asmfile
 	then
 		echo "Failed to compile file: $file"
+		rm $asmfiles
 		exit 1
 	fi
 	asmfiles="$asmfiles$asmfile "
@@ -24,11 +25,11 @@ done
 
 if ! $COMPILER -m32 $asmfiles -lc -o $TEST_PROG
 then
+	rm -f $asmfiles $TEST_PROG
 	exit 1
 fi
 
 ./$TEST_PROG
 
 rm -f $asmfiles $TEST_PROG
-
 
