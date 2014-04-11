@@ -108,8 +108,8 @@ exp_tree_t run_core_tasks()
 	 * (!!!) Compatibility hacks for
 	 * some commonly-used things
 	 */
-	hashtab_insert(cpp_defines, "NULL", strdup("(void *)0"));
-	hashtab_insert(cpp_defines, "FILE", strdup("void"));
+	hashtab_insert(cpp_defines, "NULL", my_strdup("(void *)0"));
+	hashtab_insert(cpp_defines, "FILE", my_strdup("void"));
 
 	/*
 	 * Tokenize the inputted code
@@ -244,15 +244,15 @@ int main(int argc, char** argv)
 				for(len = 0, q = wcc_buf; *p && *p != '=' && len < 255; ++p, ++q, ++len)
 					*q = *p;
 				*q = 0;
-				cli_defines[cli_defines_count].key = strdup(wcc_buf);
+				cli_defines[cli_defines_count].key = my_strdup(wcc_buf);
 				if (*p) {
 					++p;	/* eat '=' */
 					for(len = 0, q = wcc_buf; *p && len < 255; ++p, ++q, ++len)
 						*q = *p;
 					*q = 0;
-					cli_defines[cli_defines_count].val = strdup(wcc_buf);
+					cli_defines[cli_defines_count].val = my_strdup(wcc_buf);
 				} else {
-					cli_defines[cli_defines_count].val = strdup(" ");
+					cli_defines[cli_defines_count].val = my_strdup(" ");
 				}
 				++cli_defines_count;
 			/* other options, get passed down to gcc assembler/linker */

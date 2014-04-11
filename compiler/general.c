@@ -4,6 +4,13 @@
 #include <stdio.h>
 #include "tree.h"
 
+void* my_strdup(char *s)
+{
+	char *n = malloc(strlen(s) + 1);
+	strcpy(n, s);
+	return n;
+}
+
 void fail(char* mesg)
 {
 	fprintf(stderr, "error: %s\n", mesg);

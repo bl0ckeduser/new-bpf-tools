@@ -6,5 +6,6 @@
 void fail(char* mesg);
 void sanity_requires(int exp);
 token_t *findtok(exp_tree_t *et);
+void* my_strdup(char *s);
 
 #endif

@@ -78,7 +78,7 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 	int needs_further_preprocessing = 0;
 	char *p;
 	char *q;
-	char *src_copy = strdup(*src);
+	char *src_copy = my_strdup(*src);
 	char directive[128];
 	char error_message_buffer[256];
 	int line_number = 1;
@@ -118,7 +118,7 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 				readtoken(define_key, &p);
 				eatwhitespace(&p);
 				readlinetoken(define_val, &p);
-				hashtab_insert(defines, define_key, strdup(define_val));
+				hashtab_insert(defines, define_key, my_strdup(define_val));
 				#ifdef DEBUG
 					fprintf(stderr, "CPP: define `%s' => `%s'\n",
 						define_key, define_val);
@@ -306,7 +306,7 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 	int main(int argc, char **argv)
 	{
 		hashtab_t *tab = new_hashtab();
-		char *foo = strdup( 
+		char *foo = my_strdup( 
 			"#define FOO 1 + 2 * 3\nint x = FOO;\n"
 			"#define THING\n"
 			"#include \"bob.h\""
