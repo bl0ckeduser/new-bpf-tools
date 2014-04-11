@@ -2105,7 +2105,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 						/*
 						 * Global / heap storage and symbol
 						 */
-						if (!glob_check(dc->child[0]->tok)) {
+						if (is_extern || !glob_check(dc->child[0]->tok)) {
 							/*
 							 * If there is an initializer, make sure
 							 * it is an integer constant.
