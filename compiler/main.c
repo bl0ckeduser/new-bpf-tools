@@ -206,6 +206,7 @@ int main(int argc, char** argv)
 	#endif
 
 	init_tokens();
+	init_tree();
 
 	/*
 	 * wcc (wannabe c compiler) command

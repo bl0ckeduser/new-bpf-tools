@@ -88,7 +88,7 @@ enum {		/* head_type */
 	NULL_TREE
 };
 
-extern char* tree_nam[];
+extern char** tree_nam;
 
 typedef struct exp_tree {
 	char head_type;
