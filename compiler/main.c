@@ -121,7 +121,7 @@ int main(int argc, char** argv)
 	 */
 
 	cpp_defines = preprocess(&buf);
-	
+
 	/*
 	 * (!!!) Compatibility hacks for
 	 * some commonly-used things

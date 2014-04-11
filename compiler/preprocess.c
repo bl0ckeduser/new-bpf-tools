@@ -106,7 +106,7 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 			
 			/*
 			 * XXX: TODO: #define macro mode,
-			 * #ifdef, #ifndef, #endif, #if, ##, ...
+			 * #if, ##, ...
 			 */
 			if (!strcmp(directive, "define")) {
 				char define_key[128];
@@ -179,6 +179,91 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 				fclose(include_file_ptr);
 
 				skip_include:;
+
+			} else if (!strcmp(directive, "ifdef") || !strcmp(directive, "ifndef")) {
+				char define_name[128];
+				int define_exists;
+				int depth;
+				char *oldp;
+				int keep;
+				int negative = !strcmp(directive, "ifndef");
+				enum { 
+					INSIDE_IF,
+					INSIDE_ELSE
+				} current;
+
+				eatwhitespace(&p);
+				readtoken(define_name, &p);
+
+				/* chomp to end of line */
+				while (*p && *p != '\n')
+					++p;
+				++line_number;
+
+				/*
+				 * Here we only mind with the current depth,
+				 * and let a recursive preprocessing sub-iteration
+				 * handle the ifdef's at greater depth.
+				 */
+				needs_further_preprocessing = 1;
+				depth = 1;
+
+				define_exists = hashtab_lookup(defines, define_name) != NULL;
+				current = INSIDE_IF;
+
+				while (*p) {
+					/* consume whitespace at beginning of line */
+					eatwhitespace(&p);
+
+					oldp = p;
+
+					/* check for a directive */
+					if (*p == '#') {
+						++p;	/* eat # */
+
+						/* get the directive part */
+						readtoken(directive, &p);
+
+						if (!strcmp(directive, "ifdef")) {
+							++depth;
+							p = oldp;
+						} else if (!strcmp(directive, "ifndef")) {
+							++depth;
+							p = oldp;
+						} else if (!strcmp(directive, "endif")) {
+							if (!--depth)
+								break;
+							else
+								p = oldp;
+						} else if (!strcmp(directive, "else")) {
+							if (depth == 1)
+								current = INSIDE_ELSE;
+							else
+								p = oldp;
+						} else {
+							p = oldp;
+						}
+					}
+
+					keep = (define_exists && current == INSIDE_IF)
+						|| (!define_exists && current == INSIDE_ELSE);
+
+					if (negative)
+						keep = !keep;
+
+					/* eat up till end of line */
+					while (*p && *p != '\n') {
+						if (keep)
+							extensible_buffer_putchar(new_src, *p);
+						++p;
+					}
+					if (*p == '\n') {
+						if (keep)
+							extensible_buffer_putchar(new_src, *p);
+						++p;
+					}
+					++line_number;
+				}
 
 			} else {
 				sprintf(error_message_buffer, 
