@@ -1265,6 +1265,26 @@ void run_codegen(exp_tree_t *tree)
 	int i;
 
 	/*
+	 * re-initialize global counters
+	 */
+	syms = 0;			/* count */
+	symbytes = 0;		/* stack size in bytes */
+	globs = 0;	/* count */
+	arg_syms = 0;		/* count */
+	argbytes = 0;		/* total size in bytes */
+	proto_arg_syms = 0;		/* count */
+	proto_argbytes = 0;		/* total size in bytes */
+	funcdefs = 0;
+	named_structs = 0;
+	str_const_id = 0;
+	main_defined = 0;		/* this is set if user-defined main() exists */
+	ccid = 0;			/* internal label numbering, */
+	intl_label = 0; 		/* internal label numbering */
+	switch_count = 0;		/* index of a switch statement */
+	break_count = 0;
+
+
+	/*
 	 * set up hash table for string constants
 	 */
 	str_consts = new_hashtab();
