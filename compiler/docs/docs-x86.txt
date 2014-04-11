@@ -475,10 +475,25 @@ elements are C syntax.
 
 25. preprocessor
 
-	The C preprocessor isn't supported yet.
-	#-lines are just consumed and ignored by the tokenizer.
-	This approach permits some compatibility with trivial
-	things like #include <stdio.h> but not stuff like #ifdef
+	A preprocessor is currently being programmed.
+	
+	Currently supported features:	
+
+	    - #define without macro substitution
+
+		e.g. #define SYMBOLIC_CONSTANT (3 + 2 + 3)
+
+	    - #ifdef, #ifndef, #else, #endif
+
+		e.g.
+
+		#ifdef SYMBOLIC_CONSTANT
+			...
+		#else
+			...
+		#endif
+
+	    - #include "local_file.h"
 
 26. function prototypes
 
