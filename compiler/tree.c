@@ -4,8 +4,6 @@
  *        a modern OS should clean up, but nevertheless, yeah */
 
 #include "tree.h"
-#include "tokenizer.h"
-#include "tokens.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
