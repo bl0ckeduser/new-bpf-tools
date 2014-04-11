@@ -297,19 +297,21 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 }
 
 /*
-	cc -DDEBUG preprocess.c -DTEST_CPP hashtable.c general.c -o testcpp
+	./wcc -DTEST_CPP preprocess.c hashtable.c general.c -o testcpp
 	./testcpp
 
+	yes indeed, partial selfcompilation
 */
 #ifdef TEST_CPP
 	int main(int argc, char **argv)
 	{
+		hashtab_t *tab = new_hashtab();
 		char *foo = strdup( 
 			"#define FOO 1 + 2 * 3\nint x = FOO;\n"
 			"#define THING\n"
 			"#include \"bob.h\""
 		);
-		(void)preprocess(&foo);
+		(void)preprocess(&foo, tab);
 		printf("-----------------\n");
 		puts(foo);
 	}
