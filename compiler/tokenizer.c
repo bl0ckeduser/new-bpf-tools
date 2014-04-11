@@ -345,8 +345,7 @@ match_t match(nfa* t, char* full_tok, char* tok)
 nfa *t[100];
 int tc = 0;
 
-#define TOK_FAIL(msg)	\
-	{ strcpy(fail_msg, msg); goto tok_fail; }
+/* #define TOK_FAIL(msg) { strcpy(fail_msg, msg); goto fail; } */
 
 token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 {
@@ -436,7 +435,7 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 			}
 			else
 				/* Not in a comment, so tokenization has really failed */
-				TOK_FAIL("tokenization failed -- unknown pattern");
+				fail("tokenization failed -- unknown pattern");
 		} else {
 			/*
 			 * Matching from this offset has succeeded
@@ -478,7 +477,7 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 			 */
 			if (c.success == C_CMNT_OPEN) {
 				if (comstat == INSIDE_A_C_COMMENT)
-					TOK_FAIL("Please do not nest C comments");
+					fail("Please do not nest C comments");
 				comstat = INSIDE_A_C_COMMENT;
 			/* 
 			 * C comment closes are allowed if a C comment
@@ -489,7 +488,7 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 					comstat = NOT_INSIDE_A_COMMENT;
 					goto advance;
 				} else {
-					TOK_FAIL("Dafuq is a */ doing there ?");
+					fail("Dafuq is a */ doing there ?");
 				}
 			/* 
 			 * Start a C++ comment, unless already in a C comment
@@ -578,7 +577,7 @@ advance:
 
 	return toks;
 
-tok_fail:
+fail:
 	compiler_fail(fail_msg,
 		NULL,
 		line, p - line_start + 1);
