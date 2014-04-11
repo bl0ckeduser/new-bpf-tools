@@ -593,7 +593,7 @@ int glob_check(token_t* tok)
 	char buf[128];
 
 	for (i = 0; i < globs; i++)
-		if (!strcmp(globtab[i], s)) {
+		if (!strcmp(globtab[i], s) && globtyp[i].is_extern == 0) {
 			sprintf(buf, "global symbol `%s' defined twice", s);
 			compiler_fail(buf, tok, 0, 0);
 		}
@@ -1019,7 +1019,7 @@ int checknode(exp_tree_t *t, int nodety)
  * Returns the symbol number.
  */
 int create_array(int symty, exp_tree_t *dc,
-	int base_size, int objsiz)
+	int base_size, int objsiz, int is_extern)
 {
 	/* 
 	 * First, try global symbol mode.
@@ -1027,17 +1027,19 @@ int create_array(int symty, exp_tree_t *dc,
 	 */
 
 	if (symty == SYMTYPE_GLOBALS) {
-		/* Check name not already taken */	
-		glob_check(dc->child[0]->tok);
+		if (!is_extern) {
+			/* Check name not already taken */	
+			glob_check(dc->child[0]->tok);
 
-		/* register as global (needed for multifile) */
-		printf(".globl %s\n", 
-			get_tok_str(*(dc->child[0]->tok)));
+			/* register as global (needed for multifile) */
+			printf(".globl %s\n", 
+				get_tok_str(*(dc->child[0]->tok)));
 
-		/* Do a magic assembler instruction */
-		printf(".comm %s,%d,32\n", 
-			get_tok_str(*(dc->child[0]->tok)),
-			objsiz);
+			/* Do a magic assembler instruction */
+			printf(".comm %s,%d,32\n", 
+				get_tok_str(*(dc->child[0]->tok)),
+				objsiz);
+		}
 
 		/* 
 		 * XXX: can't do e.g. "int foo[] = {1, 2, 3}" declarations
@@ -1982,7 +1984,8 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				 * array symbols, and create_array() deals with that
 				 */
 				sym_num = create_array(symty, dc,
-					type2siz(array_base_type), arr_dim_prod(typedat) * objsiz);
+					type2siz(array_base_type), arr_dim_prod(typedat) * objsiz,
+					is_extern);
 			} else {
 				/*
 				 * It's just a non-arrayed variable (either a struct
@@ -2007,8 +2010,12 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			 * Add type data to appropriate symbol table
 			 * (above we were taking care just of the name)
 			 */
-			if (symty == SYMTYPE_GLOBALS)
+			if (symty == SYMTYPE_GLOBALS) {
 				globtyp[sym_num] = typedat;
+				if (is_extern) {
+					globtyp[sym_num].is_extern = 1;
+				}
+			}
 			else
 				symtyp[sym_num] = typedat;
 		}
@@ -2073,7 +2080,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			if (check_array(dc) > 0) {
 				/* Create the memory and symbols */
 				sym_num = create_array(symty, dc,
-					type2siz(array_base_type), objsiz);
+					type2siz(array_base_type), objsiz, is_extern);
 
 				/* Discard the tree if it has no initializer */
 				if (dc->child_count - 1 - check_array(dc) == 0)
@@ -2165,6 +2172,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				symtyp[sym_num] = typedat;
 			} else if (symty == SYMTYPE_GLOBALS) {
 				globtyp[sym_num] = typedat;
+				if (is_extern) {
+					globtyp[sym_num].is_extern = 1;
+				}
 			}
 		}
 		

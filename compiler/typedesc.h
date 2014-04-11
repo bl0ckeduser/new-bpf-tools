@@ -37,6 +37,7 @@ typedef struct {
 	char* struct_name_ref;
 
 	int ty;			/* e.g. INT_DECL for "int" */
+	int is_extern;
 
 } typedesc_t;
 

@@ -66,6 +66,7 @@ typedesc_t mk_typedesc(int bt, int ptr, int arr)
 	td.arr_dim = NULL;
 	td.is_struct = 0;
 	td.is_struct_name_ref = 0;
+	td.is_extern = 0;
 	return td;
 }
 
