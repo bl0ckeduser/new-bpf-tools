@@ -293,9 +293,12 @@ match_t match(nfa* t, char* full_tok, char* tok)
 		/* 
 		 * If a character edge for the
 		 * current character exists,
-		 * follow it. 
+		 * follow it. Additionally,
+		 * put in a sanity check that
+		 * 0 <= c < 256. Otherwise,
+		 * very strange things can happen.
 		 */
-		if (t->map[c]) {
+		if (c >= 0 && c < 256 && t->map[c]) {
 			t = t->map[c];
 			++i;
 
