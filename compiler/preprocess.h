@@ -1,6 +1,6 @@
 #ifndef PREPROCESSOR_H
 #define PREPROCESSOR_H
 
-hashtab_t* preprocess(char **src);
+void preprocess(char **src, hashtab_t* defines);
 
 #endif

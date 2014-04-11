@@ -36,9 +36,8 @@ void extensible_buffer_putchar(extensible_buffer_t* eb, char c)
 	eb->buf[eb->len - 1] = c;
 }
 
-hashtab_t* preprocess(char **src)
+void preprocess(char **src, hashtab_t* defines)
 {
-	hashtab_t *defines = new_hashtab();
 	extern int iterate_preprocess(hashtab_t*, char**);
 
 	/*
@@ -303,7 +302,7 @@ int iterate_preprocess(hashtab_t *defines, char **src)
 
 */
 #ifdef TEST_CPP
-	void main(void)
+	int main(int argc, char **argv)
 	{
 		char *foo = strdup( 
 			"#define FOO 1 + 2 * 3\nint x = FOO;\n"

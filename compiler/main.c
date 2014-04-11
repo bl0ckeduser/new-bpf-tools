@@ -43,6 +43,15 @@ char* buf, *nbuf;
 	char cmd[1024];
 #endif
 
+/* 
+ * Used for e.g. wcc foo.c -DFLAG -DTHING=123
+ */
+struct cli_define_s {
+	char *key;
+	char *val;
+} *cli_defines;
+int cli_defines_count = 0;
+
 /*
  * Factored-out core tasks: read from stdin into a buffer;
  * preprocess the buffer, gathering defines; inject
@@ -55,7 +64,7 @@ exp_tree_t run_core_tasks()
 	token_t* tokens;
 	int i, c;
 	int alloc = 1024;
-	hashtab_t* cpp_defines;
+	hashtab_t* cpp_defines = new_hashtab();
 
 	/* 
 	 * Default mode: read code from stdin
@@ -80,11 +89,20 @@ exp_tree_t run_core_tasks()
 		buf[i] = c;
 	}
 
+	#ifdef WCC
+		/*
+		 * CLI-injected defines
+		 */
+		for (i = 0; i < cli_defines_count; ++i) {
+			hashtab_insert(cpp_defines, cli_defines[i].key, cli_defines[i].val);
+		}
+	#endif
+
 	/*
 	 * Run preprocessor, and collect
 	 * defines in `cpp_defines' hash table.
 	 */
-	cpp_defines = preprocess(&buf);
+	preprocess(&buf, cpp_defines);
 
 	/*
 	 * (!!!) Compatibility hacks for
@@ -182,6 +200,9 @@ int main(int argc, char** argv)
 	int i;
 	#ifdef WCC
 		char wcc_sfiles[4096];
+		char wcc_buf[256];
+		char *p, *q;
+		int len;
 	#endif
 
 	/*
@@ -189,6 +210,9 @@ int main(int argc, char** argv)
 	 * for unixlikes running x86
  	 */
 	#ifdef WCC
+		cli_defines = malloc(100 * sizeof(struct cli_define_s));
+		if (!cli_defines)
+			fail("malloc");
 		sprintf(opt, "");
 		for (i = 1; i < argc; ++i) {
 			if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "--version")) {
@@ -211,9 +235,25 @@ int main(int argc, char** argv)
 				strcat(wcc_sfiles, tempf);
 				strcat(wcc_sfiles, " ");
 				printf("%s\n", wcc_sfiles);
-			}
-			/* options, get passed down to gcc assembler/linker */
-			else {
+			/* #define injection */
+			} else if (argv[i][0] && argv[i][0] == '-' && argv[i][1] == 'D') {
+				p = &argv[i][2];
+				for(len = 0, q = wcc_buf; *p && *p != '=' && len < 255; ++p, ++q, ++len)
+					*q = *p;
+				*q = 0;
+				cli_defines[cli_defines_count].key = strdup(wcc_buf);
+				if (*p) {
+					++p;	/* eat '=' */
+					for(len = 0, q = wcc_buf; *p && len < 255; ++p, ++q, ++len)
+						*q = *p;
+					*q = 0;
+					cli_defines[cli_defines_count].val = strdup(wcc_buf);
+				} else {
+					cli_defines[cli_defines_count].val = strdup(" ");
+				}
+				++cli_defines_count;
+			/* other options, get passed down to gcc assembler/linker */
+			} else {
 				strcat(opt, argv[i]);
 				strcat(opt, " ");
 			}
