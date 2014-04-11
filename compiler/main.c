@@ -205,6 +205,8 @@ int main(int argc, char** argv)
 		int len;
 	#endif
 
+	init_tokens();
+
 	/*
 	 * wcc (wannabe c compiler) command
 	 * for unixlikes running x86

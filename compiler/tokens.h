@@ -103,9 +103,9 @@ struct bpf_kw {
 	char tok;
 };
 
-extern char* tok_nam[];
-extern char* tok_desc[];
-extern struct bpf_kw kw_tab[];
+extern char** tok_nam;
+extern char** tok_desc;
+extern struct bpf_kw *kw_tab;
 
 /* routines */
 
