@@ -9,8 +9,9 @@ typedef struct token {
 	int len;
 
 	/* for elegant parser diagnostics */
-	char* from_line;	/* originating source line (linemark string) */
+	int from_line;	/* originating source line */
 	int from_char;	/* originating offset in that line */
+	char *from_file;
 	char *lineptr;
 } token_t;
 

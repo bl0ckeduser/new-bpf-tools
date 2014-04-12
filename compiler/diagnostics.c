@@ -20,22 +20,22 @@ enum {
 
 /* internal prototype */
 void compiler_fail_int(char *message, token_t *token,
-	char* in_line, int in_chr, int mode);
+	int in_line, int in_chr, int mode);
 
 void compiler_fail(char *message, token_t *token,
-	char* in_line, int in_chr)
+	int in_line, int in_chr)
 {
 	compiler_fail_int(message, token, in_line, in_chr, CF_ERROR);
 }
 
 void compiler_warn(char *message, token_t *token,
-	char* in_line, int in_chr)
+	int in_line, int in_chr)
 {
 	compiler_fail_int(message, token, in_line, in_chr, CF_WARN);
 }
 
 void compiler_debug(char *message, token_t *token,
-	char* in_line, int in_chr)
+	int in_line, int in_chr)
 {
 #ifdef DEBUG
 	compiler_fail_int(message, token, in_line, in_chr, CF_DEBUG);
@@ -43,24 +43,25 @@ void compiler_debug(char *message, token_t *token,
 }
 
 void compiler_fail_int(char *message, token_t *token,
-	char* in_line, int in_chr, int mode)
+	int in_line, int in_chr, int mode)
 {
 	char buf[1024];
-	char* line = in_line;
 	int chr;
+	char *file = "?";
 	int i;
+	int line;
 
 	/* 
 	 * Check for specific line/chr override
 	 * (used for special cases like end of line)
 	 */
-	if (!line && token && token->from_line)
-		line = token->from_line;
-	if (!line)
-		line = "";
+	line = !token ? in_line : token->from_line;
 	chr = !token ? in_chr : token->from_char;
 	if (in_chr > 0)
 		chr = in_chr;
+
+	if (token && token->from_file)
+		file = token->from_file;
 
 	fflush(stdout);
 	fflush(stderr);
@@ -103,7 +104,8 @@ void compiler_fail_int(char *message, token_t *token,
 		fprintf(stderr, "E: ");
 	else
 		fprintf(stderr, "W: ");
-	fprintf(stderr, "%s: %s\n", 
+	fprintf(stderr, "%s: %d: %s\n",
+		file, 
 		line,
 		message);
 	if (mode == CF_ERROR)

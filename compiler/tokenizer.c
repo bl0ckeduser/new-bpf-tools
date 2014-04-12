@@ -359,6 +359,7 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 	char fail_msg[1024] = "";
 	char *p;
 	char linemark[256];
+	char *curfile = "";
 	char *current_linemark = "";
 	char tokfile[1024];
 	int linemark_index;
@@ -436,8 +437,6 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 				 * so just go forward and suck it up */
 				if (*p == '\n') {
 					++lineno;
-					sprintf(buf_2, "%s:%d", tokfile, lineno);
-					current_linemark = my_strdup(buf_2);
 					line_start = p + 1;
 				}
 				++p;
@@ -491,8 +490,7 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 					++p;
 				line_start = p;
 				sscanf(linemark, "%s %d", tokfile, &lineno);
-				sprintf(buf_2, "%s:%d", tokfile, lineno);
-				current_linemark = my_strdup(buf_2);
+				curfile = my_strdup(tokfile);
 				continue;
 			}
 
@@ -561,7 +559,8 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 				toks[tok_count - 1].start = p;
 				toks[tok_count - 1].len = max;
 				toks[tok_count - 1].lineptr = line_start;
-				toks[tok_count - 1].from_line = current_linemark;
+				toks[tok_count - 1].from_line = lineno;
+				toks[tok_count - 1].from_file = curfile;
 				toks[tok_count - 1].from_char = p - 
 					line_start + 1;
 			}
@@ -587,7 +586,8 @@ advance:
 	/* the final token is a bit special */
 	toks[tok_count].start = NULL;
 	toks[tok_count].len = 0;
-	toks[tok_count].from_line = current_linemark;
+	toks[tok_count].from_line = lineno;
+	toks[tok_count].from_file = curfile;
 	toks[tok_count].lineptr = line_start;
 	toks[tok_count].from_char = p - line_start;
 
