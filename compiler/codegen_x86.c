@@ -2873,6 +2873,12 @@ char* codegen(exp_tree_t* tree)
 			for (i = 0; i < tree->child_count; ++i)
 				callee_argbytes += type2siz(callee_argtyp[i]);
 		}
+	
+		/*
+		 * Align stack space to 4 bytes
+		 */
+		while (callee_argbytes % 4)
+			++callee_argbytes;
 
 		/* 
 		 * Move down the stack pointer

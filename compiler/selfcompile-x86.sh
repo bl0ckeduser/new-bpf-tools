@@ -4,5 +4,5 @@ then
 	exit 1
 fi
 
-./wcc -g -DDEBUG -o wcc2 tokenizer.c general.c tokens.c hashtable.c diagnostics.c main.c optimize.c tree.c preprocess.c escapes.c typeof.c codegen_x86.c parser.c
+./wcc -g -o wcc2 tokenizer.c general.c tokens.c hashtable.c diagnostics.c main.c optimize.c tree.c preprocess.c escapes.c typeof.c codegen_x86.c parser.c
 
