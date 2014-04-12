@@ -2342,6 +2342,7 @@ char* codegen(exp_tree_t* tree)
 	int jumptab;
 	int casenum;
 	int defset;
+	int offs;
 
 	/*
 	 * Track the tree currently
@@ -2526,12 +2527,11 @@ char* codegen(exp_tree_t* tree)
 	 * -> read
 	 */
 	if (tree->head_type == DEREF_STRUCT_MEMB) {
-		char buf[128];
-		strcpy(buf, get_tok_str(*(tree->child[1]->tok)));
-		int offs = struct_tag_offs(tree_typeof(tree->child[0]),
-						buf);
+		strcpy(sbuf, get_tok_str(*(tree->child[1]->tok)));
+		offs = struct_tag_offs(tree_typeof(tree->child[0]),
+						sbuf);
 
-		printf("# -> load tag `%s' with offset %d\n", buf, offs);
+		printf("# -> load tag `%s' with offset %d\n", sbuf, offs);
 
 		membsiz = type2siz(tree_typeof(tree));
 
@@ -2585,12 +2585,11 @@ char* codegen(exp_tree_t* tree)
 	 */
 	if (tree->head_type == ASGN
 		&& tree->child[0]->head_type == DEREF_STRUCT_MEMB) {
-		char buf[128];
-		strcpy(buf, get_tok_str(*(tree->child[0]->child[1]->tok)));
-		int offs = struct_tag_offs(tree_typeof(tree->child[0]->child[0]),
-						buf);
+		strcpy(sbuf, get_tok_str(*(tree->child[0]->child[1]->tok)));
+		offs = struct_tag_offs(tree_typeof(tree->child[0]->child[0]),
+						sbuf);
 
-		printf("# load address of tag `%s' with offset %d\n", buf, offs);
+		printf("# load address of tag `%s' with offset %d\n", sbuf, offs);
 
 		membsiz = type2siz(tree_typeof(tree));
 
@@ -2620,12 +2619,11 @@ char* codegen(exp_tree_t* tree)
 		&& tree->child[0]->head_type == DEREF_STRUCT_MEMB) {
 		tree = tree->child[0];
 
-		char buf[128];
-		strcpy(buf, get_tok_str(*(tree->child[1]->tok)));
-		int offs = struct_tag_offs(tree_typeof(tree->child[0]),
-						buf);
+		strcpy(sbuf, get_tok_str(*(tree->child[1]->tok)));
+		offs = struct_tag_offs(tree_typeof(tree->child[0]),
+						sbuf);
 
-		printf("# -> load tag `%s' with offset %d\n", buf, offs);
+		printf("# -> load tag `%s' with offset %d\n", sbuf, offs);
 
 		membsiz = type2siz(tree_typeof(tree));
 
