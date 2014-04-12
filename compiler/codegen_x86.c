@@ -2564,8 +2564,10 @@ char* codegen(exp_tree_t* tree)
 		 * if the tag is an array,
 		 * do not dereference, because
 		 * arrays evaluate to pointers at run-time.
+		 * Also, for large struct-members, we return
+		 * a pointer, by convention.
 		 */
-		if (tree_typeof(tree).arr) {
+		if (tree_typeof(tree).arr || membsiz > 4) {
 			/* return pointer */ 
 			return sto2;
 		} else {
@@ -3347,7 +3349,8 @@ char* codegen(exp_tree_t* tree)
 			if (check_proc_call(tree->child[0])) {
 				sto = codegen(tree->child[0]);
 				printf("movl %s, %%eax\n", sto);
-			} else if (tree->child[0]->head_type == DEREF) {
+			} else if (tree->child[0]->head_type == DEREF
+				|| tree->child[0]->head_type == DEREF_STRUCT_MEMB) {
 				sto = codegen(tree->child[0]->child[0]);
 				printf("movl %s, %%eax\n", sto);
 			} else {

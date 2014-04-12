@@ -1746,6 +1746,11 @@ int run_fixup(exp_tree_t *ptr)
 	int i;
 	int check = 0;
 	if (ptr->head_type == DEREF_STRUCT_MEMB
+		&& ptr->child_count >= 2
+		&& ptr->child[1]->head_type == ADDR) {
+		ptr->child[1] = ptr->child[1]->child[0];
+	}
+	if (ptr->head_type == DEREF_STRUCT_MEMB
 	    && ptr->child_count
 	    && ptr->child[1]->head_type == DEREF_STRUCT_MEMB) {
 		old = alloc_exptree(copy_tree(*(ptr->child[1])));

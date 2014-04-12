@@ -226,6 +226,7 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 	if (decl == STRUCT_DECL) {
 		*typedat = struct_tree_2_typedesc(father, &struct_bytes, &sd);
 		typedat->ptr = stars;
+		typedat->struct_desc->bytes = struct_bytes;
 	} else {
 		*typedat = mk_typedesc(decl, stars, 0);
 	}
@@ -659,7 +660,8 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 		struct_typ = tree_typeof(tp->child[0]);
 		strcpy(tag_name, get_tok_str(*(tp->child[1]->tok)));
 
-		if (tp->head_type == DEREF_STRUCT_MEMB)
+		
+		if (tp->head_type == DEREF_STRUCT_MEMB && struct_typ.ptr)
 			struct_typ = deref_typeof(struct_typ);
 
 		if (struct_typ.arr || struct_typ.ptr ||
