@@ -2684,6 +2684,13 @@ char* codegen(exp_tree_t* tree)
 		return sto;
 	}
 
+	/* &*x = x */
+	if (tree->head_type == ADDR
+		&& tree->child_count == 1
+		&& tree->child[0]->head_type == DEREF) {
+		return codegen(tree->child[0]->child[0]);
+	}
+
 	/* address-of variable -- &x */
 	if (tree->head_type == ADDR
 		&& tree->child_count == 1
