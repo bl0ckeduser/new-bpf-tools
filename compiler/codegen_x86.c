@@ -2312,9 +2312,9 @@ char* codegen(exp_tree_t* tree)
 	char *sym_s;
 	char *oper;
 	char *arith;
-	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
-	token_t fakenum = { TOK_INTEGER, "0", 1, 0, 0 };
-	token_t fakenum2 = { TOK_INTEGER, "0", 1, 0, 0 };
+	token_t one;
+	token_t fakenum;
+	token_t fakenum2;
 	token_t faketok;
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	exp_tree_t fake_tree;
@@ -2343,6 +2343,21 @@ char* codegen(exp_tree_t* tree)
 	int casenum;
 	int defset;
 	int offs;
+
+	/*
+		token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
+		token_t fakenum = { TOK_INTEGER, "0", 1, 0, 0 };
+		token_t fakenum2 = { TOK_INTEGER, "0", 1, 0, 0 };
+	*/
+	one.type = TOK_INTEGER;
+	fakenum.type = TOK_INTEGER;
+	fakenum2.type = TOK_INTEGER;
+	one.start = "1";
+	one.len = 1;
+	fakenum.start = "0";
+	fakenum.len = 1;
+	fakenum2.start = "0";
+	fakenum2.len = 1;
 
 	/*
 	 * Track the tree currently
@@ -4520,10 +4535,13 @@ char* codegen(exp_tree_t* tree)
 	/*
 	 * Failed to codegen
 	 */
+	/*
 	if (findtok(tree)) {
 		compiler_warn("I don't yet know how to code this", findtok(tree), 0, 0);
 		fprintf(stderr, "\n\n");
 	}
+	*/
+
 	fprintf(stderr, "codegen_x86: incapable of coding tree:\n");
 	fflush(stderr);
 	printout_tree(*tree);
