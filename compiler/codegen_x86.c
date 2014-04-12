@@ -2316,7 +2316,7 @@ char* codegen(exp_tree_t* tree)
 	token_t fakenum;
 	token_t fakenum2;
 	token_t faketok;
-	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
+	exp_tree_t one_tree;
 	exp_tree_t fake_tree;
 	exp_tree_t fake_tree_2;
 	exp_tree_t fake_tree_3;
@@ -2352,12 +2352,13 @@ char* codegen(exp_tree_t* tree)
 	one.type = TOK_INTEGER;
 	fakenum.type = TOK_INTEGER;
 	fakenum2.type = TOK_INTEGER;
-	one.start = "1";
+	one.start = my_strdup("1");
 	one.len = 1;
-	fakenum.start = "0";
+	fakenum.start = my_strdup("0");
 	fakenum.len = 1;
-	fakenum2.start = "0";
+	fakenum2.start = my_strdup("0");
 	fakenum2.len = 1;
+	one_tree = new_exp_tree(NUMBER, &one);
 
 	/*
 	 * Track the tree currently
