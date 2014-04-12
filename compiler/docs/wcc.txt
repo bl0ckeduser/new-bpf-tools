@@ -3,6 +3,8 @@ that kind of behaves somewhat like standard "cc" commands
 
 build it using build-wcc.sh
 
+do:	 wcc --help	for current usage info
+
 example use (once it's built and installed):
 
 $ wcc test/x86/e.c -o euler 2>/dev/null
