@@ -61,6 +61,8 @@ char* temp_mem[TEMP_MEM];
 char symstack_buf[128];
 char tokstr_buf[1024];
 
+int old_size;
+
 /* ====================================================== */
 
 /*
@@ -637,7 +639,7 @@ char* nameless_perm_storage(int siz)
 	 * expand buffers if necessary
 	 */
 	if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
-		int old_size = symtab_a;
+		old_size = symtab_a;
 		int i;
 		while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
 			symtab_a *= 2;
@@ -663,6 +665,7 @@ char* nameless_perm_storage(int siz)
 int sym_add(token_t *tok, int size)
 {
 	char *s = get_tok_str(*tok);
+	int i;
 
 	/*
 	 * when it's a large struct,
@@ -689,8 +692,7 @@ int sym_add(token_t *tok, int size)
 		 * expand buffers if necessary
 		 */
 		if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
-			int old_size = symtab_a;
-			int i;
+			old_size = symtab_a;
 			while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
 				symtab_a *= 2;
 				symsiz_a *= 2;
@@ -728,8 +730,7 @@ int sym_add(token_t *tok, int size)
 	 * expand buffers if necessary
 	 */
 	if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
-		int old_size = symtab_a;
-		int i;
+		old_size = symtab_a;
 		while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
 			symtab_a *= 2;
 			symsiz_a *= 2;
@@ -763,7 +764,7 @@ int glob_add(token_t *tok)
 	 * expand buffers if necessary
 	 */
 	if (globs >= globtab_a || globs >= globtyp_a) {
-		int old_size = globtab_a;
+		old_size = globtab_a;
 		int i;
 		while (globs >= globtab_a || globs >= globtyp_a) {
 			globtab_a *= 2;
@@ -1065,7 +1066,7 @@ int create_array(int symty, exp_tree_t *dc,
 	 * expand buffers if necessary
 	 */
 	if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
-		int old_size = symtab_a;
+		old_size = symtab_a;
 		int i;
 		while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
 			symtab_a *= 2;
@@ -1136,8 +1137,7 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 		 * expand buffers if necessary
 		 */
 		if (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
-			int old_size = arg_symtab_a;
-			int i;
+			old_size = arg_symtab_a;
 			while (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
 				arg_symtab_a *= 2;
 				argsiz_a *= 2;
@@ -1834,7 +1834,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			 * expand buffers if necessary
 			 */
 			if (named_structs >= named_struct_a || named_structs >= named_struct_name_a) {
-				int old_size = named_struct_name_a;
+				old_size = named_struct_name_a;
 				while (named_structs >= named_struct_a || named_structs >= named_struct_name_a) {
 					named_struct_a *= 2;
 					named_struct_name_a *= 2;
@@ -3016,8 +3016,7 @@ char* codegen(exp_tree_t* tree)
 		 */
 		proto_arg_syms = argl->child_count;
 		if (proto_arg_syms >= proto_arg_symtab_a || proto_arg_syms >= proto_argsiz_a || proto_arg_syms >= proto_argtyp_a) {
-			int old_size = proto_arg_symtab_a;
-			int i;
+			old_size = proto_arg_symtab_a;
 			while (proto_arg_syms >= proto_arg_symtab_a || proto_arg_syms >= proto_argsiz_a || proto_arg_syms >= proto_argtyp_a) {
 				proto_arg_symtab_a *= 2;
 				proto_argsiz_a *= 2;
@@ -3165,8 +3164,7 @@ char* codegen(exp_tree_t* tree)
 		 */
 		arg_syms = argl->child_count;
 		if (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
-			int old_size = arg_symtab_a;
-			int i;
+			old_size = arg_symtab_a;
 			while (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
 				arg_symtab_a *= 2;
 				argsiz_a *= 2;
