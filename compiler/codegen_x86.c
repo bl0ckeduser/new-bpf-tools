@@ -3907,6 +3907,14 @@ char* codegen(exp_tree_t* tree)
 			 * general case for 4-byte destination
 			 */
 			membsiz = type2siz(tree_typeof(tree->child[1]));
+			/*
+			 * Assigning an array ? well it gets
+			 * implicitly converted to a pointer,
+			 * so its size should be considered
+			 * 4 bytes.
+			 */
+			if (tree_typeof(tree->child[1]).arr)
+				membsiz = 4;
 			/* n.b. codegen() converts stuff to int */
 			sto = registerize_siz(codegen(tree->child[1]), membsiz);
 			compiler_debug("simple variable assignment -- "
