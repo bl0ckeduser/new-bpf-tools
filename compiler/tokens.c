@@ -242,7 +242,7 @@ void tok_display(token_t t)
 	char buf[1024];
 	strncpy(buf, t.start, t.len);
 	buf[t.len] = 0;
-	fprintf(stderr, "%s, from %s", buf, t.from_line);
+	fprintf(stderr, "%s", buf);
 }
 
 int is_add_op(char type)

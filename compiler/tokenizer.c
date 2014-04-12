@@ -596,7 +596,7 @@ advance:
 fail:
 	compiler_fail(fail_msg,
 		NULL,
-		current_linemark, p - line_start + 1);
+		lineno, p - line_start + 1);
 }
 
 /* 

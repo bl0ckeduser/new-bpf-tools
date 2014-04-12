@@ -105,5 +105,6 @@ exp_tree_t new_exp_tree(/*unsigned*/ int type, token_t* tok);
 int valid_tree(exp_tree_t et);
 exp_tree_t *alloc_exptree(exp_tree_t et);
 void printout_tree(exp_tree_t et);
+void init_tree();
 
 #endif

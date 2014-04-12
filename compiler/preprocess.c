@@ -61,9 +61,7 @@ void preprocess(char **src, hashtab_t* defines)
 		if (first)
 			first = !first;
 		goto preprocessor_loop;
-	}
-
-	return defines;	
+	}	
 }
 
 void eatwhitespace(char **p)

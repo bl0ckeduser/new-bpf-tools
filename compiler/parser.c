@@ -117,7 +117,7 @@ token_t peek()
 void parse_fail(char *message)
 {
 	token_t tok;
-	char* line;
+	int line;
 	int chr;
 
 	if (tokens[indx].from_line
