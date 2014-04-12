@@ -29,6 +29,21 @@ hashtab_t *typedef_tags;
 
 extern char* get_tok_str(token_t t);
 
+enum {
+	B_CCAND,
+	B_BOR,
+	B_BXOR,
+	B_BAND,
+	B_COMP,
+	B_SHIFT,
+	B_SUM,
+	B_MUL,
+	B_E1,
+	B_E0_4
+};
+
+exp_tree_t parse_left_assoc(int code, int no_assoc);
+
 exp_tree_t block();
 exp_tree_t expr();
 exp_tree_t expr0();
@@ -161,8 +176,11 @@ exp_tree_t parse(token_t *t)
 	exp_tree_t program;
 	exp_tree_t *subtree;
 	program = new_exp_tree(BLOCK, NULL);
-	token_t end = { TOK_NOMORETOKENSLEFT, "", 0, 0, 0 };
+	token_t end;
 	int i;
+	end.type = TOK_NOMORETOKENSLEFT;
+	end.start = my_strdup("");
+	end.len = 0;
 
 	/* set up enum tags dictionary */
 	enum_tags = new_hashtab();
@@ -459,7 +477,10 @@ exp_tree_t struct_decl(int is_extern)
 	exp_tree_t tree, subtree;
 	token_t name;
 	int sav_indx;
-	token_t fake_anon_name = { TOK_IDENT, "<anonymous struct>", 0, 0, 0 };
+	token_t fake_anon_name;
+	fake_anon_name.type = TOK_IDENT;
+	fake_anon_name.start = "<anonymous struct>";
+
 	if (peek().type == TOK_STRUCT) {
 		adv();
 		/* [ident] */
@@ -504,7 +525,10 @@ exp_tree_t decl2(int is_extern)
 	exp_tree_t tree, subtree, subtree2;
 	int stars = 0;
 	int i;
-	token_t zero = { TOK_INTEGER, "0", 1, 0, 0 };
+	token_t zero;
+	zero.type = TOK_INTEGER;
+	zero.start = my_strdup("0");
+	zero.len = 1;
 	int contains_ambig = 0;
 	int ambig = 0;
 
@@ -718,7 +742,10 @@ exp_tree_t block()
 	exp_tree_t proctyp, ct;
 	int typed_proc = 0;
 	token_t tok;
-	token_t one = { TOK_INTEGER, "1", 1, 0, 0 };
+	token_t one;
+	one.type = TOK_INTEGER;
+	one.start = my_strdup("1");
+	one.len = 1;
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	int sav_indx, ident_indx, arg_indx;
 	int must_be_proto = 0;
@@ -1334,75 +1361,6 @@ exp_tree_t expr0()
 	return null_tree;
 }
 
-/* 
- * General parsing routine for 
- * left-associative operators:
- * A-expr := B-expr { C-op B-expr } 
- *
- * if no_assoc is set, it instead parses
- * the non-associative but similary
- * structured form:
- * A-expr := B-expr [ C-op B-expr ]
- * 
- * anonymous functions AKA lambdas
- * would have been nice to have in C
- */
-exp_tree_t parse_left_assoc(
-	exp_tree_t(*B_expr)(),
-	int(*is_C_op)(char),
-	void(*tree_dispatch)(char, exp_tree_t*),
-	int no_assoc)
-{
-	exp_tree_t child, tree, new;
-	exp_tree_t *child_ptr, *tree_ptr, *new_ptr;
-	exp_tree_t *root;
-	int prev;
-	int cc = 0;
-	token_t oper;
-
-	if (!valid_tree(child = B_expr()))
-		return null_tree;
-	
-	if (!is_C_op((oper = peek()).type))
-		return child;
-	
-	child_ptr = alloc_exptree(child);
-	
-	tree_dispatch(oper.type, &tree);
-
-	prev = oper.type;
-	adv();	/* eat C-op */
-	tree_ptr = alloc_exptree(tree);
-	add_child(tree_ptr, child_ptr);
-
-	while (1) {
-		if (!valid_tree(child = B_expr()))
-			parse_fail("expression expected");
-
-		/* add term as child */
-		add_child(tree_ptr, alloc_exptree(child));
-
-		/* non-associativity corner-case,
-		 * used for comparison operators */
-		if (cc++ && no_assoc)
-			parse_fail("illegal use of non-associative operator");
-
-		/* bail out early if no more operators */
-		if (!is_C_op((oper = peek()).type))
-			return *tree_ptr;
-
-		tree_dispatch(oper.type, &new);
-
-		adv();	/* eat C-op */
-
-		new_ptr = alloc_exptree(new);
-		add_child(new_ptr, tree_ptr);
-		tree_ptr = new_ptr;
-	}
-
-	return *tree_ptr;
-}
-
 /*
 	ternary-expr := ccor_expr 
 	                | ccor_expr '?' expr0 ':' expr0
@@ -1444,9 +1402,7 @@ int is_ccor_op(char ty) {
 exp_tree_t ccor_expr()
 {
 	return parse_left_assoc(
-		&ccand_expr,
-		&is_ccor_op,
-		&ccor_dispatch,
+		B_CCAND,
 		0);
 }
 
@@ -1465,9 +1421,7 @@ int is_ccand_op(char ty) {
 exp_tree_t ccand_expr()
 {
 	return parse_left_assoc(
-		&bor_expr,
-		&is_ccand_op,
-		&ccand_dispatch,
+		B_BOR,
 		0);
 }
 
@@ -1486,9 +1440,7 @@ int is_bor_op(char ty) {
 exp_tree_t bor_expr()
 {
 	return parse_left_assoc(
-		&bxor_expr,
-		&is_bor_op,
-		&bor_dispatch,
+		B_BXOR,
 		0);
 }
 
@@ -1507,9 +1459,7 @@ int is_bxor_op(char ty) {
 exp_tree_t bxor_expr()
 {
 	return parse_left_assoc(
-		&band_expr,
-		&is_bxor_op,
-		&bxor_dispatch,
+		B_BAND,
 		0);
 }
 
@@ -1528,9 +1478,7 @@ int is_band_op(char ty) {
 exp_tree_t band_expr()
 {
 	return parse_left_assoc(
-		&comp_expr,
-		&is_band_op,
-		&band_dispatch,
+		B_COMP,
 		0);
 }
 
@@ -1561,9 +1509,7 @@ void comp_dispatch(char oper, exp_tree_t *dest)
 exp_tree_t comp_expr()
 {
 	return parse_left_assoc(
-		&shift_expr,
-		&is_comp_op,
-		&comp_dispatch,
+		B_SHIFT,
 		1);
 }
 
@@ -1582,9 +1528,7 @@ void shift_dispatch(char oper, exp_tree_t *dest)
 exp_tree_t shift_expr()
 {
 	return parse_left_assoc(
-		&sum_expr,
-		&is_shift_op,
-		&shift_dispatch,
+		B_SUM,
 		1);
 }
 
@@ -1603,9 +1547,7 @@ void sum_dispatch(char oper, exp_tree_t *dest)
 exp_tree_t sum_expr()
 {
 	return parse_left_assoc(
-		&mul_expr,
-		&is_add_op,
-		&sum_dispatch,
+		B_MUL,
 		0);
 }
 
@@ -1627,9 +1569,7 @@ void mul_dispatch(char oper, exp_tree_t *dest)
 exp_tree_t mul_expr()
 {
 	return parse_left_assoc(
-		&e1,
-		&is_mul_op,
-		&mul_dispatch,
+		B_E1,
 		0);
 }
 
@@ -1909,9 +1849,7 @@ void e0_3_rewrite(exp_tree_t *tree)
 exp_tree_t e0_3()
 {
 	exp_tree_t et = parse_left_assoc(
-		&e0_4,
-		&check_e0_3_op,
-		&e0_3_dispatch,
+		B_E0_4,
 		0);
 	e0_3_rewrite(&et);
 	return et;
@@ -2193,5 +2131,118 @@ exp_tree_t int_const()
 		return tree;
 	}
 	return null_tree;
+}
+
+/* 
+ * General parsing routine for 
+ * left-associative operators:
+ * A-expr := B-expr { C-op B-expr } 
+ *
+ * if no_assoc is set, it instead parses
+ * the non-associative but similary
+ * structured form:
+ * A-expr := B-expr [ C-op B-expr ]
+ * 
+ * anonymous functions AKA lambdas
+ * would have been nice to have in C
+ */
+exp_tree_t B_expr(int code)
+{
+	switch(code) {
+		case B_CCAND: return ccand_expr();
+		case B_BOR: return bor_expr();
+		case B_BXOR: return bxor_expr();
+		case B_BAND: return band_expr();
+		case B_COMP: return comp_expr();
+		case B_SHIFT: return shift_expr();
+		case B_SUM: return sum_expr();
+		case B_MUL: return mul_expr();
+		case B_E1: return e1();
+		case B_E0_4: return e0_4();
+		default: return null_tree;
+	}
+}
+int is_C_op(int code, int type)
+{
+	switch(code) {
+		case B_CCAND: return is_ccor_op(type);
+		case B_BOR: return is_ccand_op(type);
+		case B_BXOR: return is_bor_op(type);
+		case B_BAND: return is_bxor_op(type);
+		case B_COMP: return is_band_op(type);
+		case B_SHIFT: return is_comp_op(type);
+		case B_SUM: return is_shift_op(type);
+		case B_MUL: return is_add_op(type);
+		case B_E1: return is_mul_op(type);
+		case B_E0_4: return check_e0_3_op(type);
+		default: return 0;
+	}
+}
+void tree_dispatch(int code, char oper, exp_tree_t *dest)
+{
+	switch(code) {
+		case B_CCAND: return ccor_dispatch(oper, dest);
+		case B_BOR: return ccand_dispatch(oper, dest);
+		case B_BXOR: return bor_dispatch(oper, dest);
+		case B_BAND: return bxor_dispatch(oper, dest);
+		case B_COMP: return band_dispatch(oper, dest);
+		case B_SHIFT: return comp_dispatch(oper, dest);
+		case B_SUM: return shift_dispatch(oper, dest);
+		case B_MUL: return sum_dispatch(oper, dest);
+		case B_E1: return mul_dispatch(oper, dest);
+		case B_E0_4: return e0_3_dispatch(oper, dest);
+		default:	return;
+	}
+}
+exp_tree_t parse_left_assoc(int code, int no_assoc)
+{
+	exp_tree_t child, tree, new;
+	exp_tree_t *child_ptr, *tree_ptr, *new_ptr;
+	exp_tree_t *root;
+	int prev;
+	int cc = 0;
+	token_t oper;
+
+	if (!valid_tree(child = B_expr(code)))
+		return null_tree;
+	
+	if (!is_C_op(code, (oper = peek()).type))
+		return child;
+	
+	child_ptr = alloc_exptree(child);
+	
+	tree_dispatch(code, oper.type, &tree);
+
+	prev = oper.type;
+	adv();	/* eat C-op */
+	tree_ptr = alloc_exptree(tree);
+	add_child(tree_ptr, child_ptr);
+
+	while (1) {
+		if (!valid_tree(child = B_expr(code)))
+			parse_fail("expression expected");
+
+		/* add term as child */
+		add_child(tree_ptr, alloc_exptree(child));
+
+		/* non-associativity corner-case,
+		 * used for comparison operators */
+		if (cc++ && no_assoc)
+			parse_fail("illegal use of non-associative operator");
+
+		/* bail out early if no more operators */
+		if (!is_C_op(code, (oper = peek()).type))
+			return *tree_ptr;
+
+		tree_dispatch(code, oper.type, &new);
+
+		adv();	/* eat C-op */
+
+		new_ptr = alloc_exptree(new);
+		add_child(new_ptr, tree_ptr);
+		tree_ptr = new_ptr;
+	}
+
+	return *tree_ptr;
 }
 
