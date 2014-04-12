@@ -2896,11 +2896,12 @@ char* codegen(exp_tree_t* tree)
 				#ifdef DEBUG
 					fprintf(stderr, "big arg: %d, %d bytes\n", i, membsiz);
 				#endif
-				if (check_proc_call(tree->child[i])) {
+				if (check_proc_call(tree->child[i]) || tree->child[i]->head_type == ARRAY) {
 					/* procedure calls already give pointers */
 					sto = codegen(tree->child[i]);
 					printf("movl %s, %%eax\n", sto);
-				} else if (tree->child[i]->head_type == DEREF) {
+				} else if (tree->child[i]->head_type == DEREF
+					|| tree->child[i]->head_type == DEREF_STRUCT_MEMB) {
 					sto = codegen(tree->child[i]->child[0]);
 					printf("movl %s, %%eax\n", sto);
 				} else {
@@ -3344,7 +3345,7 @@ char* codegen(exp_tree_t* tree)
 		 */
 		if (tree->child_count && type2siz(tree_typeof(tree->child[0])) > 4) {
 			/* procedure calls already give pointers */
-			if (check_proc_call(tree->child[0])) {
+			if (check_proc_call(tree->child[0]) || tree->child[0]->head_type == ARRAY) {
 				sto = codegen(tree->child[0]);
 				printf("movl %s, %%eax\n", sto);
 			} else if (tree->child[0]->head_type == DEREF
@@ -3785,9 +3786,10 @@ char* codegen(exp_tree_t* tree)
 			faketok.from_line = 1;
 
 			fake_tree = new_exp_tree(PROC_CALL_MEMCPY, &faketok);
-			if (tree->child[1]->head_type == DEREF) {
+			if (tree->child[1]->head_type == DEREF
+				|| tree->child[1]->head_type == DEREF_STRUCT_MEMB) {
 				fake_tree_3 = *(tree->child[1]->child[0]);
-			} else if (check_proc_call(tree->child[1])) {
+			} else if (check_proc_call(tree->child[1]) || tree->child[1]->head_type == ARRAY) {
 				fake_tree_3 = *(tree->child[1]);
 			} else {
 				fake_tree_3 = new_exp_tree(ADDR, NULL);
@@ -3842,9 +3844,10 @@ char* codegen(exp_tree_t* tree)
 			fake_tree = new_exp_tree(PROC_CALL_MEMCPY, &faketok);
 			fake_tree_2 = new_exp_tree(ADDR, NULL);
 			add_child(&fake_tree_2, tree->child[0]);
-			if (tree->child[1]->head_type == DEREF) {
+			if (tree->child[1]->head_type == DEREF
+				|| tree->child[1]->head_type == DEREF_STRUCT_MEMB) {
 				fake_tree_3 = *(tree->child[1]->child[0]);
-			} else if (check_proc_call(tree->child[1])) {
+			} else if (check_proc_call(tree->child[1]) || tree->child[1]->head_type == ARRAY) {
 				fake_tree_3 = *(tree->child[1]);
 			} else {
 				fake_tree_3 = new_exp_tree(ADDR, NULL);
@@ -3939,9 +3942,10 @@ char* codegen(exp_tree_t* tree)
 			faketok.from_line = 1;
 
 			fake_tree = new_exp_tree(PROC_CALL_MEMCPY, &faketok);
-			if (tree->child[1]->head_type == DEREF) {
+			if (tree->child[1]->head_type == DEREF
+				|| tree->child[1]->head_type == DEREF_STRUCT_MEMB) {
 				fake_tree_3 = *(tree->child[1]->child[0]);
-			} else if (check_proc_call(tree->child[1])) {
+			} else if (check_proc_call(tree->child[1]) || tree->child[1]->head_type == ARRAY) {
 				fake_tree_3 = *(tree->child[1]);
 			} else {
 				fake_tree_3 = new_exp_tree(ADDR, NULL);
@@ -4042,6 +4046,13 @@ char* codegen(exp_tree_t* tree)
 			do_deref = 0;
 		else
 			do_deref = 1;
+
+		/*
+		 * large things -> pointers
+		 * convention
+		 */
+		if (membsiz > 4)
+			do_deref = 0;
 
 		if (do_deref)
 			printf("%s (%s), %s\n", 
