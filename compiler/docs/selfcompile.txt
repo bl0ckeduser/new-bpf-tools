@@ -1,6 +1,5 @@
 Self-compilation completes sucessfully, but the resulting
-executable crashes (somewhere in the parser) when I try to 
-declare variables using it.
+executable gets in infinite loops or crashes for some inputs.
 
-So, there is some fixing to do...
-
+The self-compiled compiler does succeed in compiling a few
+of the more basic test cases at this point.
