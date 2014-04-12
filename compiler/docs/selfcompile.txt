@@ -1,0 +1,6 @@
+Self-compilation completes sucessfully, but the resulting
+executable crashes (somewhere in the parser) when I try to 
+declare variables using it.
+
+So, there is some fixing to do...
+
