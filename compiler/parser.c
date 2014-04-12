@@ -1058,6 +1058,7 @@ not_proc:
 	if (peek().type == TOK_GOTO) {
 		adv();	/* eat goto */
 		tok = need(TOK_IDENT);
+		(void)need(TOK_SEMICOLON);
 		return new_exp_tree(GOTO, &tok);
 	}
 	/* 'return' [expr] */
