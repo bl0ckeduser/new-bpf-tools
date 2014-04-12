@@ -123,7 +123,7 @@ exp_tree_t run_core_tasks()
 		/*
 		 * Debug mode: display the tokens
 		 */
-		for (int i = 0; tokens[i].start; i++) {
+		for (i = 0; tokens[i].start; i++) {
 			fprintf(stderr, "%d: %s: ", i, tok_nam[tokens[i].type]);
 			tok_display(tokens[i]);
 			fputc('\n', stderr);
