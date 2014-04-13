@@ -302,6 +302,7 @@ typedesc_t func_ret_typ(char *func_nam)
 	for (i = 0; i < funcdefs; ++i)
 		if (!strcmp(func_desc[i].name, func_nam))
 			return func_desc[i].ret_typ;
+
 	/*
 	 * If the function is not found in the table,
 	 * it's probably an external one like printf().
@@ -2607,7 +2608,44 @@ char* codegen(exp_tree_t* tree)
 
 		printf("# load address of tag `%s' with offset %d\n", sbuf, offs);
 
-		membsiz = type2siz(tree_typeof(tree));
+		if (type2siz(tree_typeof(tree)) > 4) {
+			/* 
+			 * Rewrite large assignments as:
+			 *
+			 * (PROC_CALL:___mymemcpy 
+			 *     (VARIABLE:b)
+			 *     (ADDR (VARIABLE:a))
+			 *     (SIZEOF (VARIABLE:a)))
+			 *
+			 * Where ___mymemcpy is a custom routine
+			 * autoincluded in the compiled output.
+			 * This should deal with struct assignments.
+			 */
+
+			faketok.type = TOK_IDENT;
+			buf = newstr("___mymemcpy");
+			faketok.start = buf;
+			faketok.len = strlen(buf);
+			faketok.from_line = 0;
+			faketok.from_line = 1;
+
+			fake_tree = new_exp_tree(PROC_CALL_MEMCPY, &faketok);
+			if (tree->child[1]->head_type == DEREF
+				|| tree->child[1]->head_type == DEREF_STRUCT_MEMB) {
+				fake_tree_3 = *(tree->child[1]->child[0]);
+			} else if (check_proc_call(tree->child[1]) || tree->child[1]->head_type == ARRAY) {
+				fake_tree_3 = *(tree->child[1]);
+			} else {
+				fake_tree_3 = new_exp_tree(ADDR, NULL);
+				add_child(&fake_tree_3, tree->child[1]);
+			}
+			fake_tree_4 = new_exp_tree(SIZEOF, NULL);
+			add_child(&fake_tree_4, tree->child[0]);
+			add_child(&fake_tree, tree->child[0]->child[0]);
+			add_child(&fake_tree, alloc_exptree(fake_tree_3));
+			add_child(&fake_tree, alloc_exptree(fake_tree_4));
+			return codegen(alloc_exptree(fake_tree));
+		}
 
 		/* get base adr */
 		if (tree->child[0]->child[0]->head_type != VARIABLE)
@@ -3263,7 +3301,7 @@ char* codegen(exp_tree_t* tree)
 		/* arg count */
 		func_desc[funcdefs].argc = argl->child_count;
 		/* return type */
-		if (custom_return_type)
+		if (custom_return_type) 
 			func_desc[funcdefs].ret_typ = tree_typeof(tree);
 		else
 			/* default return type is "int" */

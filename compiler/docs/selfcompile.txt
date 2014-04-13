@@ -1,14 +1,7 @@
 Self-compilation completes sucessfully, but the resulting
 executable is not 100% perfectly working yet.
 
-The self-compiled compiler does not succeed in properly compiling
-the following test cases:
+The self-compiled compiler succeeds in running all the test-cases.
 
-test/x86/binary-tree.c
-test/x86/bitshifts.c
-test/x86/call-arrow.c
-test/x86/recursive-fib.c
-test/x86/square.c
-test/x86/struct-ptr.c
 
 Self-self-compilation does not work yet.
