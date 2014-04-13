@@ -29,11 +29,6 @@
 #include "preprocess.h"
 #include <unistd.h>	/* XXX: for dup2; i guess windows might choke on it */
 
-#ifdef WCC
-	#include <errno.h>	/* that's business with .NET */
-	extern char *tempnam(const char *dir, const char *pfx);
-#endif
-
 char* buf, *nbuf;
 
 #ifdef WCC
@@ -101,6 +96,17 @@ exp_tree_t run_core_tasks()
 	#endif
 
 	/*
+	 * Preserve knowledge of beeing on FreeBSD through
+	 * self-compilations, because FreeBSD needs special
+	 * attention since doesn't work the same as Linux.
+	 * it doesn't refer to "stdin" by the symbol-name
+	 * "stdin", etc.
+	 */
+	#ifdef __FreeBSD__
+		hashtab_insert(cpp_defines, "__FreeBSD__", my_strdup("1"));
+	#endif
+
+	/*
 	 * Run preprocessor, and collect
 	 * defines in `cpp_defines' hash table.
 	 */
@@ -110,7 +116,7 @@ exp_tree_t run_core_tasks()
 	 * (!!!) Compatibility hacks for
 	 * some commonly-used things
 	 */
-	hashtab_insert(cpp_defines, "NULL", my_strdup("(void *)0"));
+	hashtab_insert(cpp_defines, "NULL", my_strdup("0"));
 	hashtab_insert(cpp_defines, "FILE", my_strdup("void"));
 
 	/*
@@ -223,7 +229,7 @@ int main(int argc, char** argv)
 		sprintf(opt, "");
 		for (i = 1; i < argc; ++i) {
 			if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "--version")) {
-				printf("This is the wannabe C compiler command\n");
+				printf("This is the wannabe C compiler command, version 0.4\n");
 				printf("programmed by bl0ckeduser, 2014-2014\n");
 				printf("<https://github.com/bl0ckeduser/new-bpf-tools>\n\n");
 				printf("Usage: wcc filename.c... [-o target] [-Ddef[=val]]...\n\n");
@@ -268,7 +274,7 @@ int main(int argc, char** argv)
 		if (!inf)
 			fail("expected a .c file as an argument");
 		if (!freopen(inf, "r", stdin)) {
-			sprintf(cmd, "could not open input file `%s': %s", inf, strerror(errno));
+			sprintf(cmd, "could not open input file `%s'.", inf);
 			fail(cmd);
 		}
 	#else

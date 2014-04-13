@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # wcc: wannabe c compiler command for unixlikes running x86
 
 if [ $(uname | grep MINGW) ];

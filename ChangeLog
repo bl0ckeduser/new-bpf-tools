@@ -1,3 +1,30 @@
+0.4 - April 13, 2014
+
+- achieved self-compilation, self-self-compilation, etc. :)
+- multifile support
+- basic preprocessor: local recursive #include, #ifdef, #ifndef, #else, #endif,
+                      simple #define without macros
+- parse and x86-compile "extern" declarations
+- added some useful notes to the docs
+- make a list of improvement ideas people sent from reddit
+  (there was a big thread on reddit.com/r/programming around April 4)
+- improve coding style following suggestions
+- wcc: --version, --help flags
+- several tweaks so that the compiler could compile itself
+- cleaned up lots of old hackish code that was broken
+- add a compatibility hack so that NULL and FILE* are defined
+  to 0 and void *, respectively
+- wcc: added -Ddefine[=val]... flag (preprocessor define injection)
+- new line tracking (i.e. for diagnostics) mechanism, shows file name
+- x86: improved support for structs-within-structs
+- x86: fixed array to pointer conversion in assignments
+- parser: fix parsing of goto statements
+- x86: fixed a register fuckup
+- x86: fixed sizeof() for structs
+- x86: implement a->b = c for large structs
+
+-----------------------------------------------------------------------
+
 0.3 - March 23, 2014
 
 - real-life: i feel like i might be quite busy with "real life" soon

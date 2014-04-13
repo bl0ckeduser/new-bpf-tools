@@ -1,7 +1,23 @@
-Self-compilation completes sucessfully, but the resulting
-executable is not 100% perfectly working yet.
+Self-compilation completes sucessfully.
+Self-self-compilation completes succesfully.
+Self-self-self-compilation completes succesfully.
 
-The self-compiled compiler succeeds in running all the test-cases.
+To do it:
 
+	./build-wcc.sh
+	./selfcompile-x86.sh
+	./selfcompile2-x86.sh
+	./selfcompile3-x86.sh
 
-Self-self-compilation does not work yet.
+To test the third-generation compiler on the test cases:
+
+	./4test.sh
+
+----------------------------------------------------------------------
+
+$ ls -la wcc wcc2 wcc3 wcc4
+-rwxr-xr-x 1 blockeduser blockeduser 176066 Apr 13 11:10 wcc
+-rwxr-xr-x 1 blockeduser blockeduser 342774 Apr 13 11:10 wcc2
+-rwxr-xr-x 1 blockeduser blockeduser 342774 Apr 13 11:10 wcc3
+-rwxr-xr-x 1 blockeduser blockeduser 342774 Apr 13 11:10 wcc4
+

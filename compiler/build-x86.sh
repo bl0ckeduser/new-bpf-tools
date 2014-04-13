@@ -1,3 +1,5 @@
+#!/bin/sh
+
 if [ $(uname | grep MINGW) ];
 then
 
