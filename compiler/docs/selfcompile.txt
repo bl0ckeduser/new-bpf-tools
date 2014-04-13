@@ -11,3 +11,4 @@ test/x86/recursive-fib.c
 test/x86/square.c
 test/x86/struct-ptr.c
 
+Self-self-compilation does not work yet.
