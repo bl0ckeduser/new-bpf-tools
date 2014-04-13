@@ -1,5 +1,13 @@
 Self-compilation completes sucessfully, but the resulting
-executable gets in infinite loops or crashes for some inputs.
+executable is not 100% perfectly working yet.
 
-The self-compiled compiler does succeed in compiling a few
-of the more basic test cases at this point.
+The self-compiled compiler does not succeed in properly compiling
+the following test cases:
+
+test/x86/binary-tree.c
+test/x86/bitshifts.c
+test/x86/call-arrow.c
+test/x86/recursive-fib.c
+test/x86/square.c
+test/x86/struct-ptr.c
+
