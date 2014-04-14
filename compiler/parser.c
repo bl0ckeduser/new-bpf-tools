@@ -4,8 +4,6 @@
 /* 
  * Classical recursive descent shit,
  * but it's hand-coded so it's kind of a mess.
- * Note that this module actually involves a
- * fairly sane use of function pointers.
  */
 
 #include <stdio.h>
