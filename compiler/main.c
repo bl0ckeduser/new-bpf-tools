@@ -241,8 +241,10 @@ int main(int argc, char** argv)
 				current_file = inf = argv[i];
 				tempf = tempnam("/tmp", "wcc");
 				strcat(tempf, ".s");
-				freopen(tempf, "w", stdout);
-				freopen(inf, "r", stdin);
+				if (!freopen(tempf, "w", stdout))
+					fail("stdout redirection");
+				if (!freopen(inf, "r", stdin))
+					fail("stdin redirection");
 				compile_one_file();
 				fflush(stdout);
 				strcat(wcc_sfiles, tempf);
@@ -301,9 +303,12 @@ int main(int argc, char** argv)
  	 */
 	#ifdef WCC
 		sprintf(cmd, "gcc -m32 %s -lc %s", wcc_sfiles, opt);
-		system(cmd);
+		if (system(cmd) == -1)
+			fail("Failed to assemble. Do you have gcc installed ?");
 		sprintf(cmd, "rm -f %s", wcc_sfiles);
-		system(cmd);
+		if (system(cmd) == -1) {
+			fprintf(stderr, "Couldn't remove temporary files...\n");
+		}
 	#endif
 
 	return 0;

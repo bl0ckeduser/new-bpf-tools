@@ -179,7 +179,8 @@ exp_tree_t parse(token_t *t)
 	end.type = TOK_NOMORETOKENSLEFT;
 	end.start = my_strdup("");
 	end.len = 0;
-	end.from_file = end.lineptr = end.from_char = 0;
+	end.from_file = end.lineptr = NULL;
+	end.from_char = 0;
 
 	/* set up enum tags dictionary */
 	enum_tags = new_hashtab();
@@ -480,7 +481,8 @@ exp_tree_t struct_decl(int is_extern)
 	fake_anon_name.type = TOK_IDENT;
 	fake_anon_name.start = my_strdup("<anonymous struct>");
 	fake_anon_name.len = 0;
-	fake_anon_name.from_file = fake_anon_name.lineptr = fake_anon_name.from_char = 0;
+	fake_anon_name.from_file = fake_anon_name.lineptr = NULL;
+	fake_anon_name.from_char = 0;
 
 	if (peek().type == TOK_STRUCT) {
 		adv();
@@ -530,7 +532,8 @@ exp_tree_t decl2(int is_extern)
 	zero.type = TOK_INTEGER;
 	zero.start = my_strdup("0");
 	zero.len = 1;
-	zero.from_file = zero.lineptr = zero.from_char = 0;
+	zero.from_file = zero.lineptr = NULL;
+	zero.from_char = 0;
 	int contains_ambig = 0;
 	int ambig = 0;
 
@@ -748,7 +751,8 @@ exp_tree_t block()
 	one.type = TOK_INTEGER;
 	one.start = my_strdup("1");
 	one.len = 1;
-	one.from_file = one.lineptr = one.from_char = 0;
+	one.from_file = one.lineptr = NULL;
+	one.from_char = 0;
 	exp_tree_t one_tree = new_exp_tree(NUMBER, &one);
 	int sav_indx, ident_indx, arg_indx;
 	int must_be_proto = 0;
