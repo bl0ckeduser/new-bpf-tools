@@ -677,7 +677,7 @@ exp_tree_t initializer()
 /*
  * lvalue := ident
  *          | '(' cast-type ') lvalue
- *			| '(' lvalue ')'
+ *	    | '(' lvalue ')'
  */
 /* XXX: TODO: cast part */
 exp_tree_t lval()
