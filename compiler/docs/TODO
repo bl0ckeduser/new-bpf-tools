@@ -1,0 +1,15 @@
+- do-while loops
+- constant folding in parser, as in e.g.
+
+		int foo[1024 * 1024];
+
+- #define macros, e.g.
+	
+	 #define foo(X,Y) x + y
+
+- wcc -w flag
+
+- fancy initializers for structs, arrays, ...
+
+- support for fancier things as global variables
+
