@@ -230,7 +230,7 @@ int main(int argc, char** argv)
 		for (i = 1; i < argc; ++i) {
 			if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "--version")) {
 				printf("This is the wannabe C compiler command, version 0.4\n");
-				printf("programmed by bl0ckeduser, 2014-2014\n");
+				printf("programmed by bl0ckeduser, 2012-2014\n");
 				printf("<https://github.com/bl0ckeduser/new-bpf-tools>\n\n");
 				printf("Usage: wcc filename.c... [-o target] [-Ddef[=val]]...\n\n");
 				exit(0);
