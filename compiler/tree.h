@@ -106,5 +106,6 @@ int valid_tree(exp_tree_t et);
 exp_tree_t *alloc_exptree(exp_tree_t et);
 void printout_tree(exp_tree_t et);
 void init_tree();
+exp_tree_t copy_tree(exp_tree_t src_a);
 
 #endif

@@ -80,24 +80,6 @@ int check_typedef(char *str)
 	return hashtab_lookup(typedef_tags, str) != NULL;
 }
 
-/*
- * Deep(i.e. recursive)-copy a tree object
- */
-exp_tree_t copy_tree(exp_tree_t src_a)
-{
-	exp_tree_t *src = &src_a;
-	exp_tree_t et = new_exp_tree(src->head_type, src->tok);
-	int i;
-
-	for (i = 0; i < src->child_count; ++i)
-		if (src->child[i]->child_count == 0)
-			add_child(&et, alloc_exptree(*src->child[i]));
-		else
-			add_child(&et, alloc_exptree(copy_tree(*(src->child[i]))));
-
-	return *alloc_exptree(et);
-}
-
 int indx_bound(int indx)
 {
 	if (indx > tok_count)
