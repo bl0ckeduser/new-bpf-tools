@@ -14,6 +14,7 @@
 #include "tree.h"
 #include "general.h"
 #include "diagnostics.h"
+#include "constfold.h"
 #include <string.h>
 
 extern int escape_code(char c);
@@ -518,6 +519,7 @@ exp_tree_t decl2(int is_extern)
 	zero.from_char = 0;
 	int contains_ambig = 0;
 	int ambig = 0;
+	exp_tree_t cexpr;
 
 	tree = new_exp_tree(DECL_CHILD, NULL);
 
@@ -538,8 +540,20 @@ exp_tree_t decl2(int is_extern)
 multi_array_decl:
 		adv();	/* eat [ */
 		ambig = 0;
-		if (peek().type == TOK_INTEGER)
-			tok = need(TOK_INTEGER);
+		if (peek().type != TOK_RBRACK) {
+			cexpr = expr();
+			/*
+			 * We want a constant as the expression
+			 * within the []. Originally this meant that
+			 * we wanted just a number-token, but now
+			 * we can reduce arithmetic expressions to
+			 * constants as well.
+			 */
+			constfold(&cexpr);
+			if (cexpr.head_type != NUMBER)
+				parse_fail("expected a constant in array bounds");
+			tok = *(cexpr.tok);	
+		}
 		else {
 			/*
 			 * The meaning of [] depends upon context.
