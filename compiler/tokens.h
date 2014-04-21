@@ -93,10 +93,11 @@ enum {
 	TOK_DEFAULT,
 	TOK_VOID,
 	TOK_ENUM,
-	TOK_EXTERN
+	TOK_EXTERN,
+	TOK_DO
 };
 
-#define KW_COUNT 28
+#define KW_COUNT 29
 
 struct bpf_kw {
 	char *str;

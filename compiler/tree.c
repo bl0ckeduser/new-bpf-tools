@@ -104,6 +104,7 @@ void init_tree()
 		"ENUM_DECL",
 		"PROC_CALL_MEMCPY",
 		"EXTERN_DECL",
+		"DOWHILE",
 		"NULL_TREE"
 	};
 

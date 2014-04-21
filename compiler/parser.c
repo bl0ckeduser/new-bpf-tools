@@ -718,6 +718,7 @@ exp_tree_t lval()
 	block := expr ';' 
 		| decl ';'
 		| if '(' expr ')' block [else block] 
+		| do block while '(' expr ')' ;
 		| while '(' expr ')' block 
 		| for '(' [expr] ';' [expr] ';' [expr] ')' block
 		| switch '(' expr ')' '{' { [('case' num | 'default') ':'] [block] ['break' ';'] } '}'
@@ -1015,6 +1016,26 @@ not_proc:
 			adv();	/* eat else */
 			add_child(&tree, alloc_exptree(block()));
 		}
+		return tree;
+	}
+	/* do (block) while (expr) ; */
+	if(peek().type == TOK_DO) {
+		adv();	/* eat do */
+		tree = new_exp_tree(DOWHILE, NULL);
+		if (!valid_tree(subtree = block()))
+			parse_fail("expected block after `do'");
+		/* (BLOCK (... inner block ...) (CONTLAB)) */
+		subtree2 = new_exp_tree(BLOCK, NULL);
+		add_child(&subtree2, alloc_exptree(subtree));
+		add_child(&subtree2, alloc_exptree(new_exp_tree(CONTLAB, NULL)));
+		need(TOK_WHILE);
+		need(TOK_LPAREN);
+		if (!valid_tree(subtree = expr()))
+			parse_fail("expression expected");
+		need(TOK_RPAREN);
+		add_child(&tree, alloc_exptree(subtree));
+		add_child(&tree, alloc_exptree(subtree2));
+		need(TOK_SEMICOLON);
 		return tree;
 	}
 	/* while (expr) block */

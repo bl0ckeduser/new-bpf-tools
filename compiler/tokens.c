@@ -107,7 +107,8 @@ void init_tokens()
 		"TOK_DEFAULT",
 		"TOK_VOID",
 		"TOK_ENUM",
-		"TOK_EXTERN"
+		"TOK_EXTERN",
+		"TOK_DO"
 	};
 
 	tok_nam = malloc(sizeof(tok_nam_local));
@@ -195,7 +196,8 @@ void init_tokens()
 		"switch default label",
 		"void type",
 		"enum",
-		"extern"
+		"extern",
+		"do"
 	};
 
 	tok_desc = malloc(sizeof(tok_desc_local));
@@ -232,6 +234,7 @@ void init_tokens()
 	kwtab_append( "default", TOK_DEFAULT );
 	kwtab_append( "enum", TOK_ENUM );
 	kwtab_append( "extern", TOK_EXTERN );
+	kwtab_append( "do", TOK_DO );
 }
 
 /* =================================== */
