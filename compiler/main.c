@@ -118,6 +118,7 @@ exp_tree_t run_core_tasks()
 	 */
 	hashtab_insert(cpp_defines, "NULL", my_strdup("0"));
 	hashtab_insert(cpp_defines, "FILE", my_strdup("void"));
+	hashtab_insert(cpp_defines, "EOF", my_strdup("-1"));
 
 	/*
 	 * Tokenize the inputted code
