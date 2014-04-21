@@ -525,11 +525,8 @@ exp_tree_t decl2(int is_extern)
 
 	/* 
 	 * Eat pointer-qualification 
-	 * stars (as in "int ***ptr") for now. 
-	 * The language currently compiled is actually
-	 * typeless, but I need to write the star-qualifiers
-	 * in the test code so automatic comparison with
-	 * gcc-compiled output is possible.
+	 * stars (as in "int ***ptr") 
+	 * and count them.
 	 */
 	while (peek().type == TOK_MUL)
 		adv(), ++stars;
