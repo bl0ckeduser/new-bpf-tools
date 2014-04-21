@@ -824,8 +824,6 @@ is_proc:
 			 * is no identifier in the argument parse,
 			 * as in e.g. "int*" or "void". this is
 			 * only valid in prototypes, of course.
-			 * XXX: foo(void) before a code-body 
-			 * may have a special meaning, I don't remember...
 			 */
 			if (subtree2.head_type == PROTO_ARG) {
 				must_be_proto = 1;
