@@ -1,7 +1,7 @@
-- do-while loops
+- do-while loops 				<--- DONE 2014-04-21
 - constant folding in parser, as in e.g.
 
-		int foo[1024 * 1024]; <--- DONE 2014-04-20
+		int foo[1024 * 1024]; 		<--- DONE 2014-04-20
 
 - #define macros, e.g.
 	

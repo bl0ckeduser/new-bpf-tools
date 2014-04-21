@@ -52,16 +52,9 @@ void preprocess(char **src, hashtab_t* defines)
 	extern int iterate_preprocess(hashtab_t*, char**, int);
 	int first = 1;
 
-	/*
-	 * XXX: No do-while compilation implemented yet
-	 * and I really want to make it selfcompilation
-	 */
-	preprocessor_loop:
-	if(iterate_preprocess(defines, src, first)) {
+	while (iterate_preprocess(defines, src, first))
 		if (first)
 			first = !first;
-		goto preprocessor_loop;
-	}	
 }
 
 void eatwhitespace(char **p)

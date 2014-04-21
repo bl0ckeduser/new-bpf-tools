@@ -4525,6 +4525,33 @@ char* codegen(exp_tree_t* tree)
 		return NULL;
 	}
 
+	/* do-while */
+	if (tree->head_type == DOWHILE) {
+		lab1 = intl_label++;
+		lab2 = intl_label++;
+		printf("IL%d: \n", lab1);
+		/* open break-scope */
+		break_labels[++break_count] = lab2;
+		/* codegen the block */
+		codegen(tree->child[1]);
+		/* codegen the conditional */
+		sto = codegen(tree->child[0]);
+		/* branch back up the conditional is true */
+		str = registerize(sto);
+		str2 = get_temp_reg_siz(4);
+		printf("movl $0, %s\n", str2);
+		printf("cmpl %s, %s\n", str, str2);
+		free_temp_reg(sto);
+		free_temp_reg(str);
+		free_temp_reg(str2);
+		printf("jne IL%d\n", lab1);
+		/* break label */
+		printf("IL%d:\n", lab2);
+		/* close break-scope */
+		--break_count;
+		return NULL;
+	}
+
 	/* break */
 	if (tree->head_type == BREAK) {
 		if (!break_count)
