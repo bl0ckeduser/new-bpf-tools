@@ -77,6 +77,7 @@ cast-type := basic-type {'*'}
 block := expr ';' 
 	| decl ';'
 	| if '(' expr ')' block [else block] 
+	| do block while '(' expr ')' ;
 	| while '(' expr ')' block 
 	| for '(' [expr] ';' [expr] ';' [expr] ')' block
 	| switch '(' expr ')' '{' { [('case' num | 'default') ':'] [block] ['break' ';'] } '}'
