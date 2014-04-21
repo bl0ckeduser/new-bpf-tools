@@ -975,8 +975,10 @@ not_proc:
 			adv();	/* eat : */
 			return tree;
 		}
-		/* push back the identifier, this isn't
-		 * a label after all */
+		/* 
+		 * Push back the identifier, this isn't
+		 * a label after all
+		 */
 		else --indx;
 	}
 	/* decl ';' */
@@ -1155,8 +1157,8 @@ not_proc:
 }
 
 /*
-	arg := [cast-type] [ident] [ '[]' ]
-*/
+ *	arg := [cast-type] [ident] [ '[]' ]
+ */
 /* 
  * TODO: argument signatures like "char foo[256]",
  * it's kind of rare and fucked up but iirc it's legal 
@@ -1227,11 +1229,11 @@ exp_tree_t expr()
 }
 
 /*
-	expr0 := e1 asg-op expr0
-		| ternary_expr
-		| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
-		| str-const
-*/
+ *	expr0 := e1 asg-op expr0
+ *		| ternary_expr
+ *		| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
+ *		| str-const
+ */
 exp_tree_t expr0()
 {
 	exp_tree_t tree, subtree, subtree2;
@@ -1360,9 +1362,9 @@ exp_tree_t expr0()
 }
 
 /*
-	ternary-expr := ccor_expr 
-	                | ccor_expr '?' expr0 ':' expr0
-*/
+ *	ternary-expr := ccor_expr 
+ *	                | ccor_expr '?' expr0 ':' expr0
+ */
 exp_tree_t ternary_expr()
 {
 	exp_tree_t tree0, tree1, tree2, full;
@@ -1572,16 +1574,16 @@ exp_tree_t mul_expr()
 }
 
 /*
-	e1 := '++' e1
-		 | '--' e1
-		 | '-' e1
-		 | '+' e1
-		 | '!' e1
-		 | cast
-		 | '*' e1
-		 | '&' e1
-		 | e0
-*/
+ *	e1 := '++' e1
+ *		 | '--' e1
+ *		 | '-' e1
+ *		 | '+' e1
+ *		 | '!' e1
+ *		 | cast
+ *		 | '*' e1
+ *		 | '&' e1
+ *		 | e0
+ */
 exp_tree_t e1()
 {
 	exp_tree_t tree, subtree;
@@ -1645,11 +1647,11 @@ e1_prefix:
 }
 
 /*
-	e0 :=
-		| e0_2 '++'
-		| e0_2 '--'
-		| e0_2
-*/
+ *	e0 :=
+ *		| e0_2 '++'
+ *		| e0_2 '--'
+ *		| e0_2
+ */
 exp_tree_t e0()
 {
 	exp_tree_t tree0, tree1, tree2, new_tree;
@@ -1715,8 +1717,8 @@ exp_tree_t e0_2_fixup()
 }
 
 /*
-	e0_2 := e0_3 [ { '[' expr ']' } [('->' | '.') e0_3]
-*/
+ *	e0_2 := e0_3 [ { '[' expr ']' } [('->' | '.') e0_3]
+ */
 exp_tree_t e0_2()
 {
 	exp_tree_t tree0, tree1, tree2, addr, new_tree;
@@ -1799,11 +1801,11 @@ multi_array_access:
 }
 
 /*
-	e0_3 :=
-		 e0_4 {'.' e0_4}
-		| e0_4 {'->' e0_4}
-		| e0_4
-*/
+ *	e0_3 :=
+ *		 e0_4 {'.' e0_4}
+ *	 	| e0_4 {'->' e0_4}
+ *		| e0_4
+ */
 void e0_3_dispatch(char oper, exp_tree_t *dest)
 {
 	switch (oper) {
@@ -1820,7 +1822,7 @@ int check_e0_3_op(char oper)
 	return oper == TOK_DOT || oper == TOK_ARROW;
 }
 /*
- * rewrite a.b as (&a)->b
+ * Rewrite a.b as (&a)->b
  *
  * this was inspired by reading the sources
  * for the V7 UNIX C compiler for fun
@@ -1854,17 +1856,17 @@ exp_tree_t e0_3()
 }
 
 /*
-	e0_4 := 
-		'sizeof' '(' cast-type ')'
-		| 'sizeof' expr
-		| ident '(' expr1, expr2, exprN ')'
-		| '(' expr ')'
-		| lvalue
-		| integer
-		| octal-integer
-		| hex-integer
-		| char-const
-*/
+ *	e0_4 := 
+ *		'sizeof' '(' cast-type ')'
+ *		| 'sizeof' expr
+ *		| ident '(' expr1, expr2, exprN ')'
+ *		| '(' expr ')'
+ *		| lvalue
+ *		| integer
+ *		| octal-integer
+ *		| hex-integer
+ *		| char-const
+ */
 exp_tree_t e0_4()
 {
 	exp_tree_t tree = null_tree, subtree = null_tree;
@@ -2220,15 +2222,17 @@ exp_tree_t parse_left_assoc(int code, int no_assoc)
 		if (!valid_tree(child = B_expr(code)))
 			parse_fail("expression expected");
 
-		/* add term as child */
+		/* Add term as child */
 		add_child(tree_ptr, alloc_exptree(child));
 
-		/* non-associativity corner-case,
-		 * used for comparison operators */
+		/* 
+		 * Non-associativity corner-case,
+		 * used for comparison operators
+		 */
 		if (cc++ && no_assoc)
 			parse_fail("illegal use of non-associative operator");
 
-		/* bail out early if no more operators */
+		/* Bail out early if no more operators */
 		if (!is_C_op(code, (oper = peek()).type))
 			return *tree_ptr;
 
