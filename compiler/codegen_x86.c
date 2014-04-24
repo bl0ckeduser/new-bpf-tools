@@ -19,6 +19,7 @@
 #define SYMLEN 256
 #define INIT_BUF_SIZ 32
 
+#include "constfold.h"
 #include "hashtable.h"
 #include "tree.h"
 #include "tokens.h"

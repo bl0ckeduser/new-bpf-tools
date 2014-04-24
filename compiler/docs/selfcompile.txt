@@ -4,10 +4,10 @@ Self-self-self-compilation completes succesfully.
 
 To do it:
 
-	./build-wcc.sh
-	./selfcompile-x86.sh
-	./selfcompile2-x86.sh
-	./selfcompile3-x86.sh
+	./build-wcc.sh			\
+	./selfcompile-x86.sh		|	./4build.sh
+	./selfcompile2-x86.sh		|	
+	./selfcompile3-x86.sh		/
 
 To test the third-generation compiler on the test cases:
 
