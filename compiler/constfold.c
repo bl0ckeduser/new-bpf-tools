@@ -48,7 +48,7 @@ token_t* make_fake_tok(char *s)
 	return t;
 }
 
-void constfold(exp_tree_t *et)
+void constfold(void *ptr)
 {
 	int i = 0;
 	int q;
@@ -60,6 +60,7 @@ void constfold(exp_tree_t *et)
 	exp_tree_t new, num;
 	exp_tree_t *new_ptr;
 	char buf[128];
+	exp_tree_t *et = (exp_tree_t *)ptr;
 
 	for (i = 0; i < et->child_count; i++)
 		constfold(et->child[i]);
