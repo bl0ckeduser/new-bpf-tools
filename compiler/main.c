@@ -235,7 +235,7 @@ int main(int argc, char** argv)
 				printf("This is the wannabe C compiler command, version 0.4\n");
 				printf("programmed by bl0ckeduser, 2012-2014\n");
 				printf("<https://github.com/bl0ckeduser/new-bpf-tools>\n\n");
-				printf("Usage: wcc filename.c... [-o target] [-Ddef[=val]]...\n\n");
+				printf("Usage: wcc filename.c... [-o target] [-Ddef[=val]]... [-w]\n\n");
 				exit(0);
 			} else if (!strcmp(argv[i], "--ast")) {
 				dump_ast();
