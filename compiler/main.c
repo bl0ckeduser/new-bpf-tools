@@ -47,6 +47,8 @@ struct cli_define_s {
 } *cli_defines;
 int cli_defines_count = 0;
 
+int shutup_warnings = 0;
+
 char *current_file;
 
 /*
@@ -237,6 +239,8 @@ int main(int argc, char** argv)
 				exit(0);
 			} else if (!strcmp(argv[i], "--ast")) {
 				dump_ast();
+			} else if (!strcmp(argv[i], "-w")) {
+				shutup_warnings = 1;
 			/* source file(s) */
 			} else if(strstr(argv[i], ".c")) {
 				current_file = inf = argv[i];

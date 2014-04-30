@@ -12,6 +12,8 @@
 #include "tokens.h"
 #include <string.h>
 
+extern int shutup_warnings;
+
 enum {
 	CF_ERROR,
 	CF_WARN,
@@ -31,7 +33,8 @@ void compiler_fail(char *message, token_t *token,
 void compiler_warn(char *message, token_t *token,
 	int in_line, int in_chr)
 {
-	compiler_fail_int(message, token, in_line, in_chr, CF_WARN);
+	if (!shutup_warnings)
+		compiler_fail_int(message, token, in_line, in_chr, CF_WARN);
 }
 
 void compiler_debug(char *message, token_t *token,

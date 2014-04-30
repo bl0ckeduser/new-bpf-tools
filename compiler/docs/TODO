@@ -7,7 +7,7 @@
 	
 	 #define foo(X,Y) x + y
 
-- wcc -w flag
+- wcc -w flag					<--- DONE 2014-04-30
 
 - fancy initializers for structs, arrays, ...
 
