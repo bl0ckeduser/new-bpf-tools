@@ -3974,8 +3974,8 @@ char* codegen(exp_tree_t* tree)
 			/* n.b. codegen() converts stuff to int */
 			sto = registerize_siz(codegen(tree->child[1]), membsiz);
 			compiler_debug("simple variable assignment -- "
-						  " looking for conversion suffix",
-						  findtok(tree), 0, 0);
+				       " looking for conversion suffix",
+					 findtok(tree), 0, 0);
 			sto2 = registerize_from(sto, membsiz);
 			printf("movl %s, %s\n", sto2, sym_s);
 			free_temp_reg(sto2);
