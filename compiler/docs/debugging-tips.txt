@@ -1,0 +1,12 @@
+Debugging tips
+==============
+
+Tracing a problem:
+
+- build with DEBUG preprocessor flag set and with debug symbols (-g)
+- set a breakpoint on the exit routine
+- run in GDB until bad things happen
+- do a backtrace
+- enjoy a happy life, and don't eat too much pudding
+
+
