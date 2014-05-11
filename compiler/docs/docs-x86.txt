@@ -539,6 +539,10 @@ elements are C syntax.
 		- FreeBSD 
 		  (verified on FreeBSD 9.0, i386)
 
+	Well wait a minute, I think external symbols are supported now.
+	You can certainly refer to symbols defined in another .c/.o module
+	without issues.
+
 29. bit shifts
 
 	Bit shifts are parsed (since commit 5d13e45bbb... of 2013-10-27)
