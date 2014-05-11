@@ -700,6 +700,23 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 			tag_name);
 		compiler_fail(err_buf, findtok(tp->child[0]), 0, 0);
 	}
+	
+	/*
+	 * Handle (SIZEOF (VARIABLE:xxx)) case.
+	 * Below, the case for sizeof a type,
+	 * e.g. sizeof(int) is handled,
+	 * which isn't quite the same peanut.
+	 *
+	 * Anyway, it's an int, of course.
+	 */
+	if (tp->head_type == SIZEOF
+	     && tp->child[0]->head_type != CAST_TYPE) {
+		td.ty = INT_DECL;
+		td.ptr = 0;
+		td.arr = 0;
+		return td;
+	}
+	
 
 	/*
 	 * Explicit casts are what this module is really
