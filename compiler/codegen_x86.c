@@ -2477,7 +2477,9 @@ char* codegen(exp_tree_t* tree)
 					printout_tree(fake_tree);
 					fprintf(stderr, "\n");
 				#endif
-				codegen(&fake_tree);
+				(void)codegen(&fake_tree);
+				new_temp_mem();
+				new_temp_reg();
 			}
 			return NULL;
 		}
@@ -2522,7 +2524,9 @@ char* codegen(exp_tree_t* tree)
 					printout_tree(fake_tree);
 					fprintf(stderr, "\n");
 				#endif
-				codegen(&fake_tree);
+				(void)codegen(&fake_tree);
+				new_temp_mem();
+				new_temp_reg();
 			}
 			return NULL;
 		}
