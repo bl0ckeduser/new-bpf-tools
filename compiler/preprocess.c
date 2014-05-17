@@ -108,6 +108,15 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 		/* consume whitespace at beginning of line */
 		eatwhitespace(&p);
 
+		/*
+		 * XXX: at this point we should do #define
+		 * substitutions for all past substitions
+		 * for this line. this would involve allocating
+		 * a new buffer for the substituted line and
+	 	 * using a pointer into that rather that `p'
+		 * for scanning
+	 	 */
+
 		/* check for a directive */
 		if (*p == '#') {
 			++p;	/* eat # */
