@@ -13,3 +13,8 @@
 
 - support for fancier things as global variables
 
+- struct literals would be nice
+
+- block scope
+
+- declaration in initializer in for-loop
