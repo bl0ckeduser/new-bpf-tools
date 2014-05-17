@@ -125,7 +125,7 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 			
 			/*
 			 * XXX: TODO: #define macro mode,
-			 * #if, ##, ...
+			 * #if, #elif, #error, #pragma, ##, ...
 			 */
 			if (!strcmp(directive, "define")) {
 				char define_key[128];
