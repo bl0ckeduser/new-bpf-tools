@@ -8,7 +8,11 @@ Quickly, I received lots of improvement suggestions messages.
 I make a list here.
 
 - Improving the style of the massive run-on `codegen' routine
-  in codegen_x86.c
+  in codegen_x86.c : forget it, it's not quite possible
+  to reduce this to a switch, because the predicates are
+  complex boolean expressions. Come on, code is code, really
+  why the fuck would it be an issue that a compiler supporting
+  many constructs needs lots code.
 
 - Reading the C standard ! unofficial pre-publication draft:
   http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf
