@@ -37,7 +37,7 @@ do
 	rm -rf autotest-tmp/
 done
 
-for x in test/x86/*.c
+for x in test/x86/std/*.c test/x86/*.c
 do
 	rm -rf autotest-tmp
 	mkdir autotest-tmp
