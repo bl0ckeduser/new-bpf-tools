@@ -1,3 +1,14 @@
+0.6 - XXX - in progress, not done yet but starting to write the log
+
+- fix register leakage in array initializer coding
+- indentation cleanups
+- implement type analysis for sizeof(variable) expressions
+  (needed if you want to do e.g. sizeof(some_array) / sizeof(int))
+- update documentation
+- preprocessor: implement #undef
+
+-----------------------------------------------------------------------
+
 0.5 - April 30, 2014
 
 - various cleanups (removed old false comments; fix indent; fix warnings)
