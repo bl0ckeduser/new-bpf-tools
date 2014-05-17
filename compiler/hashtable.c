@@ -97,6 +97,24 @@ void* hashtab_lookup_with_hash(hashtab_t* htab, char* key, /*unsigned*/ int hash
 	else
 		return NULL;
 }
+
+/* ======================================================== */
+
+void hashtab_pseudo_delete(hashtab_t *htab, char* key)
+{
+	int hash = hashtab_hash(key, htab->nbuck);
+        hashtab_entry_t *ptr = htab->buck[hash];
+
+        while (ptr)
+                if (!strcmp(ptr->key, key))
+                        break;
+                else
+                        ptr = ptr->next;
+
+	if (ptr && !strcmp(ptr->key, key))
+		*(ptr->key) = 0;
+}
+
 /* ======================================================== */
 
 void hashtab_insert(hashtab_t* htab, char* key, void* val)
@@ -119,3 +137,4 @@ void hashtab_insert(hashtab_t* htab, char* key, void* val)
 }
 
 /* ======================================================== */
+

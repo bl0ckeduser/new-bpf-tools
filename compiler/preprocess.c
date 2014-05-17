@@ -139,6 +139,15 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 					fprintf(stderr, "CPP: define `%s' => `%s'\n",
 						define_key, define_val);
 				#endif
+			} else if (!strcmp(directive, "undef")) {
+				char define_key[128];
+				eatwhitespace(&p);
+				readtoken(define_key, &p);
+				hashtab_pseudo_delete(defines, define_key);
+				#ifdef DEBUG
+					fprintf(stderr, "CPP: undefine `%s'\n",
+						define_key);
+				#endif
 			} else if (!strcmp(directive, "include")) {
 				char include_file_buffer[128];
 				char *include_file;
