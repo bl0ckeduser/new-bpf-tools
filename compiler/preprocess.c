@@ -163,6 +163,14 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr, hashtab_t *defines)
 			    && !(p != &result[0] && *(p-1) == '\\')) {
 				in_string = !in_string;
 			}
+			/*
+			 * XXX: at this point we would want to check
+			 * if the token successfully looks up
+			 * in a table of parameterized macros,
+			 * then check for a left paren,
+			 * then gobble up the list of arguments
+			 * and so forth.
+			 */
 			if (!in_string && !hash && *token && identchar(*token) 
 			    && (substitution = hashtab_lookup(defines, &token[0]))) {
 				substitution_occured = 1;
