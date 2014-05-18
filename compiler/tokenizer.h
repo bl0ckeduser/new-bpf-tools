@@ -18,6 +18,6 @@ typedef struct token {
 extern char **code_lines;
 
 token_t* tokenize(char *string, hashtab_t *cpp_defines);
-void setup_tokenizer();
+void setup_tokenizer(void);
 
 #endif

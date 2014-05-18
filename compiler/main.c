@@ -58,7 +58,7 @@ char *current_file;
  * tokenize the buffer performing the define-substitutions;
  * finally, parse the tokens.
  */
-exp_tree_t run_core_tasks()
+exp_tree_t run_core_tasks(void)
 {
 	token_t* tokens;
 	int i, c;
@@ -150,7 +150,7 @@ exp_tree_t run_core_tasks()
  * read-preprocess-tokenize-parse, then
  * just dump the parse tree.
  */
-void dump_ast()
+void dump_ast(void)
 {
 	exp_tree_t tree = run_core_tasks();
 	dup2(1, 2);	/* 2>&1 */
@@ -168,7 +168,7 @@ void dump_ast()
  *                    .--------.
  *
  */
-void compile_one_file()
+void compile_one_file(void)
 {
 	extern void run_codegen(exp_tree_t* tree);
 	extern void print_code(void);

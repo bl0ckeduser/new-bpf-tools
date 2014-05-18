@@ -81,7 +81,7 @@ typedef struct nfa_struct {
 
 /* "nfa" structure routines */
 
-nfa* new_nfa()
+nfa* new_nfa(void)
 {
 	nfa* t = malloc(sizeof(nfa));
 	int i;
@@ -605,7 +605,7 @@ fail:
  * this could be rewritten as an array
  * initializer...
  */
-void setup_tokenizer()
+void setup_tokenizer(void)
 {
 	int i = 0;
 

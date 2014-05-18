@@ -21,7 +21,7 @@ typedef struct {
 	int alloc;
 } extensible_buffer_t;
 
-extensible_buffer_t* new_extensible_buffer()
+extensible_buffer_t* new_extensible_buffer(void)
 {
 	extensible_buffer_t* eb = malloc(sizeof(extensible_buffer_t));
 	eb->buf = malloc(1024);

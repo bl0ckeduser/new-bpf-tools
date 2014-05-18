@@ -13,7 +13,7 @@
 exp_tree_t null_tree;
 char **tree_nam;
 
-void init_tree()
+void init_tree(void)
 {
 	int i;
 

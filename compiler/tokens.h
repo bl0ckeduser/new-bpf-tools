@@ -110,7 +110,7 @@ extern struct bpf_kw *kw_tab;
 
 /* routines */
 
-void init_tokens();
+void init_tokens(void);
 int is_add_op(char type);
 int is_asg_op(char type);
 int is_mul_op(char type);

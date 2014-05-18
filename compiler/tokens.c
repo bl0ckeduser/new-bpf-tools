@@ -18,7 +18,7 @@ void kwtab_append(char *k, int v)
 	kw_tab[kwno++] = entry;
 }
 
-void init_tokens()
+void init_tokens(void)
 {
 	int i;
 	char* tok_nam_local[] = {

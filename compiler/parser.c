@@ -43,35 +43,35 @@ enum {
 
 exp_tree_t parse_left_assoc(int code, int no_assoc);
 
-exp_tree_t block();
-exp_tree_t expr();
-exp_tree_t expr0();
-exp_tree_t sum_expr();
-exp_tree_t shift_expr();
-exp_tree_t mul_expr();
-exp_tree_t ternary_expr();
-exp_tree_t ccor_expr();
-exp_tree_t ccand_expr();
-exp_tree_t bor_expr();
-exp_tree_t bxor_expr();
-exp_tree_t band_expr();
-exp_tree_t comp_expr();
+exp_tree_t block(void);
+exp_tree_t expr(void);
+exp_tree_t expr0(void);
+exp_tree_t sum_expr(void);
+exp_tree_t shift_expr(void);
+exp_tree_t mul_expr(void);
+exp_tree_t ternary_expr(void);
+exp_tree_t ccor_expr(void);
+exp_tree_t ccand_expr(void);
+exp_tree_t bor_expr(void);
+exp_tree_t bxor_expr(void);
+exp_tree_t band_expr(void);
+exp_tree_t comp_expr(void);
 exp_tree_t decl(int);
 exp_tree_t decl2(int);
-exp_tree_t cast();
-exp_tree_t cast_type();
-exp_tree_t arg();
+exp_tree_t cast(void);
+exp_tree_t cast_type(void);
+exp_tree_t arg(void);
 exp_tree_t struct_decl(int);
-exp_tree_t e1();
-exp_tree_t e0();
-exp_tree_t e0_2();
-exp_tree_t e0_3();
-exp_tree_t e0_4();
-exp_tree_t e0_2_fixup();
-exp_tree_t int_const();
-exp_tree_t initializer();
-exp_tree_t enum_decl();
-exp_tree_t enum_tag_decl();
+exp_tree_t e1(void);
+exp_tree_t e0(void);
+exp_tree_t e0_2(void);
+exp_tree_t e0_3(void);
+exp_tree_t e0_4(void);
+exp_tree_t e0_2_fixup(void);
+exp_tree_t int_const(void);
+exp_tree_t initializer(void);
+exp_tree_t enum_decl(void);
+exp_tree_t enum_tag_decl(void);
 int decl_dispatch(char type);
 
 void printout(exp_tree_t et);
@@ -93,13 +93,13 @@ int indx_bound(int indx)
  * clipped to the highest token number
  * to avoid overflow.
  */
-int adv()
+int adv(void)
 {
 	return indx_bound(++indx);
 }
 
 /* Give the current token */
-token_t peek()
+token_t peek(void)
 {
 	return tokens[indx];
 }
@@ -205,7 +205,7 @@ exp_tree_t parse(token_t *t)
 /*
  * cast := '(' cast-type ')' e0
  */
-exp_tree_t cast()
+exp_tree_t cast(void)
 {
 	exp_tree_t tree, ct, ue;
 	int restor;
@@ -232,7 +232,7 @@ exp_tree_t cast()
  *				 | 'struct' ident {'*'}
  *				 | 'enum' identifier
  */
-exp_tree_t cast_type()
+exp_tree_t cast_type(void)
 {
 	token_t bt;
 	exp_tree_t btt, btct, ct, star;
@@ -631,7 +631,7 @@ multi_array_decl:
  * initializer := expr0
  *               | '{' {'{'} expr0 {'}'} [ {',' {'{'} expr0 {'}'}}] '}'
  */
-exp_tree_t initializer()
+exp_tree_t initializer(void)
 {
 	exp_tree_t tree, child;
 	int depth, depth2;
@@ -676,7 +676,7 @@ exp_tree_t initializer()
  *	    | '(' lvalue ')'
  */
 /* XXX: TODO: cast part */
-exp_tree_t lval()
+exp_tree_t lval(void)
 {
 	token_t tok = peek();
 	exp_tree_t tree, subtree, new_tree;
@@ -732,7 +732,7 @@ exp_tree_t lval()
 		| 'continue' ';'
 		| 'typedef' cast-type ident ';'
 */
-exp_tree_t block()
+exp_tree_t block(void)
 {
 	int i, args;
 	exp_tree_t tree, subtree;
@@ -1184,7 +1184,7 @@ not_proc:
  * TODO: argument signatures like "char foo[256]",
  * it's kind of rare and fucked up but iirc it's legal 
  */
-exp_tree_t arg()
+exp_tree_t arg(void)
 {
 	exp_tree_t ct;
 	exp_tree_t at = new_exp_tree(ARG, NULL);
@@ -1224,7 +1224,7 @@ exp_tree_t arg()
 /*
 	expr := expr0 [',' expr0]
 */
-exp_tree_t expr()
+exp_tree_t expr(void)
 {
 	exp_tree_t seq = new_exp_tree(SEQ, NULL);
 	exp_tree_t ex;
@@ -1255,7 +1255,7 @@ exp_tree_t expr()
  *		| 'int' ident [ ( '=' expr ) |  ('[' integer ']') ]
  *		| str-const
  */
-exp_tree_t expr0()
+exp_tree_t expr0(void)
 {
 	exp_tree_t tree, subtree, subtree2;
 	exp_tree_t subtree3;
@@ -1386,7 +1386,7 @@ exp_tree_t expr0()
  *	ternary-expr := ccor_expr 
  *	                | ccor_expr '?' expr0 ':' expr0
  */
-exp_tree_t ternary_expr()
+exp_tree_t ternary_expr(void)
 {
 	exp_tree_t tree0, tree1, tree2, full;
 	tree0 = ccor_expr();
@@ -1420,7 +1420,7 @@ void ccor_dispatch(char oper, exp_tree_t *dest)
 int is_ccor_op(char ty) {
 	return ty == TOK_CC_OR;
 }
-exp_tree_t ccor_expr()
+exp_tree_t ccor_expr(void)
 {
 	return parse_left_assoc(
 		B_CCAND,
@@ -1439,7 +1439,7 @@ void ccand_dispatch(char oper, exp_tree_t *dest)
 int is_ccand_op(char ty) {
 	return ty == TOK_CC_AND;
 }
-exp_tree_t ccand_expr()
+exp_tree_t ccand_expr(void)
 {
 	return parse_left_assoc(
 		B_BOR,
@@ -1458,7 +1458,7 @@ void bor_dispatch(char oper, exp_tree_t *dest)
 int is_bor_op(char ty) {
 	return ty == TOK_PIPE;
 }
-exp_tree_t bor_expr()
+exp_tree_t bor_expr(void)
 {
 	return parse_left_assoc(
 		B_BXOR,
@@ -1477,7 +1477,7 @@ void bxor_dispatch(char oper, exp_tree_t *dest)
 int is_bxor_op(char ty) {
 	return ty == TOK_CARET;
 }
-exp_tree_t bxor_expr()
+exp_tree_t bxor_expr(void)
 {
 	return parse_left_assoc(
 		B_BAND,
@@ -1496,7 +1496,7 @@ void band_dispatch(char oper, exp_tree_t *dest)
 int is_band_op(char ty) {
 	return ty == TOK_ADDR;
 }
-exp_tree_t band_expr()
+exp_tree_t band_expr(void)
 {
 	return parse_left_assoc(
 		B_COMP,
@@ -1527,7 +1527,7 @@ void comp_dispatch(char oper, exp_tree_t *dest)
 			break;
 	}
 }
-exp_tree_t comp_expr()
+exp_tree_t comp_expr(void)
 {
 	return parse_left_assoc(
 		B_SHIFT,
@@ -1546,7 +1546,7 @@ void shift_dispatch(char oper, exp_tree_t *dest)
 			break;
 	}
 }
-exp_tree_t shift_expr()
+exp_tree_t shift_expr(void)
 {
 	return parse_left_assoc(
 		B_SUM,
@@ -1565,7 +1565,7 @@ void sum_dispatch(char oper, exp_tree_t *dest)
 		break;
 	}
 }
-exp_tree_t sum_expr()
+exp_tree_t sum_expr(void)
 {
 	return parse_left_assoc(
 		B_MUL,
@@ -1587,7 +1587,7 @@ void mul_dispatch(char oper, exp_tree_t *dest)
 		break;
 	}
 }
-exp_tree_t mul_expr()
+exp_tree_t mul_expr(void)
 {
 	return parse_left_assoc(
 		B_E1,
@@ -1605,7 +1605,7 @@ exp_tree_t mul_expr()
  *		 | '&' e1
  *		 | e0
  */
-exp_tree_t e1()
+exp_tree_t e1(void)
 {
 	exp_tree_t tree, subtree;
 	token_t tok = peek();
@@ -1673,7 +1673,7 @@ e1_prefix:
  *		| e0_2 '--'
  *		| e0_2
  */
-exp_tree_t e0()
+exp_tree_t e0(void)
 {
 	exp_tree_t tree0, tree1, tree2, new_tree;
 
@@ -1729,7 +1729,7 @@ int run_fixup(exp_tree_t *ptr)
 	return check;
 }
 
-exp_tree_t e0_2_fixup()
+exp_tree_t e0_2_fixup(void)
 {
 	exp_tree_t et = e0_2();
 	while (run_fixup(&et))
@@ -1740,7 +1740,7 @@ exp_tree_t e0_2_fixup()
 /*
  *	e0_2 := e0_3 [ { '[' expr ']' } [('->' | '.') e0_3]
  */
-exp_tree_t e0_2()
+exp_tree_t e0_2(void)
 {
 	exp_tree_t tree0, tree1, tree2, addr, new_tree;
 
@@ -1867,7 +1867,7 @@ void e0_3_rewrite(exp_tree_t *tree)
 	for (i = 0; i < tree->child_count; ++i)
 		e0_3_rewrite(tree->child[i]);
 }
-exp_tree_t e0_3()
+exp_tree_t e0_3(void)
 {
 	exp_tree_t et = parse_left_assoc(
 		B_E0_4,
@@ -1888,7 +1888,7 @@ exp_tree_t e0_3()
  *		| hex-integer
  *		| char-const
  */
-exp_tree_t e0_4()
+exp_tree_t e0_4(void)
 {
 	exp_tree_t tree = null_tree, subtree = null_tree;
 	exp_tree_t subtree2 = null_tree, subtree3;
@@ -1983,7 +1983,7 @@ exp_tree_t e0_4()
  */
 
 /* enum-decl := 'enum' [identifier] '{' enumerator-list '}' */
-exp_tree_t enum_decl()
+exp_tree_t enum_decl(void)
 {
 	exp_tree_t tree, subtree, subtree2;
 	token_t ident;
@@ -2062,7 +2062,7 @@ exp_tree_t enum_decl()
 /*
  * Integer constant
  */
-exp_tree_t int_const()
+exp_tree_t int_const(void)
 {
 	token_t fake_int;
 	exp_tree_t tree;
