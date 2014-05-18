@@ -1,5 +1,15 @@
 main()
 {
+	/*
+	 * These #defines are named after the
+	 * McKenzie brothers, a pair canadian
+	 * television characters who existed
+	 * a number of years ago and who devoted
+	 * much of their energies towards drinking
+	 * beer.
+	 *
+	 * http://en.wikipedia.org/wiki/Bob_and_Doug_McKenzie
+	 */
 	#define DOUG "hahaha"
 	#define BOB 123
 	#undef BOB
