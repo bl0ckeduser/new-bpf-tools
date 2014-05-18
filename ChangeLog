@@ -6,6 +6,12 @@
   (needed if you want to do e.g. sizeof(some_array) / sizeof(int))
 - update documentation
 - preprocessor: implement #undef
+- preprocessor: incremental #define substitutions
+  (this is a pretty subtle case of making the preprocessor behave
+  more closely to the way it should. see the long comment in
+  test/x86/undef.c for details. in a nuthsell, you can
+  #define something, then succesfully use that #define, and 
+  then #undef it.)
 
 -----------------------------------------------------------------------
 
