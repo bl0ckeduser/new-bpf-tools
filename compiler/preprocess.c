@@ -79,11 +79,24 @@ void readtoken(char *dest, char **p)
 	*q = 0;
 }
 
+char *preprocess_getline(char **source_ptr_ptr)
+{
+	static char result[1024];
+	char *p = &result[0];
+	while (**source_ptr_ptr && **source_ptr_ptr != '\n')
+		*p++ = *((*source_ptr_ptr)++);
+	if (**source_ptr_ptr && **source_ptr_ptr == '\n')
+		*p++ = *((*source_ptr_ptr)++);
+	*p = 0;
+	return &result[0];
+}
+
 int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 {
 	int needs_further_preprocessing = 0;
 	char *p;
 	char *q;
+	char *source_ptr;
 	char *old_p;
 	char *src_copy = my_strdup(*src);
 	char directive[128];
@@ -104,18 +117,12 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 	if (first_pass)
 		linemarker(new_src, line_number, current_file);
 
-	for (p = src_copy; *p;) {
+	for (source_ptr = src_copy; *source_ptr;) {
 		/* consume whitespace at beginning of line */
-		eatwhitespace(&p);
+		eatwhitespace(&source_ptr);
 
-		/*
-		 * XXX: at this point we should do #define
-		 * substitutions for all past substitions
-		 * for this line. this would involve allocating
-		 * a new buffer for the substituted line and
-	 	 * using a pointer into that rather that `p'
-		 * for scanning
-	 	 */
+		/* fetch a new line */
+		p = preprocess_getline(&source_ptr);
 
 		/* check for a directive */
 		if (*p == '#') {
@@ -240,6 +247,9 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 					++p;
 				++line_number;
 
+				/* fetch a new line */
+				p = preprocess_getline(&source_ptr);
+
 				/*
 				 * Here we only mind with the current depth,
 				 * and let a recursive preprocessing sub-iteration
@@ -306,6 +316,9 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 						++p;
 						++line_number;
 					}
+
+					/* fetch a new line */
+					p = preprocess_getline(&source_ptr);
 				}
 
 			} else {
