@@ -10,9 +10,7 @@ main()
  * the preprocessor should substitue in the BOB
  * before the undef occurs, which currently it doesn't
  */
-/*
 	printf("BOB=%d\n", BOB);
-*/
 	
 	puts(DOUG);
 

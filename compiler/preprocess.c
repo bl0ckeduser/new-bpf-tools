@@ -12,6 +12,9 @@
 
 extern char* current_file;
 
+char result[2048];
+char substituted_result[2048];
+
 typedef struct {
 	char *buf;
 	int len;
@@ -79,15 +82,99 @@ void readtoken(char *dest, char **p)
 	*q = 0;
 }
 
-char *preprocess_getline(char **source_ptr_ptr)
+int identchar(char c)
 {
-	static char result[1024];
+	return (c >= 'a' && c <= 'z')
+		|| (c >= '0' && c <= '9')
+		|| (c >= 'A' && c <= 'Z')
+		|| (c == '_');
+}
+
+void readtoken2(char *dest, char **p)
+{
+	char *q;
+	/*
+	 * We want to split out either an identifier,
+	 * or a non-identifier character alone.
+	 */
+	for (q = dest; **p && (**p != ' ' && **p != '\t' && **p != '\n') && identchar(**p); ++*p)
+		*q++ = **p;
+	if (q == dest && **p && (**p != ' ' && **p != '\t' && **p != '\n')) {
+		*q++ = **p;
+		++*p;
+	}
+	*q = 0;
+}
+
+char *preprocess_get_substituted_line(char **source_ptr_ptr, hashtab_t *defines)
+{
+	char token[256];
+	char *substitution;
 	char *p = &result[0];
+	char *q;
+	int substitution_occured;
+	int hash;
+	int first;
+	int in_string;
+	/*
+	 * Copy the line to the line buffer
+	 */
 	while (**source_ptr_ptr && **source_ptr_ptr != '\n')
 		*p++ = *((*source_ptr_ptr)++);
 	if (**source_ptr_ptr && **source_ptr_ptr == '\n')
 		*p++ = *((*source_ptr_ptr)++);
 	*p = 0;
+	/*
+	 * Perform substitutions repeatedly
+	 */
+	first = 1;
+	do {
+		substitution_occured = 0;
+		hash = 0;
+		p = &result[0];
+		q = &substituted_result[0];
+		*q = 0;
+		in_string = 0;
+		while (*p) {
+			while (*p && (*p == ' ' || *p == '\t' || *p == '\n')) {
+				token[0] = *p;
+				token[1] = 0;
+				strcat(substituted_result, token);
+				++p;
+			}
+			/*
+			 * If it's a directive, do no substitutions
+			 */
+			if (first && *p == '#') {
+				strcat(substituted_result, "#");
+				hash = 1;
+				++p;
+			}
+			/*
+			 * Grab the next token that can be made
+			 * of either a string of identifier characters
+			 * or one non-identifier character. If it is
+			 * made up of identifier characters, try to
+			 * substitute it for a #define
+			 */
+			*token = 0;
+			readtoken2(&token[0], &p);
+			if (*token && *token == '"'
+			    && !(p != &result[0] && *(p-1) == '\\')) {
+				in_string = !in_string;
+			}
+			if (!in_string && !hash && *token && identchar(*token) 
+			    && (substitution = hashtab_lookup(defines, &token[0]))) {
+				substitution_occured = 1;
+				strcat(substituted_result, substitution);
+			} else if (*token) {
+				strcat(substituted_result, token);
+			}
+		}
+		first = 0;
+		strcpy(result, substituted_result);
+	} while (substitution_occured);
+	
 	return &result[0];
 }
 
@@ -101,7 +188,17 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 	char *src_copy = my_strdup(*src);
 	char directive[128];
 	char error_message_buffer[256];
+	char define_key[128];
+	char define_val[256];
 	int line_number = 1;
+	char include_file_buffer[128];
+	char *include_file;
+	FILE *include_file_ptr;
+	char define_name[128];
+	int define_exists;
+	int depth;
+	char *oldp;
+	int keep;
 	extensible_buffer_t *new_src = new_extensible_buffer();
 	enum {
 		INCLUDE_PATH_LOCAL,	/* "foo.h" */
@@ -122,7 +219,7 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 		eatwhitespace(&source_ptr);
 
 		/* fetch a new line */
-		p = preprocess_getline(&source_ptr);
+		p = preprocess_get_substituted_line(&source_ptr, defines);
 
 		/* check for a directive */
 		if (*p == '#') {
@@ -144,8 +241,6 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 			 * #if, #elif, #error, #pragma, ##, ...
 			 */
 			if (!strcmp(directive, "define")) {
-				char define_key[128];
-				char define_val[256];
 				eatwhitespace(&p);
 				readtoken(define_key, &p);
 				eatwhitespace(&p);
@@ -156,7 +251,6 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 						define_key, define_val);
 				#endif
 			} else if (!strcmp(directive, "undef")) {
-				char define_key[128];
 				eatwhitespace(&p);
 				readtoken(define_key, &p);
 				hashtab_pseudo_delete(defines, define_key);
@@ -165,10 +259,6 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 						define_key);
 				#endif
 			} else if (!strcmp(directive, "include")) {
-				char include_file_buffer[128];
-				char *include_file;
-				FILE *include_file_ptr;
-
 				eatwhitespace(&p);
 				readtoken(include_file_buffer, &p);
 
@@ -228,11 +318,6 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 				skip_include:;
 
 			} else if (!strcmp(directive, "ifdef") || !strcmp(directive, "ifndef")) {
-				char define_name[128];
-				int define_exists;
-				int depth;
-				char *oldp;
-				int keep;
 				int negative = !strcmp(directive, "ifndef");
 				enum { 
 					INSIDE_IF,
@@ -248,7 +333,7 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 				++line_number;
 
 				/* fetch a new line */
-				p = preprocess_getline(&source_ptr);
+				p = preprocess_get_substituted_line(&source_ptr, defines);
 
 				/*
 				 * Here we only mind with the current depth,
@@ -318,7 +403,7 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 					}
 
 					/* fetch a new line */
-					p = preprocess_getline(&source_ptr);
+					p = preprocess_get_substituted_line(&source_ptr, defines);
 				}
 
 			} else {
