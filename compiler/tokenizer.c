@@ -350,7 +350,7 @@ int tc = 0;
 
 /* #define TOK_FAIL(msg) { strcpy(fail_msg, msg); goto fail; } */
 
-token_t* tokenize(char *buf, hashtab_t *cpp_defines)
+token_t* tokenize(char *buf)
 {
 	match_t m;
 	match_t c;
@@ -467,14 +467,6 @@ token_t* tokenize(char *buf, hashtab_t *cpp_defines)
 				/* keywords */
 				if ((iptr = hashtab_lookup_with_hash(keywords, buf2, c.hash)))
 					c.success = *iptr;
-				/* preprocessor defines */
-				else if ((substitution = hashtab_lookup_with_hash(cpp_defines, buf2, c.hash))) {
-					/* tokenize the substitution string separately then splice it in */
-					sub_toks = tokenize(substitution, cpp_defines);
-					for (i = 0; sub_toks[i].start != NULL; ++i)
-						toks[tok_count++] = sub_toks[i];
-					goto advance;
-				}
 			}
 
 			/*

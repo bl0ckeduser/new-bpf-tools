@@ -3,7 +3,7 @@
  * and now also 32-bit x86. It could easily
  * target other things given sufficient time.
  *
- * by Bl0ckeduser, December 2012 - February 2014
+ * by Bl0ckeduser, December 2012 - ......
  * Enjoy !
  */
 
@@ -109,12 +109,6 @@ exp_tree_t run_core_tasks(void)
 	#endif
 
 	/*
-	 * Run preprocessor, and collect
-	 * defines in `cpp_defines' hash table.
-	 */
-	preprocess(&buf, cpp_defines);
-
-	/*
 	 * (!!!) Compatibility hacks for
 	 * some commonly-used things
 	 */
@@ -123,10 +117,16 @@ exp_tree_t run_core_tasks(void)
 	hashtab_insert(cpp_defines, "EOF", my_strdup("-1"));
 
 	/*
+	 * Run preprocessor, and collect
+	 * defines in `cpp_defines' hash table.
+	 */
+	preprocess(&buf, cpp_defines);
+
+	/*
 	 * Tokenize the inputted code
 	 */
 	setup_tokenizer();
-	tokens = tokenize(buf, cpp_defines);
+	tokens = tokenize(buf);
 
 	#ifdef DEBUG
 		/*

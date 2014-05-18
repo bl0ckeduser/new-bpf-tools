@@ -17,7 +17,7 @@ typedef struct token {
 
 extern char **code_lines;
 
-token_t* tokenize(char *string, hashtab_t *cpp_defines);
+token_t* tokenize(char *string);
 void setup_tokenizer(void);
 
 #endif
