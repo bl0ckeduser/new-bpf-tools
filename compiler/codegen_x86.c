@@ -4158,7 +4158,8 @@ char* codegen(exp_tree_t* tree)
 	 */
 	if (tree->head_type == INC || tree->head_type == DEC) {
 		fake_tree = new_exp_tree(ASGN, NULL);
-		fake_tree_2 = new_exp_tree(tree->head_type == INC ? ADD : SUB, NULL);
+		fake_tree_2 = new_exp_tree(tree->head_type == INC ? 
+			ADD : SUB, NULL);
 		add_child(&fake_tree_2, tree->child[0]);
 		add_child(&fake_tree_2, alloc_exptree(one_tree));
 		add_child(&fake_tree, tree->child[0]);
@@ -4176,7 +4177,8 @@ char* codegen(exp_tree_t* tree)
 		sto = registerize(codegen(tree->child[0]));
 		/* code the bump by emitting a "X = X + 1" tree */
 		fake_tree = new_exp_tree(ASGN, NULL);
-		fake_tree_2 = new_exp_tree(tree->head_type == POST_INC ? ADD : SUB, NULL);
+		fake_tree_2 = new_exp_tree(tree->head_type == POST_INC ?
+			ADD : SUB, NULL);
 		add_child(&fake_tree_2, tree->child[0]);
 		add_child(&fake_tree_2, alloc_exptree(one_tree));
 		add_child(&fake_tree, tree->child[0]);
@@ -4312,13 +4314,14 @@ char* codegen(exp_tree_t* tree)
 			} else if (tree->child[i]->head_type == NUMBER) {
 				str = registerize(sto);
 				printf("%s $%s, %s\n", 
-					oper, get_tok_str(*(tree->child[i]->tok)), str);
+					oper, get_tok_str(*
+						(tree->child[i]->tok)), str);
 				if (stackstor) {
-					printf("movl %s, %s\n", str, sto);			
+					printf("movl %s, %s\n", str, sto);
 					free_temp_reg(str);
 				}
 			} else {
-				/* general case. note that codegen() always gives an int */
+				/* general case */
 				str = registerize(codegen(tree->child[i]));
 				str2 = registerize(sto);
 				printf("%s %s, %s\n", oper, str, str2);
@@ -4362,7 +4365,7 @@ char* codegen(exp_tree_t* tree)
 		}
 		if (ts_used[3]) {	/* EDX in use ? */
 			sav2 = get_temp_mem();
-			printf("movl %%edx, %s\n", sav2);			
+			printf("movl %%edx, %s\n", sav2);
 		}
 		ts_used[0] = ts_used[3] = 1;
 		/* code the dividend */
@@ -4443,8 +4446,8 @@ char* codegen(exp_tree_t* tree)
 	 * but perhaps shouldn't
 	 */
 	if (tree->head_type == IF) {
-		int else_ret;			/* a flag raised when the "else return"
-						 * pattern is detected and can be optimized */
+		int else_ret;	/* a flag raised when the "else return"
+				* pattern is detected and can be optimized */
 		lab1 = intl_label++;
 		lab2 = intl_label++;
 		/* codegen the conditional */
@@ -4624,7 +4627,8 @@ char* codegen(exp_tree_t* tree)
 	 */
 	/*
 	if (findtok(tree)) {
-		compiler_warn("I don't yet know how to code this", findtok(tree), 0, 0);
+		compiler_warn("I don't yet know how to code this", 
+			findtok(tree), 0, 0);
 		fprintf(stderr, "\n\n");
 	}
 	*/
@@ -4674,8 +4678,8 @@ char* cheap_relational(exp_tree_t* tree, char *oppcheck)
  */
 char* optimized_if(exp_tree_t* tree, char *oppcheck)
 {
-	int else_ret;			/* a flag raised when the "else return"
-					 * pattern is detected and can be optimized */
+	int else_ret;		/* a flag raised when the "else return"
+				 * pattern is detected and can be optimized */
 	char *str, *str2, *sto, *sto2;
 	int lab1 = intl_label++;
 	int lab2 = intl_label++;
