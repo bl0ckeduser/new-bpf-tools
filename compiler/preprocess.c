@@ -12,6 +12,17 @@
 
 extern char* current_file;
 
+/*
+ * e.g. 
+ * #define DONALD(x,y) x+y
+ */
+typedef struct {
+	char *name;		/* e.g. DONALD */
+	char *body;		/* e.g. x+y */
+	char argc;		/* e.g. 2 */
+	char *argv[32];	/* e.g. &{"x","y"} */
+} parameterized_macro_entry_t;
+
 char result[2048];
 char substituted_result[2048];
 
@@ -52,10 +63,12 @@ void linemarker(extensible_buffer_t *dest, int line_number, char *current_file)
 
 void preprocess(char **src, hashtab_t* defines)
 {
-	extern int iterate_preprocess(hashtab_t*, char**, int);
+	extern int iterate_preprocess(hashtab_t*, hashtab_t*, char**, int);
 	int first = 1;
 
-	while (iterate_preprocess(defines, src, first))
+	hashtab_t *parameterized_defines = new_hashtab();
+
+	while (iterate_preprocess(defines, parameterized_defines, src, first))
 		if (first)
 			first = !first;
 }
@@ -186,7 +199,9 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr, hashtab_t *defines)
 	return &result[0];
 }
 
-int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
+int iterate_preprocess(hashtab_t *defines, 
+		       hashtab_t *parameterized_defines,
+		       char **src, int first_pass)
 {
 	int needs_further_preprocessing = 0;
 	char *p;
@@ -198,6 +213,8 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 	char error_message_buffer[256];
 	char define_key[128];
 	char define_val[256];
+	char arg_name[256];
+	char *arg_ptr;
 	int line_number = 1;
 	char include_file_buffer[128];
 	char *include_file;
@@ -207,6 +224,9 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 	int depth;
 	char *oldp;
 	int keep;
+	int i, j, k;
+	int lex_state;
+	parameterized_macro_entry_t macro_entry;
 	extensible_buffer_t *new_src = new_extensible_buffer();
 	enum {
 		INCLUDE_PATH_LOCAL,	/* "foo.h" */
@@ -253,11 +273,69 @@ int iterate_preprocess(hashtab_t *defines, char **src, int first_pass)
 				readtoken(define_key, &p);
 				eatwhitespace(&p);
 				readlinetoken(define_val, &p);
-				hashtab_insert(defines, define_key, my_strdup(define_val));
-				#ifdef DEBUG
-					fprintf(stderr, "CPP: define `%s' => `%s'\n",
-						define_key, define_val);
-				#endif
+				/*
+				 * But wait, is it a parameterized define ?
+				 *
+				 * On an unrelated note: about a month back, I went to the
+				 * grillades restaurant, and after I had gazed 
+				 * at the interesting kitchen instruments (there's a stove, 
+				 * rotating meat brochette things, and like these flames in 
+				 * the stove, and these pipes that are carrying what I suppose
+				 * must be gas for the stove) for several minutes, 
+				 * a man said: ``your sandwich is ready''. It was a good
+				 * sandwich.
+				 */
+				if (strstr(define_key, "(") && strstr(define_key, ")")) {
+					/*
+					 * Yes, it is a parameterized define
+					 */
+					q = define_key;
+					macro_entry.argc = 0;
+					lex_state = 0;
+					while (*q) {
+						if (lex_state == 1) {
+							if (*q == ',') {
+								*arg_ptr = 0;
+								macro_entry.argv[macro_entry.argc-1] = my_strdup(arg_name);
+								++macro_entry.argc;
+								arg_ptr = &arg_name[0];
+								*arg_ptr = 0;
+							} else if (*q != ')') {
+								*arg_ptr++ = *q;
+							}
+						}
+						if (*q == '(') {
+							*q = 0;
+							macro_entry.name = my_strdup(define_key);
+							arg_ptr = &arg_name[0];
+							*arg_ptr = 0;
+							lex_state = 1;
+							++macro_entry.argc;
+						}
+						if (*q == ')' && lex_state == 1) {
+							*arg_ptr = 0;
+							macro_entry.argv[macro_entry.argc-1] = my_strdup(arg_name);
+							break;
+						}
+						++q;
+					}
+					#ifdef DEBUG
+						fprintf(stderr, "------- parameterized define -------\n");
+						for (i = 0; i < macro_entry.argc; ++i) {
+							fprintf(stderr, "arg %d: %s\n", i, macro_entry.argv[i]);
+						} 
+						fprintf(stderr, "------------------------------------\n");
+					#endif
+				} else {
+					/*
+					 * No, it is not a parameterized define
+					 */
+					hashtab_insert(defines, define_key, my_strdup(define_val));
+					#ifdef DEBUG
+						fprintf(stderr, "CPP: define `%s' => `%s'\n",
+							define_key, define_val);
+					#endif
+				}
 			} else if (!strcmp(directive, "undef")) {
 				eatwhitespace(&p);
 				readtoken(define_key, &p);
