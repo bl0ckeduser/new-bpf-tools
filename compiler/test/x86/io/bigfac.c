@@ -1,8 +1,8 @@
 /*
  * Big factorial
  *
- * This test file is based on program I wrote when I was
- * more noobish than now (i.e. last year)
+ * This test file is based on program which I wrote in
+ * April 2012 (at which point I was much more noobish than now)
  * that calculates factorials even if
  * they are several digits long. (maximum 1000 digits).
  *
