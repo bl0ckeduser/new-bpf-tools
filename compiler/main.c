@@ -232,7 +232,7 @@ int main(int argc, char** argv)
 		sprintf(opt, "");
 		for (i = 1; i < argc; ++i) {
 			if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "--version")) {
-				printf("This is the wannabe C compiler command, version 0.6\n");
+				printf("This is the wannabe C compiler command, version 0.6 (19 may 2014)\n");
 				printf("programmed by bl0ckeduser, 2012-2014\n");
 				printf("<https://github.com/bl0ckeduser/new-bpf-tools>\n\n");
 				printf("Usage: wcc filename.c... [-o target] [-Ddef[=val]]... [-w]\n\n");
