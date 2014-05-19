@@ -5,7 +5,8 @@
 
 - #define macros, e.g.
 	
-	 #define foo(X,Y) x + y
+	 #define foo(X,Y) x + y			<--- DONE 2014-05-19
+							(easier ones working)
 
 - wcc -w flag					<--- DONE 2014-04-30
 
