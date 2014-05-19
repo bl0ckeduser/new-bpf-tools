@@ -119,16 +119,28 @@ void readtoken2(char *dest, char **p)
 	*q = 0;
 }
 
-char *preprocess_get_substituted_line(char **source_ptr_ptr, hashtab_t *defines)
+char *preprocess_get_substituted_line(char **source_ptr_ptr, 
+				      hashtab_t *defines, 
+				      hashtab_t *parameterized_defines,
+				      hashtab_t *macro_subst)
 {
 	char token[256];
 	char *substitution;
+	parameterized_macro_entry_t *param_subst;
+	hashtab_t *macros;
 	char *p = &result[0];
+	char argval[32][128];
 	char *q;
+	char *r;
 	int substitution_occured;
 	int hash;
 	int first;
 	int in_string;
+	int argn;
+	char *result_copy, *result_copy_2, *current_copy;
+	int i;
+	int depth = 0;
+
 	/*
 	 * Copy the line to the line buffer
 	 */
@@ -137,6 +149,7 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr, hashtab_t *defines)
 	if (**source_ptr_ptr && **source_ptr_ptr == '\n')
 		*p++ = *((*source_ptr_ptr)++);
 	*p = 0;
+
 	/*
 	 * Perform substitutions repeatedly
 	 */
@@ -177,20 +190,92 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr, hashtab_t *defines)
 				in_string = !in_string;
 			}
 			/*
-			 * XXX: at this point we would want to check
+			 * At this point we would want to check
 			 * if the token successfully looks up
 			 * in a table of parameterized macros,
 			 * then check for a left paren,
 			 * then gobble up the list of arguments
 			 * and so forth.
 			 */
-			if (!in_string && !hash && *token && identchar(*token) 
-			    && (substitution = hashtab_lookup(defines, &token[0]))) {
-				substitution_occured = 1;
-				strcat(substituted_result, substitution);
-			} else if (*token) {
+			if (!in_string && !hash && *token && identchar(*token)) {
+				if((macro_subst && (substitution = hashtab_lookup(macro_subst, &token[0]))) 
+				    || (substitution = hashtab_lookup(defines, &token[0]))) {
+					substitution_occured = 1;
+					strcat(substituted_result, substitution);
+					continue;
+				} else if ((param_subst = hashtab_lookup(parameterized_defines, &token[0]))) {
+					#ifdef DEBUG
+						fprintf(stderr, "param def\n");
+					#endif
+					eatwhitespace(&p);
+					if (*p != '(')
+						fail("parenthesis expected after macro #define name");
+					++p;
+					argn = 0;
+					depth = 0;
+					while (*p && *p != '\n' && *p != ')') {
+						r = &argval[argn][0];
+						while (!((*p == ',' && depth == 0) || (*p==')' && depth == 0))) {
+							if (*p == '(')
+								++depth;
+							if (*p == ')')
+								--depth;
+							*r++ = *p++;
+						}
+						*r = 0;
+						if (*p == ',')
+							++p;
+						#ifdef DEBUG
+							fprintf(stderr, "arg %d: %s\n", argn, argval[argn]);
+						#endif
+						++argn;
+					}
+					if (*p == ')')
+						++p;
+					/*
+					 * Make a new table with substiutions from
+					 * the argument formal names to their values
+					 * given here, and substitute the body of the 
+					 * macro using it.
+					 */
+					
+					result_copy = malloc(2048);
+					current_copy = malloc(2048);
+					strcpy(current_copy, substituted_result);
+					strcpy(result_copy, param_subst->body);
+					#ifdef DEBUG
+						fprintf(stderr, "rc: %s\n", result_copy);
+					#endif
+					result_copy_2 = result_copy;
+
+					macros = new_hashtab();
+
+					for (i = 0; i < param_subst->argc; ++i)
+						hashtab_insert(macros, 
+							       param_subst->argv[i],
+							       argval[i]);
+					
+					(void)preprocess_get_substituted_line(&result_copy_2,
+									       defines,
+									       parameterized_defines,
+									       macros);
+
+					strcat(current_copy, result);
+					strcpy(substituted_result, current_copy);
+
+					free(current_copy);
+					free(result_copy);
+
+					#ifdef DEBUG			
+						fprintf(stderr, "r: %s\n", result);
+						fprintf(stderr, "sr: %s\n", substituted_result);
+					#endif
+
+					continue;
+				}
+			}			
+			if (*token)
 				strcat(substituted_result, token);
-			}
 		}
 		first = 0;
 		strcpy(result, substituted_result);
@@ -227,6 +312,7 @@ int iterate_preprocess(hashtab_t *defines,
 	int i, j, k;
 	int lex_state;
 	parameterized_macro_entry_t macro_entry;
+	parameterized_macro_entry_t *macro_entry_ptr;
 	extensible_buffer_t *new_src = new_extensible_buffer();
 	enum {
 		INCLUDE_PATH_LOCAL,	/* "foo.h" */
@@ -247,7 +333,7 @@ int iterate_preprocess(hashtab_t *defines,
 		eatwhitespace(&source_ptr);
 
 		/* fetch a new line */
-		p = preprocess_get_substituted_line(&source_ptr, defines);
+		p = preprocess_get_substituted_line(&source_ptr, defines, parameterized_defines, NULL);
 
 		/* check for a directive */
 		if (*p == '#') {
@@ -319,13 +405,19 @@ int iterate_preprocess(hashtab_t *defines,
 						}
 						++q;
 					}
+					macro_entry.body = my_strdup(define_val);
 					#ifdef DEBUG
 						fprintf(stderr, "------- parameterized define -------\n");
+						fprintf(stderr, "name: %s\n", macro_entry.name);
+						fprintf(stderr, "body: %s\n", macro_entry.body);
 						for (i = 0; i < macro_entry.argc; ++i) {
 							fprintf(stderr, "arg %d: %s\n", i, macro_entry.argv[i]);
 						} 
 						fprintf(stderr, "------------------------------------\n");
 					#endif
+					macro_entry_ptr = malloc(sizeof(parameterized_macro_entry_t));
+					*macro_entry_ptr = macro_entry;
+					hashtab_insert(parameterized_defines, macro_entry.name, macro_entry_ptr);
 				} else {
 					/*
 					 * No, it is not a parameterized define
@@ -419,7 +511,7 @@ int iterate_preprocess(hashtab_t *defines,
 				++line_number;
 
 				/* fetch a new line */
-				p = preprocess_get_substituted_line(&source_ptr, defines);
+				p = preprocess_get_substituted_line(&source_ptr, defines, parameterized_defines, NULL);
 
 				/*
 				 * Here we only mind with the current depth,
@@ -489,7 +581,7 @@ int iterate_preprocess(hashtab_t *defines,
 					}
 
 					/* fetch a new line */
-					p = preprocess_get_substituted_line(&source_ptr, defines);
+					p = preprocess_get_substituted_line(&source_ptr, defines, parameterized_defines, NULL);
 				}
 
 			} else {
