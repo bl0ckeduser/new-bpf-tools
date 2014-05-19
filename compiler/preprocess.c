@@ -637,23 +637,3 @@ int iterate_preprocess(hashtab_t *defines,
 	return needs_further_preprocessing;
 }
 
-/*
-	./wcc -DTEST_CPP preprocess.c hashtable.c general.c -o testcpp
-	./testcpp
-
-	yes indeed, partial selfcompilation
-*/
-#ifdef TEST_CPP
-	int main(int argc, char **argv)
-	{
-		hashtab_t *tab = new_hashtab();
-		char *foo = my_strdup( 
-			"#define FOO 1 + 2 * 3\nint x = FOO;\n"
-			"#define THING\n"
-			"#include \"bob.h\""
-		);
-		(void)preprocess(&foo, tab);
-		printf("-----------------\n");
-		puts(foo);
-	}
-#endif
