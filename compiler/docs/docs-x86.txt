@@ -492,6 +492,8 @@ elements are C syntax.
 		 If you use the parameterized mode, your macro "call"
 		 can't span several lines
 
+		 In parameterized mode you can use the crazy ## operator
+
 	    - #ifdef, #ifndef, #else, #endif
 
 		e.g.

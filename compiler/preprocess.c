@@ -139,6 +139,7 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 	int argn;
 	char *result_copy, *result_copy_2, *current_copy;
 	int i;
+	char *lookahead;
 	int depth = 0;
 
 	/*
@@ -162,6 +163,19 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 		*q = 0;
 		in_string = 0;
 		while (*p) {
+			/*
+			 * If this is a macro substitution we're doing
+			 * and the next token is the ## glue operator,
+			 * then the next occurence of whitespace will not be
+			 * copied over.
+			 */
+			lookahead = p;
+			eatwhitespace(&lookahead);
+			if (macro_subst && *lookahead == '#' && lookahead[1] == '#')
+				p = lookahead;
+			/*
+			 * Copying whitespace from the source
+		 	 */
 			while (*p && (*p == ' ' || *p == '\t' || *p == '\n')) {
 				token[0] = *p;
 				token[1] = 0;
@@ -173,6 +187,7 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 			 */
 			if (first && *p == '#') {
 				strcat(substituted_result, "#");
+				fprintf(stderr, "fucking hash\n");
 				hash = 1;
 				++p;
 			}
@@ -188,6 +203,16 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 			if (*token && *token == '"'
 			    && !(p != &result[0] && *(p-1) == '\\')) {
 				in_string = !in_string;
+			}
+			/*
+			 * Consume a ## glue operator and skip
+			 * copying the whitespace after it if we're doing
+			 * a macro substitution.
+			 */
+			if (macro_subst && !identchar(*token) && *token == '#' && *p == '#') {
+				++p;
+				eatwhitespace(&p);
+				continue;
 			}
 			/*
 			 * At this point we would want to check
@@ -276,8 +301,8 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 			}			
 			if (*token)
 				strcat(substituted_result, token);
+			first = 0;
 		}
-		first = 0;
 		strcpy(result, substituted_result);
 	} while (substitution_occured);
 	
@@ -351,8 +376,8 @@ int iterate_preprocess(hashtab_t *defines,
 			#endif
 			
 			/*
-			 * XXX: TODO: #define macro mode,
-			 * #if, #elif, #error, #pragma, ##, ...
+			 * XXX: TODO:
+			 * #if, #elif, #error, #pragma, ...
 			 */
 			if (!strcmp(directive, "define")) {
 				eatwhitespace(&p);

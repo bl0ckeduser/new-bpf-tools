@@ -1,11 +1,5 @@
 0.6 - XXX - in progress, not done yet but starting to write the log
 
-- basic support for parameterized #define's (see  test/x86/pdef.c)
-- fix register leakage in array initializer coding
-- indentation cleanups
-- implement type analysis for sizeof(variable) expressions
-  (needed if you want to do e.g. sizeof(some_array) / sizeof(int))
-- update documentation
 - preprocessor: implement #undef
 - preprocessor: incremental #define substitutions
   (this is a pretty subtle case of making the preprocessor behave
@@ -13,6 +7,15 @@
   test/x86/undef.c for details. in a nuthsell, you can
   #define something, then succesfully use that #define, and 
   then #undef it.)
+- preprocessor: basic support for parameterized #define's 
+  (see test/x86/pdef.c)
+- preprocessor: implement ## concatenation operator 
+  for use in parameterized #defines
+- x86: fix register leakage in array initializer coding
+- indentation cleanups
+- implement type analysis for sizeof(variable) expressions
+  (needed if you want to do e.g. sizeof(some_array) / sizeof(int))
+- update documentation
 
 -----------------------------------------------------------------------
 
