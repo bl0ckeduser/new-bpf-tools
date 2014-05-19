@@ -187,7 +187,6 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 			 */
 			if (first && *p == '#') {
 				strcat(substituted_result, "#");
-				fprintf(stderr, "fucking hash\n");
 				hash = 1;
 				++p;
 			}
