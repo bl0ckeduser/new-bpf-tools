@@ -1,5 +1,6 @@
 0.6 - XXX - in progress, not done yet but starting to write the log
 
+- basic support for parameterized #define's (see  test/x86/pdef.c)
 - fix register leakage in array initializer coding
 - indentation cleanups
 - implement type analysis for sizeof(variable) expressions

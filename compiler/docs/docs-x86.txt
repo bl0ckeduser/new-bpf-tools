@@ -484,9 +484,13 @@ elements are C syntax.
 	
 	Currently supported features:	
 
-	    - #define without macro substitution
+	    - #define, with basic parameter substitutions working
 
 		e.g. #define SYMBOLIC_CONSTANT (3 + 2 + 3)
+		     #define SUM(A,B) A+B
+		
+		 If you use the parameterized mode, your macro "call"
+		 can't span several lines
 
 	    - #ifdef, #ifndef, #else, #endif
 
