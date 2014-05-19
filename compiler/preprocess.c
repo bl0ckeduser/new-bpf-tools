@@ -137,10 +137,11 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 	int first;
 	int in_string;
 	int argn;
-	char *result_copy, *result_copy_2, *current_copy;
+	char *result_copy, *result_copy_2, *current_copy, *source_copy;
 	int i;
 	char *lookahead;
 	int depth = 0;
+	int stringify;
 
 	/*
 	 * Copy the line to the line buffer
@@ -149,6 +150,10 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 		*p++ = *((*source_ptr_ptr)++);
 	if (**source_ptr_ptr && **source_ptr_ptr == '\n')
 		*p++ = *((*source_ptr_ptr)++);
+
+	/*
+	 * Null-terminate the line in the line buffer
+	 */
 	*p = 0;
 
 	/*
@@ -163,6 +168,7 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 		*q = 0;
 		in_string = 0;
 		while (*p) {
+			stringify = 0;
 			/*
 			 * If this is a macro substitution we're doing
 			 * and the next token is the ## glue operator,
@@ -197,6 +203,7 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 			 * made up of identifier characters, try to
 			 * substitute it for a #define
 			 */
+get_token:
 			*token = 0;
 			readtoken2(&token[0], &p);
 			if (*token && *token == '"'
@@ -214,6 +221,13 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 				continue;
 			}
 			/*
+			 * Stringification in macro substitutions
+			 */
+			if (macro_subst && !identchar(*token) && *token == '#') {
+				stringify = 1;
+				goto get_token;
+			}
+			/*
 			 * At this point we would want to check
 			 * if the token successfully looks up
 			 * in a table of parameterized macros,
@@ -225,12 +239,13 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 				if((macro_subst && (substitution = hashtab_lookup(macro_subst, &token[0]))) 
 				    || (substitution = hashtab_lookup(defines, &token[0]))) {
 					substitution_occured = 1;
+					if (stringify)
+						strcat(substituted_result, "\"");
 					strcat(substituted_result, substitution);
+					if (stringify)
+						strcat(substituted_result, "\"");
 					continue;
 				} else if ((param_subst = hashtab_lookup(parameterized_defines, &token[0]))) {
-					#ifdef DEBUG
-						fprintf(stderr, "param def\n");
-					#endif
 					eatwhitespace(&p);
 					if (*p != '(')
 						fail("parenthesis expected after macro #define name");
@@ -249,9 +264,6 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 						*r = 0;
 						if (*p == ',')
 							++p;
-						#ifdef DEBUG
-							fprintf(stderr, "arg %d: %s\n", argn, argval[argn]);
-						#endif
 						++argn;
 					}
 					if (*p == ')')
@@ -265,11 +277,11 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 					
 					result_copy = malloc(2048);
 					current_copy = malloc(2048);
+					source_copy = malloc(2048);
 					strcpy(current_copy, substituted_result);
 					strcpy(result_copy, param_subst->body);
-					#ifdef DEBUG
-						fprintf(stderr, "rc: %s\n", result_copy);
-					#endif
+					strcpy(source_copy, result);
+
 					result_copy_2 = result_copy;
 
 					macros = new_hashtab();
@@ -285,15 +297,12 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 									       macros);
 
 					strcat(current_copy, result);
+					strcpy(result, source_copy);
 					strcpy(substituted_result, current_copy);
 
 					free(current_copy);
 					free(result_copy);
-
-					#ifdef DEBUG			
-						fprintf(stderr, "r: %s\n", result);
-						fprintf(stderr, "sr: %s\n", substituted_result);
-					#endif
+					free(source_copy);
 
 					continue;
 				}
@@ -304,7 +313,7 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 		}
 		strcpy(result, substituted_result);
 	} while (substitution_occured);
-	
+
 	return &result[0];
 }
 
@@ -430,15 +439,6 @@ int iterate_preprocess(hashtab_t *defines,
 						++q;
 					}
 					macro_entry.body = my_strdup(define_val);
-					#ifdef DEBUG
-						fprintf(stderr, "------- parameterized define -------\n");
-						fprintf(stderr, "name: %s\n", macro_entry.name);
-						fprintf(stderr, "body: %s\n", macro_entry.body);
-						for (i = 0; i < macro_entry.argc; ++i) {
-							fprintf(stderr, "arg %d: %s\n", i, macro_entry.argv[i]);
-						} 
-						fprintf(stderr, "------------------------------------\n");
-					#endif
 					macro_entry_ptr = malloc(sizeof(parameterized_macro_entry_t));
 					*macro_entry_ptr = macro_entry;
 					hashtab_insert(parameterized_defines, macro_entry.name, macro_entry_ptr);

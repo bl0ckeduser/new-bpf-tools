@@ -11,6 +11,8 @@
   (see test/x86/pdef.c)
 - preprocessor: implement ## concatenation operator 
   for use in parameterized #defines
+- preprocessor: stringification # operator for use in parameterized defines 
+  (see https://gcc.gnu.org/onlinedocs/cpp/Stringification.html#Stringification)
 - x86: fix register leakage in array initializer coding
 - indentation cleanups
 - implement type analysis for sizeof(variable) expressions
