@@ -15,11 +15,11 @@
  * use a hash table.
  *
  * Okay this is kind of messy, but what it boils down
- * to is: a graph whose edges are characters and nodes
- * "states", and where egde-crossing deterministically
+ * to is: a graph whose edges are characters, and whose nodes
+ * are "states", and where egde-crossing deterministically
  * leads you to a magic "state-node" that tells you what
  * token your little character edge-walk just made up.
- * (or if it doesn't then it's an error!)
+ * (or if it doesn't then matching failed and it's an error!)
  * It was far messier (and slower, etc) 
  * last year before I spent some time cleaning it up.
  *
