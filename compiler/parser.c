@@ -1879,7 +1879,7 @@ exp_tree_t e0_3(void)
 /*
  *	e0_4 := 
  *		'sizeof' '(' cast-type ')'
- *		| 'sizeof' expr
+ *		| 'sizeof' e1
  *		| ident '(' expr1, expr2, exprN ')'
  *		| '(' expr ')'
  *		| lvalue
@@ -1895,6 +1895,7 @@ exp_tree_t e0_4(void)
 	token_t tok = peek();
 	int neg = 0;
 	int paren;
+	int sav_indx;
 
 	/*
 	 * sizeof expr
@@ -1907,6 +1908,7 @@ exp_tree_t e0_4(void)
 		 * as sizeof an non-existent variable "foo_t"
 		 */
 		adv();
+		sav_indx = indx;
 		tree = new_exp_tree(SIZEOF, NULL);
 		if (peek().type == TOK_LPAREN) {
 			adv();
@@ -1914,8 +1916,18 @@ exp_tree_t e0_4(void)
 		} else paren = 0;
 		if (valid_tree((subtree = cast_type())))
 			add_child(&tree, alloc_exptree(subtree));
-		else if (valid_tree((subtree = expr())))
-			add_child(&tree, alloc_exptree(subtree));
+		else {
+			/*
+			 * Parentheses (if any) have precedence-forcing meaning if
+			 * it's an expression rather than a type,
+			 * so backtrack to the point in the tokenstream
+			 * before the parentheses were eaten
+			 */
+			paren = 0;
+			indx = sav_indx;
+			if (valid_tree((subtree = e1())))
+				add_child(&tree, alloc_exptree(subtree));
+		}
 		if (paren)
 			need(TOK_RPAREN);
 		return tree;

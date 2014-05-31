@@ -1,3 +1,11 @@
+0.7 - [NOT TAGGED, RELEASED, OR EXISTING IN ANY WAY YET,
+      BUT I START TO WRITE THE CHANGELOG IN ADVANCE]
+
+- fix precedence and correct parsing of `sizeof' operator
+- add findkth.c test case for the above (a nice little algorithm, to boot)
+
+-----------------------------------------------------------------------
+
 0.6 - 19 May 2014
 
 - i should really stop wasting my time on this

@@ -166,7 +166,7 @@ e0_3 :=
 	| e0_4
 
 e0_4 := 'sizeof' cast-type
-	'sizeof' expr
+	'sizeof' e1
 	ident '(' expr1, expr2, exprN ')'
 	| '(' expr ')'
 	| lvalue

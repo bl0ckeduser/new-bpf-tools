@@ -24,6 +24,8 @@
 
 sizeof is not quite up to par...
 
+		*** FIXED 2014-05-31 ***
+
 
 for (i = 0; i < sizeof donald / sizeof(int); ++i)
                        ^
