@@ -19,3 +19,69 @@
 - block scope
 
 - declaration in initializer in for-loop
+
+--------------------------------------
+
+sizeof is not quite up to par...
+
+
+for (i = 0; i < sizeof donald / sizeof(int); ++i)
+                       ^
+E: hw4-3.c: 59: please don't use pointers in incomprehensible ways
+
+AST trace:
+
+$ wcc --ast
+for (i = 0; i < sizeof donald / sizeof(int); ++i)
+		printf("%d ", donald[i]);
+	printf("\n");
+
+-------------------------------------------------------------
+(BLOCK 
+  (BLOCK 
+    (ASGN (VARIABLE:i) (NUMBER:0))
+  (WHILE (LT (VARIABLE:i) 
+    (SIZEOF (DIV (VARIABLE:donald) 
+                 (SIZEOF (CAST_TYPE (BASE_TYPE (INT_DECL))))))) 
+
+    (BLOCK 
+         (PROC_CALL:printf 
+                   (STR_CONST:"%d ") 
+                   (ARRAY (VARIABLE:donald) (VARIABLE:i))) 
+         (CONTLAB) 
+         (INC (VARIABLE:i))))) 
+  (PROC_CALL:printf (STR_CONST:"\n")))
+
+
+it's mis-parsing the sizeof part as: sizeof ( donald / sizeof(int) )
+should be: sizeof(donald) / sizeof(int)
+
+that sizeof fucker needs looser precedence i guess
+
+------------------------
+
+and it also fucks up when you mix it with commas:
+
+$ wcc --ast
+findKth(bar, 0, sizeof bar / sizeof(int) - 1, 4);
+
+(BLOCK 
+   (PROC_CALL:findKth 
+     (VARIABLE:bar) 
+     (NUMBER:0) 
+     (SIZEOF 
+        (SEQ 
+	    (SUB 
+                 (DIV 
+                    (VARIABLE:bar)
+                    (SIZEOF (CAST_TYPE (BASE_TYPE (INT_DECL))))) 
+                 (NUMBER:1)) 
+            (NUMBER:4)))))
+
+Again sizeof must be looser-precedence'd I guess
+
+It is misreading the above as: 
+
+	findKth(bar, 0, sizeof (bar / sizeof(int) - 1, 4 ));
+
+it's actually putting a comma-sequence into the sizeof!
