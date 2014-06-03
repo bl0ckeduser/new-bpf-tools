@@ -10,6 +10,7 @@
 #include "general.h"
 #include "preprocess.h"
 
+extern int shutup_warnings;
 extern char* current_file;
 
 /*
@@ -484,8 +485,10 @@ int iterate_preprocess(hashtab_t *defines,
 				}
 
 				if (include_type == INCLUDE_PATH_SYSTEM) {
-					fprintf(stderr, "warning: ignoring <%s> system include\n",
-						include_file);
+					if (!shutup_warnings) {
+						fprintf(stderr, "warning: ignoring <%s> system include\n",
+							include_file);
+					}
 					goto skip_include;
 				}
 
