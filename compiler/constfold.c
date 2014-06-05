@@ -192,7 +192,7 @@ void constfold(void *ptr)
 		&& et->child[0]->child_count
 		&& (et->head_type == MULT || et->head_type == ADD)) {
 
-		new = new_exp_tree(MULT, NULL);
+		new = new_exp_tree(et->head_type, NULL);
 		new_ptr = alloc_exptree(new);
 
 		below = et->child[0];	
