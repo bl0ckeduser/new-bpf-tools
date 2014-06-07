@@ -5,9 +5,8 @@
  */
 
 /* types */
-/* TODO: structs and whatever else */
 
-basic-type := 'int'
+basic-type := 'int' | 'char' | 'long' | 'void'
 
 /* ====================================================== */
 
@@ -28,6 +27,8 @@ decl := ['extern']
  * 	XXX: it should be possible to have constant
  *	     expressions like 1 * 2 + 3 in array initializers,
  *	     not just single integer literals
+ *	Note: this is done and handled by the int_const() routine
+ *            in the parser
  */	
 decl2 := { '*' } ident [ { ('[' [integer] ']') } ] ['=' initializer]
 
@@ -45,9 +46,6 @@ initializer := expr0
 struct-decl := 'struct' [ident] '{' decl ';' { decl ';' } '}'
 		| 'struct' [ident] decl2 { ','  decl2 } ';'
 
-/* TODO stuff like "struct derp* foo;" */
-/* above is probably handled at this point through decl2 */
-
 /* ========= enums ========== */
 
 enum-decl := 'enum' [identifier] '{' enumerator-list '}'
@@ -59,6 +57,7 @@ enumerator-list := identifier [ = constant ] { ',' identifier [ = constant ] }
 
 /* casts */
 /* TODO: non-basic types ... */
+/* non-basic types might be done at this point ? */
 
 /*
  *	(int *) p
