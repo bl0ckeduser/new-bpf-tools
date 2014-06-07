@@ -1243,10 +1243,10 @@ void run_codegen(exp_tree_t *tree)
 	 * re-initialize global counters
 	 */
 	syms = 0;			/* count */
-	symbytes = 0;		/* stack size in bytes */
-	globs = 0;	/* count */
-	arg_syms = 0;		/* count */
-	argbytes = 0;		/* total size in bytes */
+	symbytes = 0;			/* stack size in bytes */
+	globs = 0;			/* count */
+	arg_syms = 0;			/* count */
+	argbytes = 0;			/* total size in bytes */
 	proto_arg_syms = 0;		/* count */
 	proto_argbytes = 0;		/* total size in bytes */
 	funcdefs = 0;
