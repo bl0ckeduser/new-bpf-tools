@@ -173,10 +173,6 @@ char tm_used[TEMP_MEM];
 int proc_ok = 1;		/* this is used to prevent nested procedure defs
 			   	 * it is raised whenever a procedure is not being coded */
 
-int main_defined = 0;		/* this is set if user-defined main() exists */
-				/* (otherwise the main lexical body is treated
-				 * as "main", as in templeOS) */
-
 int ccid = 0;			/* internal label numbering,
 				 * used specifically for short-circuiting
 				 * booleans like || and && */
@@ -1222,35 +1218,6 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	printf("ret\n\n");
 }
 
-/*
- * Determine if main() is defined
- * in a user's program. (If it isn't,
- * all the code at function level
- * is considered the main(), like in
- * losethos/templeOS's modified 
- * C / C++ compiler, which is now
- * officially known as "HolyC")
- */
-int look_for_main(exp_tree_t *tree)
-{
-	int i;
-
-	if (tree->head_type == PROC) {
-		if (!strcmp(get_tok_str(*(tree->tok)),
-			     "main"))
-			return 1;
-	}
-
-	/* child-recursion */
-	for (i = 0; i < tree->child_count; ++i)
-		if (tree->child[i]->head_type == BLOCK
-		|| tree->child[i]->head_type == PROC)
-			if (look_for_main(tree->child[i]))
-				return 1;
-
-	return 0;
-}
-
 /* 
  * Entry point of the x86 codegen
  */
@@ -1285,7 +1252,6 @@ void run_codegen(exp_tree_t *tree)
 	funcdefs = 0;
 	named_structs = 0;
 	str_const_id = 0;
-	main_defined = 0;		/* this is set if user-defined main() exists */
 	ccid = 0;			/* internal label numbering, */
 	intl_label = 0; 		/* internal label numbering */
 	switch_count = 0;		/* index of a switch statement */
@@ -1373,11 +1339,6 @@ void run_codegen(exp_tree_t *tree)
 	 */
 	create_jump_tables(tree);
 	printf("\n");
-
-	/*
-	 * Find out if the user defined main()
-	 */
-	main_defined = look_for_main(tree);
 
 	/*
 	 * Do struct declarations in global lexical scope
