@@ -3,6 +3,8 @@
 
 - fix precedence and correct parsing of `sizeof' operator
 - add findkth.c test case for the above (a nice little algorithm, to boot)
+- x86: code dereferences in a more efficient way
+- add rot13.c test case for the above (prior to this, it failed to build)
 
 -----------------------------------------------------------------------
 

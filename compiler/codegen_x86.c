@@ -2801,8 +2801,6 @@ char* codegen(exp_tree_t* tree)
 			deref_typeof(tree_typeof(tree->child[0])));
 		
 		sto = registerize_siz(codegen(tree->child[0]), membsiz);
-		sto2 = get_temp_reg_siz(membsiz);
-
 
 		/* Check for crazy wack situations like *3 */
 		if (membsiz <= 0) {
@@ -2818,10 +2816,9 @@ char* codegen(exp_tree_t* tree)
 		 * gives ints */
 		printf("%s (%s), %s\n", 
 			move_conv_to_long(membsiz),
-			sto, sto2);
-		free_temp_reg(sto);
+			sto, sto);
 
-		return sto2;
+		return sto;
 	}
 
 	/* procedure call */
