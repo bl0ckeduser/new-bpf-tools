@@ -1949,7 +1949,13 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 
 				/*
 				 * There's some arithmetic computation involved in creating
-				 * array symbols, and create_array() deals with that
+				 * array symbols, and create_array() deals with that.
+				 * Specifically it deals with the fact that an n-element array of 
+				 * objects of type X is n times larger in memory than a plain-ass object of 
+				 * type X. To make things nastier, n needs to be computed as a product
+				 * of dimensions if the array is multi-dimensional:
+				 * e.g. if you have int matrix[3][2], n would be 6.
+				 * All that trouble is encapsulated in that routine.
 				 */
 				sym_num = create_array(symty, dc,
 					type2siz(array_base_type), arr_dim_prod(typedat) * objsiz,
