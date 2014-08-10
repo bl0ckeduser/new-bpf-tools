@@ -956,7 +956,7 @@ int str_const_add(token_t *tok)
 }
 
 /* 
- * Tree type -> arithmetic routine
+ * Arithmetic expression tree type -> x86 instruction
  * (this is for the easy general
  * cases -- division and remainders
  * need special attention on X86,
