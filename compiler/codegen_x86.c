@@ -1776,7 +1776,8 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				fprintf(stderr, "struct variable with base struct %s...\n", 
 					get_tok_str(*(tree->tok)));
 			#endif
-			/* parse the struct declaration syntax tree */
+			/* parse the struct declaration syntax tree 
+			 * (into a type descriptor structure) */
 			struct_base = struct_tree_2_typedesc(tree, &struct_bytes, &sd);
 			struct_base.struct_desc->bytes = struct_bytes;
 
