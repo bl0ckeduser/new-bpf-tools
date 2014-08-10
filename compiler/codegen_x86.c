@@ -1489,7 +1489,7 @@ void create_jump_tables(exp_tree_t* tree)
 	if (tree->head_type == SWITCH) {
 		/*
 		 * Memory allocation and initialization
-		 * -- boring run-of-the-millbureacratic stuff
+		 * -- boring run-of-the-mill bureacratic stuff
 		 */
 		caselab = malloc(1024 * sizeof(int));
 		if (!caselab)
