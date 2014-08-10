@@ -1956,6 +1956,8 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 				 * of dimensions if the array is multi-dimensional:
 				 * e.g. if you have int matrix[3][2], n would be 6.
 				 * All that trouble is encapsulated in that routine.
+				 * And it also deals with setting up the memory space and symbols
+				 * and whatnot.
 				 */
 				sym_num = create_array(symty, dc,
 					type2siz(array_base_type), arr_dim_prod(typedat) * objsiz,
@@ -1982,7 +1984,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 
 			/* 
 			 * Add type data to appropriate symbol table
-			 * (above we were taking care just of the name)
+			 * (above we were taking care just of the name,
+			 * and actually also the size, but not the type.
+			 * The type is potentially supercrucial!)
 			 */
 			if (symty == SYMTYPE_GLOBALS) {
 				globtyp[sym_num] = typedat;
