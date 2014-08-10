@@ -41,6 +41,8 @@ I haven't read the standard. I'm mostly looking at gcc's x86 output and
 imitating that. It's not going to give a professional-quality standard
 compiler but it will certainly be a good learning experience for me.
 
+This really really really isn't an optimizing compiler!
+
 -------------------------------------------------------------------------
 
 This compiler can also target my terrible old bytecode VM,
