@@ -1,5 +1,17 @@
-0.7 - [NOT TAGGED, RELEASED, OR EXISTING IN ANY WAY YET,
-      BUT I START TO WRITE THE CHANGELOG IN ADVANCE]
+0.7 - 23 August 2014
+
+mostly boring little bug fixes at this point. i am not going to do anything
+big (nor maybe anything at all) on this project any time soon. 
+i have reached my initial goal of writing a c compiler that could
+compile itself and handle a few features like structs and pointers.
+it don't think it would be trivial to turn this into an optimizing
+compiler. before making this tag i tested that it self-compiles and
+passes the tests on:
+
+	Linux 3.13.0-24-generic x86_64 / gcc 4.8.2
+	FreeBSD 9.0-RELEASE i386 / gcc 4.2.1	
+
+changes:
 
 - fix precedence and correct parsing of `sizeof' operator
 - add findkth.c test case for the above (a nice little algorithm, to boot)
