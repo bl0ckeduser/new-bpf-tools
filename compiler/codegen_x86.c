@@ -3183,7 +3183,8 @@ char* codegen(exp_tree_t* tree)
 		 * and also populate the argument type descriptions table
 		 */
 		custom_return_type = 0;
-		if (tree->child[0]->head_type == CAST_TYPE) {
+		if (tree->child[0]->head_type == CAST_TYPE 
+		    || tree->child[0]->head_type == STRUCT_DECL) {
 			custom_return_type = 1;
 			argl = tree->child[1];
 			compiler_warn("only int- or char- sized return types work",
