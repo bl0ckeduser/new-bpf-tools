@@ -37,9 +37,6 @@
 	neglecting the decimal `.'
 */
 
-/* XXX: hack to deal with lack of preprocessor in wannabe-compiler */
-int NULL = 0;
-
 /* bigint code herein is based on my earlier
    work on e.c, dated Sept. 30, 2012 */
 
