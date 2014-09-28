@@ -1,7 +1,5 @@
 /*
  * Preprocessor routine.
- * Returns a hash table containing #define token mappings.
- * Modifies source text found at provided character pointer.
  */
 
 #include <string.h>
