@@ -96,6 +96,20 @@ void readtoken(char *dest, char **p)
 	*q = 0;
 }
 
+void read_defkey_token(char *dest, char **p)
+{
+	char *q;
+	int paren = 0;
+	for (q = dest; **p && !(!paren && (**p == ' ' || **p == '\t')) && **p != '\n'; ++*p) {
+		if (**p == '(')
+			paren = 1;
+		if (paren && **p == ')')
+			paren = 0;
+		*q++ = **p;
+	}
+	*q = 0;
+}
+
 int identchar(char c)
 {
 	return (c >= 'a' && c <= 'z')
@@ -390,7 +404,7 @@ int iterate_preprocess(hashtab_t *defines,
 			 */
 			if (!strcmp(directive, "define")) {
 				eatwhitespace(&p);
-				readtoken(define_key, &p);
+				read_defkey_token(define_key, &p);
 				eatwhitespace(&p);
 				readlinetoken(define_val, &p);
 				/*
@@ -420,7 +434,7 @@ int iterate_preprocess(hashtab_t *defines,
 								++macro_entry.argc;
 								arg_ptr = &arg_name[0];
 								*arg_ptr = 0;
-							} else if (*q != ')') {
+							} else if (identchar(*q)) {
 								*arg_ptr++ = *q;
 							}
 						}
