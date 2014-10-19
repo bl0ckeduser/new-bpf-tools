@@ -20,6 +20,19 @@
 
 - declaration in initializer in for-loop
 
+-------------------------------------
+
+a nasty special case: consider some globals
+
+char out[1];
+void* outPointer = &out;
+
+
+it complains it needs a constant initializer
+
+&out is actually a constant, i guess, there should
+be a way out of this one
+
 --------------------------------------
 
 sizeof is not quite up to par...
