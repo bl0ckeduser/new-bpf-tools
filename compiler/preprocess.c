@@ -81,8 +81,19 @@ void eatwhitespace(char **p)
 void readlinetoken(char *dest, char **p)
 {
 	char *q;
-	for (q = dest; **p && **p != '\n'; ++*p)
-		*q++ = **p;
+	int prev = -1;
+	int ignore = 0;
+	for (q = dest; **p && **p != '\n'; ++*p) {
+		/* // comment kills the token */
+		if (prev > 0 && prev == '/' && **p == '/') {
+			*--q = 0;
+			ignore = 1;
+		}
+		if (!ignore) {
+			*q++ = **p;
+			prev = **p;
+		}
+	}
 	*q = 0;
 }
 
