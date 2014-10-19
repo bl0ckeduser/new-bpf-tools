@@ -97,7 +97,11 @@ enum {
 	TOK_DO
 };
 
-#define KW_COUNT 29
+#ifdef BPF_VM_TARGET
+	#define KW_COUNT 29
+#else
+	#define KW_COUNT 21
+#endif
 
 struct bpf_kw {
 	char *str;

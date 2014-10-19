@@ -212,14 +212,16 @@ void init_tokens(void)
 	kwtab_append( "int", TOK_INT );
 	kwtab_append( "void", TOK_VOID );
 	kwtab_append( "char", TOK_CHAR );
-	kwtab_append( "echo", TOK_ECHO );
-	kwtab_append( "draw", TOK_DRAW );
-	kwtab_append( "wait", TOK_WAIT );
-	kwtab_append( "cmx", TOK_CMX );
-	kwtab_append( "cmy", TOK_CMY );
-	kwtab_append( "mx", TOK_MX );
-	kwtab_append( "my", TOK_MY );
-	kwtab_append( "outputdraw", TOK_OD );
+	#ifdef BPF_VM_TARGET
+		kwtab_append( "echo", TOK_ECHO );
+		kwtab_append( "draw", TOK_DRAW );
+		kwtab_append( "wait", TOK_WAIT );
+		kwtab_append( "cmx", TOK_CMX );
+		kwtab_append( "cmy", TOK_CMY );
+		kwtab_append( "mx", TOK_MX );
+		kwtab_append( "my", TOK_MY );
+		kwtab_append( "outputdraw", TOK_OD );
+	#endif
 	kwtab_append( "else", TOK_ELSE );
 	kwtab_append( "goto", TOK_GOTO );
 	kwtab_append( "return", TOK_RET );
