@@ -85,6 +85,7 @@ enum {		/* head_type */
 	PROC_CALL_MEMCPY,
 	EXTERN_DECL,
 	DOWHILE,
+	SUB_MASKED,
 	/* special */
 	NULL_TREE
 };

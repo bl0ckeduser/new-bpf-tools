@@ -4213,7 +4213,38 @@ char* codegen(exp_tree_t* tree)
 	}
 
 	/* arithmetic */
-	if ((arith = arith_op(tree->head_type)) && tree->child_count) {
+	if (tree->head_type == SUB_MASKED || (arith = arith_op(tree->head_type))
+		&& tree->child_count) {
+
+		/*
+		 * A difference of two pointers is a special case:
+		 * then, as far as I can tell, you can do:
+		 * (pointerA - pointerB) / sizeof(*pointerA)
+		 * to get the correct value, which adjusts for the
+		 * multiplication effect by dividing.
+		 */
+		if (tree->head_type == SUB
+			&& tree->child_count == 2
+			&& (!tree_typeof(tree->child[0]).arr && tree_typeof(tree->child[0]).ptr)
+			&& (!tree_typeof(tree->child[1]).arr && tree_typeof(tree->child[1]).ptr)) {
+
+			exp_tree_t *special = alloc_exptree(new_exp_tree(DIV, tree->tok));
+			tree->head_type = SUB_MASKED;
+			add_child(special, tree);
+			exp_tree_t *szeof = alloc_exptree(new_exp_tree(SIZEOF, tree->tok));
+			exp_tree_t *deref = alloc_exptree(new_exp_tree(DEREF, tree->tok));
+			add_child(deref, tree->child[0]);
+			add_child(szeof, deref);
+			add_child(special, szeof);
+
+			return codegen(special);
+		}
+
+		if (tree->head_type == SUB_MASKED) {
+			arith = arith_op(SUB);
+			tree->head_type = SUB;
+		}
+
 		/* 
 		 * Set aside the temporary storage for the result
 		 * as a register if there's enough left to go through

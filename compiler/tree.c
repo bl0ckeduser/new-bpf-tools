@@ -105,6 +105,7 @@ void init_tree(void)
 		"PROC_CALL_MEMCPY",
 		"EXTERN_DECL",
 		"DOWHILE",
+		"SUB_MAKSED",
 		"NULL_TREE"
 	};
 
