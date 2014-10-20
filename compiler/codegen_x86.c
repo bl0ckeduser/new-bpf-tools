@@ -2210,6 +2210,13 @@ char* registerize(char *stor)
 	return str;
 }
 
+char* registerize_freemem(char *stor)
+{
+	char *reg = registerize(stor);
+	free_temp_mem(stor);
+	return reg;
+}
+
 /* 
  * Convert integer data of size `fromsiz' to int and move 
  * it into a new int register
@@ -4653,8 +4660,8 @@ char* cheap_relational(exp_tree_t* tree, char *oppcheck)
 {
 	char *sto, *sto2, *sto3;
 	char *str, *str2;
-	str = registerize(codegen(tree->child[0]));
-	str2 = registerize(codegen(tree->child[1]));
+	str = registerize_freemem(codegen(tree->child[0]));
+	str2 = registerize_freemem(codegen(tree->child[1]));
 	printf("cmpl %s, %s\n", str2, str);
 	free_temp_reg(str);
 	free_temp_reg(str2);
