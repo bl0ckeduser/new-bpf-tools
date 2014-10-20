@@ -35,6 +35,42 @@ be a way out of this one
 
 --------------------------------------
 
+
+another thing to improve: the naive && and || x86 coding
+chokes on this crappy old code i stupidly wrote in highschool:
+
+            if (( (strcmp(makeValidString(theString[currentChar]),"+")==0 && quotationMarks==0)
+                    || (strcmp(makeValidString(theString[currentChar]),"-")==0 && quotationMarks==0)
+                    || strcmp(makeValidString(theString[currentChar]),"%")==0
+                    || (strcmp(makeValidString(theString[currentChar]),"*")==0 && quotationMarks==0)
+                    || strcmp(makeValidString(theString[currentChar]),"\"")==0
+                    || (strcmp(makeValidString(theString[currentChar]),">")==0 && quotationMarks==0)
+                    || (strcmp(makeValidString(theString[currentChar]),"<")==0 && quotationMarks==0)
+                    || (strcmp(makeValidString(theString[currentChar]),"!")==0 && quotationMarks==0)
+                    || (strcmp(makeValidString(theString[currentChar]),"=")==0 && quotationMarks==0)
+                    || (strcmp(makeValidString(theString[currentChar]),"/")==0 && quotationMarks==0))
+                    && !spaceAdded)
+            {
+
+it runs out of registers
+
+we need to be clever about if (A && B && ...) patterns, and even recurse the shit
+out of it
+
+like... nested demorgan stuff ??
+
+to code if(A && B && ... ), code some stuff that jumps to a particular
+label (the else part) if any of A, B, ... are false
+
+and then inside that, say A = a || b || c || ... || 
+now the code should jump to that else/end-of-if label if any is true
+
+and so on.
+
+or maybe even just a small change will do the job
+
+-----------------------------------------
+
 sizeof is not quite up to par...
 
 		*** FIXED 2014-05-31 ***
