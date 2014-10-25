@@ -7,6 +7,19 @@
 - x86: fix temporary-stack-memory leak in relational operator coding
 - x86: better support for nasty global initializer
   (thanks alexfru for technical advice, also i'm a noob)
+- parser: silently consume constants inside the [] in an array 
+  argument type, e.g. (actual example for awful code i wrote when
+  i was in highschool and even more noobish)
+
+	void SetDictionaryContents(char contents[1024*1024*2])
+	{
+		...
+
+  is treated as
+
+	void SetDictionaryContents(char contents[])
+	{
+		...
 
 -----------------------------------------------------------------------
 
