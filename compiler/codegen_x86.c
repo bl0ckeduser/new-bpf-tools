@@ -204,6 +204,99 @@ int switch_maxlab[256];
 
 /* ====================================================== */
 
+void* checked_malloc(long s)
+{
+	void *ptr = malloc(s);
+	if (!ptr)
+		fail("malloc failed");
+	return ptr;
+}
+
+/*
+ * expand buffers if necessary
+ */
+void expandBuffers()
+{
+	int i;
+
+	if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
+		old_size = symtab_a;
+		while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
+			symtab_a *= 2;
+			symsiz_a *= 2;
+			symtyp_a *= 2;
+		}
+		symtab = realloc(symtab, symtab_a * sizeof(char *));
+		for (i = old_size; i < symtab_a; ++i) {
+			symtab[i] = checked_malloc(256);
+			*symtab[i] = '\0';
+		}
+		symsiz = realloc(symsiz, symsiz_a * sizeof(int));
+		symtyp = realloc(symtyp, symtyp_a * sizeof(typedesc_t));
+	}
+
+	if (globs >= globtab_a || globs >= globtyp_a) {
+		old_size = globtab_a;
+		while (globs >= globtab_a || globs >= globtyp_a) {
+			globtab_a *= 2;
+			globtyp_a *= 2;
+		}
+		globtab = realloc(globtab, globtab_a * sizeof(char *));
+		for (i = old_size; i < globtab_a; ++i) {
+			globtab[i] = checked_malloc(256);
+			*globtab[i] = '\0';
+		}
+		globtyp = realloc(globtyp, globtyp_a * sizeof(typedesc_t));
+	}
+
+	if (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
+		old_size = arg_symtab_a;
+		while (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
+			arg_symtab_a *= 2;
+			argsiz_a *= 2;
+			argtyp_a *= 2;
+		}
+		arg_symtab = realloc(arg_symtab, arg_symtab_a * sizeof(char *));
+		for (i = old_size; i < arg_symtab_a; ++i) {
+			arg_symtab[i] = checked_malloc(256);
+			*arg_symtab[i] = '\0';
+		}
+		argsiz = realloc(argsiz, argsiz_a * sizeof(int));
+		argtyp = realloc(argtyp, argtyp_a * sizeof(typedesc_t));
+	}
+
+	if (named_structs >= named_struct_a || named_structs >= named_struct_name_a) {
+		old_size = named_struct_name_a;
+		while (named_structs >= named_struct_a || named_structs >= named_struct_name_a) {
+			named_struct_a *= 2;
+			named_struct_name_a *= 2;
+		}
+		named_struct = realloc(named_struct, named_struct_a * sizeof(struct_desc_t *));
+		named_struct_name = realloc(named_struct_name, named_struct_name_a * sizeof(char *));
+		for (i = old_size; i < named_struct_name_a; ++i) {
+			named_struct_name[i] = checked_malloc(64);
+			*named_struct_name[i] = '\0';
+		}
+	}
+
+	if (proto_arg_syms >= proto_arg_symtab_a || proto_arg_syms >= proto_argsiz_a || proto_arg_syms >= proto_argtyp_a) {
+		old_size = proto_arg_symtab_a;
+		while (proto_arg_syms >= proto_arg_symtab_a || proto_arg_syms >= proto_argsiz_a || proto_arg_syms >= proto_argtyp_a) {
+			proto_arg_symtab_a *= 2;
+			proto_argsiz_a *= 2;
+			proto_argtyp_a *= 2;
+		}
+		proto_arg_symtab = realloc(proto_arg_symtab, proto_arg_symtab_a * sizeof(char *));
+		for (i = old_size; i < proto_arg_symtab_a; ++i) {
+			proto_arg_symtab[i] = checked_malloc(256);
+			*proto_arg_symtab[i] = '\0';
+		}
+		proto_argsiz = realloc(proto_argsiz, proto_argsiz_a * sizeof(int));
+		proto_argtyp = realloc(proto_argtyp, proto_argtyp_a * sizeof(typedesc_t));
+	}
+
+}
+
 void register_structs(exp_tree_t *tree)
 {
 	typedesc_t struct_base;
@@ -263,14 +356,6 @@ int check_proc_call(exp_tree_t *et)
 			if (check_proc_call(et->child[i]))
 				return 1;
 	return 0;
-}
-
-void* checked_malloc(long s)
-{
-	void *ptr = malloc(s);
-	if (!ptr)
-		fail("malloc failed");
-	return ptr;
 }
 
 /*
@@ -635,25 +720,7 @@ char* nameless_perm_storage(int siz)
 
 	symsiz[syms++] = siz;
 
-	/*
-	 * expand buffers if necessary
-	 */
-	if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
-		old_size = symtab_a;
-		int i;
-		while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
-			symtab_a *= 2;
-			symsiz_a *= 2;
-			symtyp_a *= 2;
-		}
-		symtab = realloc(symtab, symtab_a * sizeof(char *));
-		for (i = old_size; i < symtab_a; ++i) {
-			symtab[i] = checked_malloc(256);
-			*symtab[i] = '\0';
-		}
-		symsiz = realloc(symsiz, symsiz_a * sizeof(int));
-		symtyp = realloc(symtyp, symtyp_a * sizeof(typedesc_t));
-	}
+	expandBuffers();
 
 	return symstack((symbytes += siz) - siz);
 }
@@ -688,24 +755,7 @@ int sym_add(token_t *tok, int size)
 		symsiz[syms++] = size - 4;
 		symbytes += size - 4;
 
-		/*
-		 * expand buffers if necessary
-		 */
-		if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
-			old_size = symtab_a;
-			while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
-				symtab_a *= 2;
-				symsiz_a *= 2;
-				symtyp_a *= 2;
-			}
-			symtab = realloc(symtab, symtab_a * sizeof(char *));
-			for (i = old_size; i < symtab_a; ++i) {
-				symtab[i] = checked_malloc(256);
-				*symtab[i] = '\0';
-			}
-			symsiz = realloc(symsiz, symsiz_a * sizeof(int));
-			symtyp = realloc(symtyp, symtyp_a * sizeof(typedesc_t));
-		}
+		expandBuffers();
 
 		/* 
 		 * Clear the symbol name tag for the symbol table
@@ -726,24 +776,7 @@ int sym_add(token_t *tok, int size)
 
 	++syms;
 
-	/*
-	 * expand buffers if necessary
-	 */
-	if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
-		old_size = symtab_a;
-		while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
-			symtab_a *= 2;
-			symsiz_a *= 2;
-			symtyp_a *= 2;
-		}
-		symtab = realloc(symtab, symtab_a * sizeof(char *));
-		for (i = old_size; i < symtab_a; ++i) {
-			symtab[i] = checked_malloc(256);
-			*symtab[i] = '\0';
-		}
-		symsiz = realloc(symsiz, symsiz_a * sizeof(int));
-		symtyp = realloc(symtyp, symtyp_a * sizeof(typedesc_t));
-	}
+	expandBuffers();
 
 	return syms - 1; 
 }
@@ -760,23 +793,7 @@ int glob_add(token_t *tok)
 	strcpy(globtab[globs], s);
 	++globs;
 
-	/*
-	 * expand buffers if necessary
-	 */
-	if (globs >= globtab_a || globs >= globtyp_a) {
-		old_size = globtab_a;
-		int i;
-		while (globs >= globtab_a || globs >= globtyp_a) {
-			globtab_a *= 2;
-			globtyp_a *= 2;
-		}
-		globtab = realloc(globtab, globtab_a * sizeof(char *));
-		for (i = old_size; i < globtab_a; ++i) {
-			globtab[i] = checked_malloc(256);
-			*globtab[i] = '\0';
-		}
-		globtyp = realloc(globtyp, globtyp_a * sizeof(typedesc_t));
-	}
+	expandBuffers();
 
 	return globs - 1; 
 }
@@ -1062,25 +1079,7 @@ int create_array(int symty, exp_tree_t *dc,
 	symsiz[syms++] = objsiz - base_size;
 	symbytes += objsiz - base_size;
 
-	/*
-	 * expand buffers if necessary
-	 */
-	if (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
-		old_size = symtab_a;
-		int i;
-		while (syms >= symtab_a || syms >= symsiz_a || syms >= symtyp_a) {
-			symtab_a *= 2;
-			symsiz_a *= 2;
-			symtyp_a *= 2;
-		}
-		symtab = realloc(symtab, symtab_a * sizeof(char *));
-		for (i = old_size; i < symtab_a; ++i) {
-			symtab[i] = checked_malloc(256);
-			*symtab[i] = '\0';
-		}
-		symsiz = realloc(symsiz, symsiz_a * sizeof(int));
-		symtyp = realloc(symtyp, symtyp_a * sizeof(typedesc_t));
-	}
+	expandBuffers();
 
 	/* 
 	 * Clear the symbol name tag for the symbol table
@@ -1133,24 +1132,7 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 		strcpy(arg_symtab[arg_syms], args[i]);
 		++arg_syms;
 
-		/*
-		 * expand buffers if necessary
-		 */
-		if (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
-			old_size = arg_symtab_a;
-			while (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
-				arg_symtab_a *= 2;
-				argsiz_a *= 2;
-				argtyp_a *= 2;
-			}
-			arg_symtab = realloc(arg_symtab, arg_symtab_a * sizeof(char *));
-			for (i = old_size; i < arg_symtab_a; ++i) {
-				arg_symtab[i] = checked_malloc(256);
-				*arg_symtab[i] = '\0';
-			}
-			argsiz = realloc(argsiz, argsiz_a * sizeof(int));
-			argtyp = realloc(argtyp, argtyp_a * sizeof(typedesc_t));
-		}
+		expandBuffers();
 	}
 
 	/* Make the symbol and label for the procedure */
@@ -1800,22 +1782,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			strcpy(named_struct_name[named_structs],
 				get_tok_str(*(tree->tok)));
 			++named_structs;
-			/*
-			 * expand buffers if necessary
-			 */
-			if (named_structs >= named_struct_a || named_structs >= named_struct_name_a) {
-				old_size = named_struct_name_a;
-				while (named_structs >= named_struct_a || named_structs >= named_struct_name_a) {
-					named_struct_a *= 2;
-					named_struct_name_a *= 2;
-				}
-				named_struct = realloc(named_struct, named_struct_a * sizeof(struct_desc_t *));
-				named_struct_name = realloc(named_struct_name, named_struct_name_a * sizeof(char *));
-				for (i = old_size; i < named_struct_name_a; ++i) {
-					named_struct_name[i] = checked_malloc(64);
-					*named_struct_name[i] = '\0';
-				}
-			}
+			expandBuffers();
 			children_offs = sd->cc;
 		} else {
 			/* NAMED_STRUCT_DECL -- named reference case */
@@ -3073,25 +3040,7 @@ char* codegen(exp_tree_t* tree)
 
 		argbytes = 0;
 
-		/*
-		 * expand buffers if necessary
-		 */
-		proto_arg_syms = argl->child_count;
-		if (proto_arg_syms >= proto_arg_symtab_a || proto_arg_syms >= proto_argsiz_a || proto_arg_syms >= proto_argtyp_a) {
-			old_size = proto_arg_symtab_a;
-			while (proto_arg_syms >= proto_arg_symtab_a || proto_arg_syms >= proto_argsiz_a || proto_arg_syms >= proto_argtyp_a) {
-				proto_arg_symtab_a *= 2;
-				proto_argsiz_a *= 2;
-				proto_argtyp_a *= 2;
-			}
-			proto_arg_symtab = realloc(proto_arg_symtab, proto_arg_symtab_a * sizeof(char *));
-			for (i = old_size; i < proto_arg_symtab_a; ++i) {
-				proto_arg_symtab[i] = checked_malloc(256);
-				*proto_arg_symtab[i] = '\0';
-			}
-			proto_argsiz = realloc(proto_argsiz, proto_argsiz_a * sizeof(int));
-			proto_argtyp = realloc(proto_argtyp, proto_argtyp_a * sizeof(typedesc_t));
-		}
+		expandBuffers();
 
 		if (argl->child_count) {
 			for (i = 0; argl->child[i]; ++i) {
@@ -3222,25 +3171,7 @@ char* codegen(exp_tree_t* tree)
 
 		argbytes = 0;
 
-		/*
-		 * expand buffers if necessary
-		 */
-		arg_syms = argl->child_count;
-		if (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
-			old_size = arg_symtab_a;
-			while (arg_syms >= arg_symtab_a || arg_syms >= argsiz_a || arg_syms >= argtyp_a) {
-				arg_symtab_a *= 2;
-				argsiz_a *= 2;
-				argtyp_a *= 2;
-			}
-			arg_symtab = realloc(arg_symtab, arg_symtab_a * sizeof(char *));
-			for (i = old_size; i < arg_symtab_a; ++i) {
-				arg_symtab[i] = checked_malloc(256);
-				*arg_symtab[i] = '\0';
-			}
-			argsiz = realloc(argsiz, argsiz_a * sizeof(int));
-			argtyp = realloc(argtyp, argtyp_a * sizeof(typedesc_t));
-		}
+		expandBuffers();
 
 		if (argl->child_count) {
 			for (i = 0; argl->child[i]; ++i) {
