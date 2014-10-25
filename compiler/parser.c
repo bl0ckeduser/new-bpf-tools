@@ -1210,6 +1210,19 @@ exp_tree_t arg(void)
 
 	if (peek().type == TOK_LBRACK) {
 		adv();
+		/*
+		 * e.g. 'char foo[1+2*3]' should probably be treated as char foo[]
+		 * in a type signature like this.
+		 * XXX: TODO: if it's multi-dimensional it might means something for
+		 * codegeneration but to *parse* it just run a loop of this
+		 */
+		if (peek().type != TOK_RBRACK) {
+			ct = expr();
+			constfold(&ct);
+			if (ct.head_type != NUMBER)
+				parse_fail("expected either a constant in array type descriptor bounds, or ]");
+		}
+		/* XXX: for now we don't care about ct for the 1d case */
 		if (peek().type == TOK_RBRACK) {
 			adv();
 			/* add a pointer-leveledness star */
