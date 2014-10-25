@@ -33,6 +33,8 @@ it complains it needs a constant initializer
 &out is actually a constant, i guess, there should
 be a way out of this one
 
+*** partly addressed, 2014-10-24 ***
+
 --------------------------------------
 
 
@@ -68,6 +70,8 @@ now the code should jump to that else/end-of-if label if any is true
 and so on.
 
 or maybe even just a small change will do the job
+
+*** addressed 2014-10-24 ***
 
 -----------------------------------------
 
