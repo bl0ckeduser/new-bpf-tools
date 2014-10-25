@@ -4,6 +4,7 @@
   pointerA - pointerB --> (pointerA - pointerB) / sizeof(*pointerA)
 - x86: new test code: towers of hanoi, n-queens
 - very slightly improved support for parameterized #define directives
+- x86: fix temporary-stack-memory leak in relational operator coding
 
 -----------------------------------------------------------------------
 
