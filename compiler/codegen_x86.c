@@ -30,6 +30,8 @@
 #include <stdio.h>
 #include "diagnostics.h"
 
+extern int get_global_initializer_string_gnux86(exp_tree_t *t, char *str_dest);
+
 extern int type2siz(typedesc_t);
 extern typedesc_t mk_typedesc(int bt, int ptr, int arr);
 extern int is_arith_op(char);
@@ -1720,11 +1722,14 @@ void setup_symbols(exp_tree_t *tree, int symty)
 {
 	extern void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass);
 	setup_symbols_iter(tree, symty, 1);
-	setup_symbols_iter(tree, symty, 0);
+	if (symty != SYMTYPE_GLOBALS) {
+		setup_symbols_iter(tree, symty, 0);
+	}
 }
 
 void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 {
+	int override = symty == SYMTYPE_GLOBALS;
 	int i, j;
 	exp_tree_t *dc;
 	int sym_num;
@@ -1739,6 +1744,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 	exp_tree_t *initializer_val;
 	int children_offs;
 	int is_extern = 0;
+	char init_str[128];
 
 	/*
 	 * Externs are added to the global symbols list
@@ -1759,7 +1765,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 	 * finer details of x86)
 	 */
 	if ((tree->head_type == STRUCT_DECL
-		|| tree->head_type == NAMED_STRUCT_DECL) && (!first_pass || is_extern)) {
+		|| tree->head_type == NAMED_STRUCT_DECL) && ((override||!first_pass) || is_extern)) {
 
 		/*
 		 * The first part of handling a struct declaration (e.g.
@@ -2037,9 +2043,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 			 * innit ?
 			 */
 			if (!is_extern) {
-				if (first_pass && check_array(dc))
+				if ((!override && first_pass) && check_array(dc))
 					continue;
-				if (!first_pass && !check_array(dc))
+				if ((!override && !first_pass) && !check_array(dc))
 					continue;
 			}
 
@@ -2102,8 +2108,8 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 							 * it is an integer constant.
 							 */
 							if (dc->child_count == 2
-								&& dc->child[1]->head_type != NUMBER) {
-								codegen_fail("non-integer-constant global initializer",
+								&& !get_global_initializer_string_gnux86(dc->child[1], init_str)) {
+								codegen_fail("invalid or unsupported global initializer",
 									dc->child[0]->tok);
 							}
 
@@ -2124,10 +2130,13 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 							 * the initial value.
 							 */
 							/* XXX: change .long for types other than `int' */
-							printf(".long %s\n",
-								dc->child_count == 2 ?
-									get_tok_str(*(dc->child[1]->tok))
-									: "0");
+
+							if (dc->child_count == 2) {
+								printf(".long %s\n", init_str);
+							} else {
+								printf(".long 0\n");
+							}
+
 							printf(".globl %s\n\n",
 								get_tok_str(*(dc->child[0]->tok)));
 						}
@@ -2170,7 +2179,7 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		 * stack variable initializers (the ASGNs)
 		 * have to be coded.
 		 */
-		if (!first_pass)
+		if (!override && !first_pass)
 			tree->head_type = BLOCK;
 	}
 
@@ -2182,8 +2191,8 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 		||  tree->child[i]->head_type == WHILE
 		||  tree->child[i]->head_type == EXTERN_DECL
 		||  int_type_decl(tree->child[i]->head_type)
-		||  (!first_pass && tree->child[i]->head_type == STRUCT_DECL)
-		||  (!first_pass && tree->child[i]->head_type == NAMED_STRUCT_DECL))
+		||  ((override || !first_pass) && tree->child[i]->head_type == STRUCT_DECL)
+		||  ((override || !first_pass) && tree->child[i]->head_type == NAMED_STRUCT_DECL))
 			setup_symbols_iter(tree->child[i], symty, first_pass);
 }
 
