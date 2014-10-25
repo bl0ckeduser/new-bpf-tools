@@ -252,7 +252,8 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 
 	/* 
 	 * Deal with initializer-implied array sizes,
-	 * as in e.g int arr[] = {1, 2, 3}
+	 * as in e.g int arr[] = {1, 2, 3}	-> size is number of entries
+	 * OR: char bob[] = "hax"		-> size is length of string
 	 */ 
 	if (typedat->arr && typedat->arr_dim[typedat->arr - 1] == 0) {
 		#ifdef DEBUG
@@ -262,15 +263,21 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 		#endif
 		/* find the initializer */
 		for (j = 0; j < dc->child_count; ++j) {
-			if (dc->child[j]->head_type == COMPLICATED_INITIALIZER)
+			if (dc->child[j]->head_type == COMPLICATED_INITIALIZER || dc->child[j]->head_type == STR_CONST)
 				break;
 		}
 		if (j < dc->child_count) {
+			int implicit_cc;
+			if (dc->child[j]->head_type == STR_CONST) {
+				implicit_cc = strlen(get_tok_str(*(dc->child[j]->tok)));
+			} else {
+				implicit_cc = dc->child[j]->child_count;
+			}
 			#ifdef DEBUG
 				fprintf(stderr, "it has an initialization-implied size: %d\n",
-					 dc->child[j]->child_count);
+					 implicit_cc);
 			#endif
-			typedat->arr_dim[typedat->arr - 1] = dc->child[j]->child_count;
+			typedat->arr_dim[typedat->arr - 1] = implicit_cc;
 		} else {
 			compiler_fail("initializer expected", findtok(dc), 0, 0);
 		}

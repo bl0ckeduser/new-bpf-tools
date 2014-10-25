@@ -596,7 +596,7 @@ multi_array_decl:
 		 * int foo[] = {1, 2, 3}
 		 */
 		if (contains_ambig) {
-			if (subtree2.head_type == COMPLICATED_INITIALIZER) {
+			if (subtree2.head_type == COMPLICATED_INITIALIZER || subtree2.head_type == STR_CONST) {
 				add_child(&tree, 
 					alloc_exptree(new_exp_tree(ARRAY_DIM, &zero)));
 			}
@@ -609,7 +609,7 @@ multi_array_decl:
 		 * char ptr[] = "Enjoy your teeth"
 		 */
 		if (contains_ambig) {
-			if (subtree2.head_type != COMPLICATED_INITIALIZER) {
+			if (!(subtree2.head_type == COMPLICATED_INITIALIZER || subtree2.head_type == STR_CONST)) {
 				add_child(&tree, 
 					alloc_exptree(new_exp_tree(DECL_STAR, NULL)));
 			}

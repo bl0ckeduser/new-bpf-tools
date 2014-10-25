@@ -21,6 +21,11 @@
 	{
 		...
 
+- properly code statements such as e.g. 'char bob[] = "hax"' --
+  they should be coded as e.g. 'char bob[] = {'h','a','x','\0'}',
+  using modifiable stack memory. it should not make a pointer
+  to a static string constant, which is what it was doing.
+
 -----------------------------------------------------------------------
 
 0.7 - 23 August 2014
