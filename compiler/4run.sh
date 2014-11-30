@@ -5,6 +5,9 @@ if [ $(uname | grep MINGW) ];
 then
 	TEST_PROG="testprog.exe"
 	MY_COMPILER="./compiler.exe"
+	LC_FLAG=""
+else
+	LC_FLAG="-lc"
 fi
 
 # clang on FreeBSD has also been tested
@@ -23,7 +26,7 @@ do
 	asmfiles="$asmfiles$asmfile "
 done
 
-if ! $COMPILER -m32 $asmfiles -lc -o $TEST_PROG
+if ! $COMPILER -m32 $asmfiles $LC_FLAG -o $TEST_PROG
 then
 	rm -f $asmfiles $TEST_PROG
 	exit 1

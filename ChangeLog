@@ -27,6 +27,7 @@
   to a static string constant, which is what it was doing.
 
 - mingw issue
+- wcc command and self-compilation work on MinGW (aka gnu on windows)
 
 -----------------------------------------------------------------------
 
