@@ -226,6 +226,7 @@ int main(int argc, char** argv)
 	 * for unixlikes running x86
  	 */
 	#ifdef WCC
+		*wcc_sfiles = 0;
 		cli_defines = malloc(100 * sizeof(struct cli_define_s));
 		if (!cli_defines)
 			fail("malloc");
