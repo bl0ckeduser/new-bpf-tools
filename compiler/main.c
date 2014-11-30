@@ -109,6 +109,14 @@ exp_tree_t run_core_tasks(void)
 	#endif
 
 	/*
+	 * Similarly for MinGW
+	 */
+	#ifdef MINGW_BUILD
+		hashtab_insert(cpp_defines, "MINGW_BUILD", my_strdup("1"));
+	#endif
+
+
+	/*
 	 * (!!!) Compatibility hacks for
 	 * some commonly-used things
 	 */
