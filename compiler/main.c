@@ -210,8 +210,9 @@ int main(int argc, char** argv)
 {
 	int i;
 	#ifdef WCC
-		char wcc_sfiles[4096];
-		char wcc_buf[256];
+		/* using too much stack is evil */
+		char *wcc_sfiles = malloc(4096);
+		char *wcc_buf = malloc(256);
 		char *p, *q;
 		int len;
 	#endif

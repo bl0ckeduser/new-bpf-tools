@@ -153,7 +153,7 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 	parameterized_macro_entry_t *param_subst;
 	hashtab_t *macros;
 	char *p = &result[0];
-	char argval[32][128];
+	char** argval/*[32][128];*/;
 	char *q;
 	char *r;
 	int substitution_occured;
@@ -162,10 +162,15 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 	int in_string;
 	int argn;
 	char *result_copy, *result_copy_2, *current_copy, *source_copy;
-	int i;
+	int i, j;
 	char *lookahead;
 	int depth = 0;
 	int stringify;
+
+	argval = malloc(128 * sizeof(char *));
+	for (i = 0; i < 128; ++i)
+		argval[i] = malloc(32 * sizeof(char));
+	
 
 	/*
 	 * Copy the line to the line buffer
@@ -337,6 +342,11 @@ get_token:
 		}
 		strcpy(result, substituted_result);
 	} while (substitution_occured);
+
+
+	for (i = 0; i < 128; ++i)
+		free(argval[i]);
+	free(argval);
 
 	return &result[0];
 }
