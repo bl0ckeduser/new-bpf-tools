@@ -308,7 +308,11 @@ int main(int argc, char** argv)
 	 * (then remove the temporary .s files)
  	 */
 	#ifdef WCC
-		sprintf(cmd, "gcc -m32 %s -lc %s", wcc_sfiles, opt);
+		#ifdef MINGW_BUILD
+			sprintf(cmd, "gcc -m32 %s %s", wcc_sfiles, opt);
+		#else
+			sprintf(cmd, "gcc -m32 %s -lc %s", wcc_sfiles, opt);
+		#endif
 		if (system(cmd) == -1)
 			fail("Failed to assemble. Do you have gcc installed ?");
 		sprintf(cmd, "rm -f %s", wcc_sfiles);
