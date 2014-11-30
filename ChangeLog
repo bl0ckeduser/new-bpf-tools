@@ -26,6 +26,8 @@
   using modifiable stack memory. it should not make a pointer
   to a static string constant, which is what it was doing.
 
+- mingw issue
+
 -----------------------------------------------------------------------
 
 0.7 - 23 August 2014
