@@ -2964,7 +2964,11 @@ char* codegen(exp_tree_t* tree)
 		 * Call the subroutine
 		 */
 		#ifdef MINGW_BUILD
-			printf("call _%s\n", get_tok_str(*(tree->tok)));
+			if (!strcmp(get_tok_str(*(tree->tok)), "___mymemcpy")) {
+				printf("call %s\n", get_tok_str(*(tree->tok)));
+			} else {
+				printf("call _%s\n", get_tok_str(*(tree->tok)));
+			}
 		#else
 			printf("call %s\n", get_tok_str(*(tree->tok)));
 		#endif
