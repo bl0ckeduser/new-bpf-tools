@@ -1,5 +1,6 @@
 /*
- * Hash table (keys are generic void* pointers)
+ * Hash table (keys are char* ie strings, values are 'generic'
+ * void* pointers)
  */
 
 #include <stdlib.h>
