@@ -1,6 +1,10 @@
 /* Optimize the syntax tree */
 
-/* TODO: constant folding ? other stuff ? */
+/* TODO: constant folding ?
+ * actually constant folding is now being handled by constfold.c module
+ *
+ * other stuff ? 
+ */
 
 #include "tree.h"
 #include "tokens.h"
