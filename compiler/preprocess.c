@@ -531,7 +531,8 @@ int iterate_preprocess(hashtab_t *defines,
 
 				if (!include_file_ptr) {
 					sprintf(error_message_buffer, 
-						"line %d: failed to open #include'd file `%s'", 
+						"%s: line %d: failed to open #include'd file `%s'", 
+						current_file,
 						line_number, 
 						include_file);
 					fail(error_message_buffer);
