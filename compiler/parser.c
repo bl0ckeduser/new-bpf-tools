@@ -646,10 +646,17 @@ exp_tree_t initializer(void)
 			/* {'{'} */
 			while (peek().type == TOK_LBRACE)
 				++depth2, adv();
-			child = expr0();
-			if (!valid_tree(child))
-				parse_fail("expression expected in array or struct initializer");
-			add_child(&tree, alloc_exptree(child));
+			/*
+			 * You can have a comma and then nothing, e.g. in
+			 * "int Array2[10] = { 12, 34, 56, 78, 90, 123, 456, 789, 8642, 9753, };"
+			 * (example taken from the tcc test suite)
+			 */
+			if (peek().type != TOK_RBRACE) {
+				child = expr0();
+				if (!valid_tree(child))
+					parse_fail("expression expected in array or struct initializer");
+				add_child(&tree, alloc_exptree(child));
+			}
 			/* {'}'} */
 			if (depth2 && peek().type == TOK_RBRACE) {
 				depth = 0;
