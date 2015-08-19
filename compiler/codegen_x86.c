@@ -1658,11 +1658,11 @@ char *decl2suffix(char ty)
 	switch (ty) {
 		case LONG_DECL:		/* 4 bytes */
 			return "l";
-		case INT_DECL:			/* 4 bytes */
+		case INT_DECL:		/* 4 bytes */
 			return "l";
 		case CHAR_DECL:		/* 1 byte */
 			return "b";
-		default:			/* ??? */
+		default:		/* ??? */
 			return "";
 	}
 }
