@@ -1,5 +1,6 @@
 
-/* projecteuler problem 51
+/* 
+ * projecteuler problem 51
  * solution by: blockeduser
  * date: May 21, 2013
  *
@@ -113,7 +114,8 @@ match(char *patt, num, len)
 		num /= 10;
 
 		if (!num && !patt[i])
-			return 1;	}
+			return 1;	
+	}
 	
 	return 0;
 }
