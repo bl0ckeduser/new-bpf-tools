@@ -924,7 +924,7 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 			&& (tree_typeof(tp->child[0]).ptr || tree_typeof(tp->child[0]).arr)
 			&& (tree_typeof(tp->child[1]).ptr || tree_typeof(tp->child[1]).arr)) {
 			td.ty = INT_DECL;	/* XXX: should be "ptrdiff_t" according
-								 * to K&R 2 */
+						 * to K&R 2 */
 			td.arr = td.ptr = 0;
 		}
 
