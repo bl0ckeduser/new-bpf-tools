@@ -1,6 +1,8 @@
 main()
 {
-	int arr[] = {1, 2, 3, 3 + 1, 3 + 2, 3 + 3}, i, j,
+	/* notice that it tolerates the weirdness with the final comma */
+	int arr[] = {1, 2, 3, 3 + 1, 3 + 2, 3 + 3,},
+	    i, j,
 	    arr3[10] = {0};
 
 	char *arr2[] = {"hello", "world", "hahah", "what", "a", "strange",
