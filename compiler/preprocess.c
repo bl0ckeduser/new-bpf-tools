@@ -267,13 +267,16 @@ get_token:
 			if (!in_string && !hash && *token && identchar(*token)) {
 				if((macro_subst && (substitution = hashtab_lookup(macro_subst, &token[0]))) 
 				    || (substitution = hashtab_lookup(defines, &token[0]))) {
-					substitution_occured = 1;
-					if (stringify)
-						strcat(substituted_result, "\"");
-					strcat(substituted_result, substitution);
-					if (stringify)
-						strcat(substituted_result, "\"");
-					continue;
+					/* avoid infinite loops in some sneaky cases */
+					if (strcmp(token, substitution)) {
+						substitution_occured = 1;
+						if (stringify)
+							strcat(substituted_result, "\"");
+						strcat(substituted_result, substitution);
+						if (stringify)
+							strcat(substituted_result, "\"");
+						continue;
+					}
 				} else if ((param_subst = hashtab_lookup(parameterized_defines, &token[0]))) {
 					eatwhitespace(&p);
 					if (*p != '(')
