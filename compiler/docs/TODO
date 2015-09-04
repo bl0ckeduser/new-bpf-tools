@@ -14,11 +14,16 @@
 
 - support for fancier things as global variables
 
-- struct literals would be nice
+- struct literals would be nice. also doing things like "= {0};" on a
+  struct which apparently you can do. well I am no C language expert
+  I don't know all the dozens of different syntaxes off my head
 
 - block scope
 
-- declaration in initializer in for-loop
+- declaration in initializer in for-loop. 
+   actually I think that goes with block scope, as far as I remember
+   when you do that, the variable gets scoped to the associated block
+   of the for-loop.
 
 -------------------------------------
 
