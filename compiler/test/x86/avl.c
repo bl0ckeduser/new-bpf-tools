@@ -10,7 +10,7 @@
  *	 ./avl | drawtree avl.png
  *
  * where `drawtree' is another program by
- * my noobself, availabel on my website.
+ * my noobself, available on my website.
  *
  * Note that this file tests expressions
  * like
