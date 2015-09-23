@@ -10,6 +10,15 @@ I started this in highschool in 2012 and the code has turned into a mess.
 I am now attending a CS program, since 2013, & if I started this project
 again from scratch I should follow better development principles!
 
+The code is not particularly maintainable or readable, this is what happens
+when an overzealous high school student wants to ``prove himself'' and
+writes large amounts of code like an insane madman. 
+Programming is like a drug
+
+Although, I think the lexer and parser are not *that* bad. The codegen_x86 
+module is extremely nasty in a few parts, it has some very messy stuff when 
+it sets up symbols. And there are few things that need to be refactored...
+
 
 	---------------------- X86 QUICKSTART -----------------------
 
