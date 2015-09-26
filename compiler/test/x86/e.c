@@ -1,38 +1,101 @@
 /*
- * This is a program that will print 1000 decimal places
- * of the contant "e". It is based on the program "e.c"
- * which is a real C program I (blockeduser) wrote on Sept. 30, 2012.
- * The original program has some more comments (including
- * some on the algorithm used and the log of a performance test)
- * and a feature to choose the number of digits to be printed.
- * The original program is available at:
- * http://sites.google.com/site/bl0ckeduserssoftware/e.c
- *
- * Checksum of the 1000 places:
- * 	$ ./compile-run-x86.sh e.c 2>/dev/null | sed 's/e = 2\.//g'
- *		| sed 's/\.\.\.\(.*\)//g' | tr -d '\n' | md5sum
- *	509a0539a67baea4730a85ad0d12c289  -
- *	$
- * (Verified against http://www.greatplay.net/uselessia/articles/e2-1000.html)
+ * This is a test that involves running a programming that calculates
+ * the constant \e  to some number of digits, using an old program called e.c
+ * dated 2012-09-30.
+ * Now is some hacks to make it work with wannabe CC and to hard-wire
+ * the d-value  (number of digits). After the dashes is the original program
+ * preserved as-is by my trusty hard-drive, which is still fucking magnetic
+ * because I was raised to be very cheap by my parents and I have not spent
+ * on an SSD. Money is always hard-earned when you do real work and then
+ * nearly half of it goes to the government, so don't fucking splurge!!!
  */
 
-char *my_realloc(char *ptr, int len)
+#define unsigned /**/
+
+int main(int argc, char **argv)
 {
-	char *new_ptr = malloc(len);
-	int i;
-	for (i = 0; i < len; ++i)
-		new_ptr[i] = ptr[i];
-	free(ptr);
-	return new_ptr;
+	char *my_argv[] = {"foobar.elf", "-d", "1000"};
+	old_main(3, my_argv);
 }
 
-max(a, b) {
-	if (a > b)
-		return a;
-	return b;
-}
+#define main old_main
 
-int wannabe_null = 0x0;
+/* -------------------------------------------------------------------- */
+
+/* 
+ * This program gives either "N - 2" terms of the 
+ * series for e, or "N" decimal places of e
+ * (in the latter case converting the digit count
+ * to a term count by brute-force) using only C's
+ * built-in integer arithmetic (lots of it and lots
+ * of memory allocation and moving-around stuff).
+ * In both cases, it makes sure to stop giving
+ * you digits once the error margin is reached.
+ * 
+ * No legal absolute guarantee of accuracy is 
+ * made because this is just a hobby project.
+ *
+ * 	IMPORTANT:
+ * The *term* count (which is not necessarily the
+ * same as the decimal place count) has to fit in
+ * your system's int type. I could have written 
+ * this program so that it accepts arbitrarily big 
+ * integers ("bignums" as I call them herein) for 
+ * the term count, but accepting only ints (or some 
+ * other built-in type) allows for much greater 
+ * multiplication performance. (See the bignum_nmul
+ * routine).
+ *
+ * The calculus algorithms for estimating e and 
+ * estimating the error in the estimate are the 
+ * same as in my earlier program e-estim.py. 
+ * (MacLaurin series 1/n! and Lagrange Remainder Term
+ * and some tricks. The old program has the details 
+ * in its comments). The bignum arithmetic operations are
+ * done "pencil-and-paper" style as I was
+ * taught in elementary. The main new thing in
+ * this program is the "product table" to speed
+ * up division.
+ *
+ * Performance test (done on a 1.50 GHz, dual-core 
+ * "Intel(R) Celeron(R) B800" running 64-bit Linux):
+ * $ time ./e -d 200000 >test-200000.txt
+ * 
+ * real	15m25.528s
+ * user	15m16.001s
+ * sys	0m1.256s
+ * 
+ * During this test, the program computed
+ * 200002 decimal places of e. From my tests,
+ * they appeared to match the 200002 first 
+ * places of NASA's "e.2mil" file (which gives 2 
+ * million places).
+ *
+ * Memory usage test (same machine):
+ * $ valgrind ./e -d 3000 2>&1 1>/dev/null | tail -8 | head -3
+ * ==14427== HEAP SUMMARY:
+ * ==14427==     in use at exit: 0 bytes in 0 blocks
+ * ==14427==   total heap usage: 4,645 allocs, 4,645 frees, 12,278,936 bytes allocated
+ * 
+ * (I used far fewer digits for this test because 
+ * valgrind seems to slow things down and I'm lazy).
+ *
+ * blockeduser Sept. 30, 2012
+ */
+
+/*
+ *  NOTE: binary might be faster than
+ *  base-10 for my bignums, but would
+ *  lead to the problem of converting the
+ *  end-result to decimal ;_;
+ *  I don't know that sort of stuff well.
+ *  BCD would be more memory-efficient, but
+ *  also somewhat trickier.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct bignum {
 	char* dig;	/* base-10 digits */
@@ -40,12 +103,15 @@ typedef struct bignum {
 	int alloc;	/* bytes allocated */
 } bignum_t;
 
+void require(int e, char* msg)
+{
+	if (!e) {
+		fprintf(stderr, "failure: %s\n", msg);
+		exit(1);
+	}
+}
+
 bignum_t* make_bignum(void);
-/*
- * XXX: it seems (void) means: i want zero args
- * i don't even remember what it means i should lookitup
- * in the book one day
- */
 void bignum_copy(bignum_t* dest, bignum_t* src);
 void bignum_add(bignum_t*, bignum_t*);
 void bignum_sub(bignum_t*, bignum_t*);
@@ -56,30 +122,11 @@ void bignum_nset(bignum_t* a, int n);
 int bignum_len(bignum_t* a);
 void bignum_shift(bignum_t* bn);
 
-bignum_t* make_bignum()
-{
-	bignum_t* bn;
-	require((bn = malloc(sizeof(bignum_t))) != wannabe_null, 
-		"bignum structure allocation");
-	require((bn->dig = malloc(1000)) != wannabe_null, 
-		"bignum dig allocation");
-	bn->alloc = 1000;
-	bn->length = 0;
-	return bn;
-}
-
-require(int e, char* msg)
-{
-	if (!e) {
-		printf("failure: %s\n", msg);
-		exit(1);
-	}
-}
+bignum_t* one;
 
 int bruteforce_terms(int digits)
 {
-	bignum_t* a;
-	a = make_bignum();
+	bignum_t* a = make_bignum();
 	int i;
 
 	bignum_nset(a, 24);
@@ -99,9 +146,8 @@ int main(int argc, char** argv)
 	bignum_t* acc = make_bignum();
 	bignum_t* acc2 = make_bignum();
 	bignum_t* sum = make_bignum();
-	int places;
-	bignum_t* ptab[30];
-	bignum_t* one;
+	unsigned int places;
+	bignum_t* ptab[10];
 
 	int n, d;
 	int i, j, k;
@@ -110,7 +156,18 @@ int main(int argc, char** argv)
 	one = make_bignum();
 	bignum_nset(one, 1);
 
-	n = bruteforce_terms(1000);
+	if (argc < 2){
+		printf("use: %s <terms>\nor %s -d <decimal-places> \n", argv[0], argv[0]);
+		exit(0);
+	}
+
+	if (!strcmp(argv[1], "-d")) {
+		require(argc > 2, "-d argument");
+		sscanf(argv[2], "%d", &d);
+		n = bruteforce_terms(d);
+	} else {
+		sscanf(argv[1], "%d", &n);
+	}
 	require(n > 3, "n > 3");
 
 	bignum_nset(sum, 1);
@@ -128,20 +185,22 @@ int main(int argc, char** argv)
 	bignum_nmul(acc2, 2);
 	places = bignum_len(acc2);	/* decimal places of accuracy */
 
+	/* digit-cranking starts now */
+	printf("%d decimal places\n", places);
+	printf("e = 2.");
+
 	/* set up product table */
-	bignum_copy(acc2, acc);
+	bignum_copy(acc2, acc);	
 	for (i = 0; i < 9; i++) {
 		ptab[i] = make_bignum();
 		bignum_copy(ptab[i], acc2);
 		bignum_add(acc2, acc);
 	}
 
-	printf("e = 2.");
-
 	bignum_shift(sum);
 	for (i = 0; i < places; i++) {
 		for (j = 0; j < 9; j++)
-			if (bignum_cmp(sum, ptab[j]) == 1)
+			if (bignum_cmp(sum, ptab[j]) == +1)
 				break;
 		printf("%d", j);
 		if (j > 0)
@@ -164,7 +223,7 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-trunczeroes(bignum_t* a) {
+void trunczeroes(bignum_t* a) {
 	int i;
 	int c = 0;
  
@@ -176,29 +235,46 @@ trunczeroes(bignum_t* a) {
 	a->length -= c;
 }
 
+bignum_t* make_bignum()
+{
+	bignum_t* bn;
+	require((bn = malloc(sizeof(bignum_t))) != NULL, 
+		"bignum structure allocation");
+	require((bn->dig = malloc(1000)) != NULL, 
+		"bignum dig allocation");
+	bn->alloc = 1000;
+	bn->length = 0;
+	return bn;
+}
+
 /* multiply by ten */
 void bignum_shift(bignum_t* bn)
 {
 	char* new = malloc(bignum_len(bn) + 1);
 	char* old = bn->dig;
-	require(new != wannabe_null, "shift digits");
+	require(new != NULL, "shift digits");
 	*new = 0;
 	memcpy(new + 1, old, bignum_len(bn));
 	bn->dig = new;
 	++bn->length;
-	//free(old);
+	free(old);
 }
 
 void bignum_free(bignum_t* bn)
 {
+	if (bn) {
+		if (bn->dig)
+			free(bn->dig);
+		free(bn);
+	}
 }
 
 void bignum_copy(bignum_t* dest, bignum_t* src)
 {
 	if (src->alloc > dest->alloc) {
-		dest->dig = my_realloc(dest->dig, src->alloc);
+		dest->dig = realloc(dest->dig, src->alloc);
 		dest->alloc = src->alloc;
-		require(dest->dig != wannabe_null, "resize on copy");
+		require(dest->dig != NULL, "resize on copy");
 	}
 	memcpy(dest->dig, src->dig, src->length);
 	dest->length = src->length;
@@ -228,14 +304,14 @@ int bignum_len(bignum_t* a){
 void bignum_nmul(bignum_t* a, int n){
 	int max_len = a->length;
 	int i, j;
-	 int carry = 0;
-	 int dig;
+	unsigned long carry = 0;
+	unsigned long dig;
 
 	for(i = 0; i < max_len || carry; i++) {
 		/* make space for new digits if necessary */
 		if (!(i < a->alloc)) {
 			a->alloc += 5;
-			require((a->dig = my_realloc(a->dig, a->alloc)) != wannabe_null,
+			require((a->dig = realloc(a->dig, a->alloc)) != NULL,
 				"add new digit during addition");
 		}
 		if (!(i < a->length)) {
@@ -261,15 +337,14 @@ void bignum_nmul(bignum_t* a, int n){
 /* convert natural int to bignum */
 void bignum_nset(bignum_t* a, int n){
 	int i;
-	for (i = 0; n; i++) {
+	for (i = 0; n; i++, n /= 10) {
 		if (!(i < a->alloc)) {
 			a->alloc += 5;
-			require((a->dig = my_realloc(a->dig, a->alloc)) != wannabe_null,
+			require((a->dig = realloc(a->dig, a->alloc)) != NULL,
 				"add new digit during addition");
 		}
 		a->dig[i] = n % 10;
-		++a->length;
-		n /= 10;
+		a->length++;
 	}
 	trunczeroes(a);
 }
@@ -284,23 +359,23 @@ int bignum_cmp(bignum_t* a, bignum_t* b){
 	if (a->length > b->length)
 		return -1;
 	if (b->length > a->length)
-		return 1;
+		return +1;
 	for (i = a->length - 1; i >= 0; i--) {
 		if (a->dig[i] > b->dig[i])
 			return -1;
 		else if (a->dig[i] < b->dig[i])
-			return 1;
+			return +1;
 	}
 	return 0;
 }
 
 void bignum_sub(bignum_t* a, bignum_t* b){
-	int max_len = max(a->length, b->length);
+	int max_len = a->length > b->length ? a->length : b->length;
 	int i, j;
-	 int borrow = 0;
+	unsigned long borrow = 0;
 
 	/* negative ? */
-	if (bignum_cmp(a, b) == 1) {
+	if (bignum_cmp(a, b) == +1) {
 		printf("I don't do negatives yet, sorry.\n");
 		exit(1);
 	}
@@ -309,14 +384,14 @@ void bignum_sub(bignum_t* a, bignum_t* b){
 	if (bignum_cmp(a, b) == 0) {
 		*(a->dig) = 0;
 		a->length = 1;
-		return 0;
+		return;
 	}
 
 	for(i = 0; i < max_len || borrow; i++) {
 		/* make space for new digits if necessary */
 		if (!(i < a->alloc)) {
 			a->alloc += 5;
-			require((a->dig = my_realloc(a->dig, a->alloc)) != wannabe_null,
+			require((a->dig = realloc(a->dig, a->alloc)) != NULL,
 				"add new digit during addition");
 		}
 		if (!(i < a->length)) {
@@ -341,15 +416,15 @@ void bignum_sub(bignum_t* a, bignum_t* b){
 }
 
 void bignum_add(bignum_t* a, bignum_t* b){
-	int max_len = max(a->length, b->length);
+	int max_len = a->length > b->length ? a->length : b->length;
 	int i, j;
-	 int carry = 0;
+	unsigned long carry = 0;
 
 	for(i = 0; i < max_len || carry; i++) {
 		/* make space for new digits if necessary */
 		if (!(i < a->alloc)) {
 			a->alloc += 5;
-			require((a->dig = my_realloc(a->dig, a->alloc)) != wannabe_null,
+			require((a->dig = realloc(a->dig, a->alloc)) != NULL,
 				"add new digit during addition");
 		}
 		if (!(i < a->length)) {
@@ -372,5 +447,6 @@ void bignum_add(bignum_t* a, bignum_t* b){
 	}
 	trunczeroes(a);
 }
+
 
 
