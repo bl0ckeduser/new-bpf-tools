@@ -301,7 +301,7 @@ get_token:
 					if (*p == ')')
 						++p;
 					/*
-					 * Make a new table with substiutions from
+					 * Make a new table with substitutions from
 					 * the argument formal names to their values
 					 * given here, and substitute the body of the 
 					 * macro using it.
