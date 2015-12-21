@@ -233,7 +233,6 @@ char *preprocess_get_substituted_line(char **source_ptr_ptr,
 			 * substitute it for a #define
 			 */
 get_token:
-			fprintf(stderr, "----------> get_token: ms=%p, *tok=%s, *p=%s\n", macro_subst, token, p);
 			*token = 0;
 			readtoken2(&token[0], &p);
 			if (*token && *token == '"'
@@ -245,15 +244,10 @@ get_token:
 			 * copying the whitespace after it if we're doing
 			 * a macro substitution.
 			 */
-			
 			if (macro_subst && !identchar(*token) && *token == '#' && *p == '#') {
-				fprintf(stderr, "----------> consume ##\n");				
 				++p;
 				eatwhitespace(&p);
-				
 				continue;
-			} else {
-				fprintf(stderr, "----------> ms=%p, *tok=%s, *p=%s\n", macro_subst, token, p);
 			}
 			/*
 			 * Stringification in macro substitutions
@@ -307,7 +301,7 @@ get_token:
 					if (*p == ')')
 						++p;
 					/*
-					 * Make a new table with substitutions from
+					 * Make a new table with substiutions from
 					 * the argument formal names to their values
 					 * given here, and substitute the body of the 
 					 * macro using it.
