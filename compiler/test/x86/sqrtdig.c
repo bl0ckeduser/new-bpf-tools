@@ -18,6 +18,11 @@
    originally written in real C October 12, 2012.
    (as always some little tweaks needed to feed it into
    the wannabe-compiler)
+
+   scientific notice: Newton's method would probably be
+   better on this one. or maybe taylor series? god knows,
+   and i don't even know if god exists, so let's end this 
+   here.
  */
 
 long null = 0x0;

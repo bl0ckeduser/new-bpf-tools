@@ -14,6 +14,8 @@ The code is not particularly maintainable or readable, this is what happens
 when an overzealous high school student wants to ``prove himself'' and
 writes large amounts of code like an insane madman. 
 Programming is like a drug
+Corporate-quality code this ain't. but definitely i was enthusiastic and
+willing, i suppose that is the point
 
 Although, I think the lexer and parser are not *that* bad. The codegen_x86 
 module is extremely nasty in a few parts, it has some very messy stuff when 
