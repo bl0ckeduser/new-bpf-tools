@@ -1,3 +1,10 @@
+0.72 - 1 Jan 2016
+- some fixes to the comments
+- new example code: anagrams.c
+- preprocessor: fix infinite loop in some sneaky cases
+- postmortem: programming is like a drug
+- new example code: euler33.c
+
 0.71 - 30 Nov 2014
 
 - wcc command and self-compilation work on MinGW (aka gnu on windows)
