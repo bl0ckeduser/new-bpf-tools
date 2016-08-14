@@ -4,7 +4,7 @@ TEST_PROG="test_prog"
 if [ $(uname | grep MINGW) ];
 then
 	TEST_PROG="testprog.exe"
-	MY_COMPILER="./compiler.exe"
+	MY_COMPILER="./wcc4b.exe"
 	LC_FLAG=""
 else
 	LC_FLAG="-lc"
