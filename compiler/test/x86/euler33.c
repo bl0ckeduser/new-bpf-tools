@@ -14,20 +14,17 @@ void main(void)
 	int x, keycount, y, num_digit1;
 	int num_digit2, denom_digit1, denom_digit2;
 	int test2, c;
-	int num_keys[100];
-	int denom_keys[100];
-	int factor_count[1000];
+	int *num_keys = malloc(100 * sizeof(int));
+	int *denom_keys = malloc(100 * sizeof(int));
+	int *factor_count = malloc(1000 * sizeof(int));
 	int product;
 	int denom;
 	int tp;
 	
-	int numFactors[10000];
-	int denomFactors[10000];
-
+	int *numFactors = malloc(10000 * sizeof(int));
+	int *denomFactors = malloc(10000 * sizeof(int));
 
 	x = 10;
-
-
 
 	keycount = 0;
 	
@@ -38,7 +35,6 @@ void main(void)
 		{
 			if((x%10!=0)*(y%10!=0))
 			{
-	
 				num_digit1 = (y/10);
 				num_digit2 = y-(10*(y/10));
 				
