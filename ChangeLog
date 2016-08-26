@@ -5,6 +5,8 @@
 - postmortem: programming is like a drug
 - new example code: euler33.c
 
+-----------------------------------------------------------------------
+
 0.71 - 30 Nov 2014
 
 - wcc command and self-compilation work on MinGW (aka gnu on windows)
