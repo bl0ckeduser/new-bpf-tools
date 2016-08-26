@@ -494,7 +494,21 @@ exp_tree_t struct_decl(int is_extern)
 		} else if (valid_tree((subtree = decl2(is_extern)))) {
 			tree = new_exp_tree(NAMED_STRUCT_DECL, &name);
 			add_child(&tree, alloc_exptree(subtree));
-			/* XXX: TODO: { , decl2 } repetition */
+
+			/* { , decl2 } */
+			if (peek().type == TOK_COMMA) {
+				while (1) {
+					if (peek().type == TOK_COMMA) {
+						adv();
+						subtree = decl2(is_extern);
+						if (!valid_tree(subtree))
+							parse_fail("bad declaration syntax");
+						add_child(&tree, alloc_exptree(subtree));
+					} else {
+						break;
+					}
+				}
+			}
 			return tree;
 		} else
 			indx = sav_indx;
