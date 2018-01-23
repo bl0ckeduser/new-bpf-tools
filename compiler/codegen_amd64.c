@@ -217,22 +217,6 @@ int switch_maxlab[256];
 
 /* ====================================================== */
 
-/*
- * Helper: mark all registers needed to pass the arguments
- * as dirty (AMD64 special)
- */
-void amd64_dirty_call_registers(exp_tree_t *tree)
-{
-	int i, j;
-	for (i = 0; i < tree->child_count; ++i) {
-		for (j = 0; j < TEMP_REGISTERS; ++j) {
-			if (!strcmp(amd64_calling_registers[i], temp_reg[j])) {
-				ts_used[j] = 1;
-			}
-		}
-	}
-}
-
 void* checked_malloc(long s)
 {
 	void *ptr = malloc(s);
@@ -862,22 +846,20 @@ int sym_stack_offs(token_t *tok)
 	char *s = get_tok_str(*tok);
 	int i = 0;
 
-	/* Try stack locals */
-	for (i = 0; i < syms; i++)
-		if (!strcmp(symtab[i], s)) {
-			return offs(symsiz, i);
-		}
-
 	/* Try arguments */
 	/*
 	 * On AMD64 arguments are usually not passed on the stack
 	 * so this is commented-out.
 	 */
-	/*
 	for (i = 0; i < arg_syms; i++)
 		if (!strcmp(arg_symtab[i], s))
 			return -2*8 - offs(argsiz, i);
-	*/
+
+	/* Try stack locals */
+	for (i = 0; i < syms; i++)
+		if (!strcmp(symtab[i], s)) {
+			return offs(symsiz, i);
+		}
 
 	compiler_fail("could not find stack address for this symbol", tok, 0, 0);
 	return 0;
@@ -897,16 +879,16 @@ char* sym_lookup(token_t* tok)
 	char *s = get_tok_str(*tok);
 	int i = 0;
 
+	/* Try arguments */
+	for (i = 0; i < arg_syms; i++)
+		if (!strcmp(arg_symtab[i], s))
+			return newstr(symstack(-2*8 - offs(argsiz, i)));
+
 	/* Try stack locals */
 	for (i = 0; i < syms; i++)
 		if (!strcmp(symtab[i], s)) {
 			return newstr(symstack(offs(symsiz, i)));
 		}
-
-	/* Try arguments */
-	for (i = 0; i < arg_syms; i++)
-		if (!strcmp(arg_symtab[i], s))
-			return newstr(symstack(-2*8 - offs(argsiz, i)));
 
 	/* 
 	 * Try globals last -- they are shadowed
@@ -949,15 +931,15 @@ typedesc_t sym_lookup_type(token_t* tok)
 	char *s = get_tok_str(*tok);
 	int i = 0;
 
-	/* Try stack locals */
-	for (i = 0; i < syms; i++)
-		if (!strcmp(symtab[i], s))
-			return symtyp[i];
-
 	/* Try arguments */
 	for (i = 0; i < arg_syms; i++)
 		if (!strcmp(arg_symtab[i], s))
 			return argtyp[i];
+
+	/* Try stack locals */
+	for (i = 0; i < syms; i++)
+		if (!strcmp(symtab[i], s))
+			return symtyp[i];
 
 	/* 
 	 * Try globals last -- they are shadowed
@@ -1221,14 +1203,21 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args, exp_tree_t *argl)
 	 * Copy the argument symbols to the *main* symbol table
 	 * and copy them from the registers into local stack
 	 * (special hack for AMD64) 
+	 * exception: large (presumably struct) arguments do
+	 * end up on the stack
 	 */
 	for (i = 0; i < argl->child_count && args[i]; ++i) {
 		if (strlen(args[i]) >= SYMLEN)
 			compiler_fail("argument name too long", findtok(tree), 0, 0);
-		/* strcpy(arg_symtab[arg_syms], args[i]); */
-		/* ++arg_syms; */
 
-		printf("movq %s, %s\n", amd64_calling_registers[i], symstack(symbytes));
+
+		if (!(type2siz(tree_typeof(argl->child[i])) > 8)) {
+			printf("movq %s, %s\n", amd64_calling_registers[i], symstack(symbytes));
+		} else {
+			strcpy(arg_symtab[arg_syms], args[i]);
+			++arg_syms;
+			expandBuffers();
+		}
 
 		strcpy(symtab[syms], args[i]);
 
@@ -2902,7 +2891,7 @@ char* codegen(exp_tree_t* tree)
 
 
 		char *arg_temp_mem[32];
-		int arg_temp_mem_idx;
+		int total_struct_bytes = 0;
 
 		memcpy(my_ts_used, ts_used, TEMP_REGISTERS);
 		
@@ -2994,10 +2983,34 @@ char* codegen(exp_tree_t* tree)
 			 * function's arg type
 			 */
 			if (membsiz > 8) { 
-				/*
-				 * XXX this needs to be redone properly for AMD64
- 				 */
 
+				/*
+				 * Big thinks like big structs
+			 	 * need special handling
+				 */
+				#ifdef DEBUG
+					fprintf(stderr, "big arg: %d, %d bytes\n", i, membsiz);
+				#endif
+				if (check_proc_call(tree->child[i]) || tree->child[i]->head_type == ARRAY) {
+					/* procedure calls already give pointers */
+					sto = codegen(tree->child[i]);
+					printf("movq %s, %%rax\n", sto);
+				} else if (tree->child[i]->head_type == DEREF
+					|| tree->child[i]->head_type == DEREF_STRUCT_MEMB) {
+					sto = codegen(tree->child[i]->child[0]);
+					printf("movq %s, %%rax\n", sto);
+				} else {
+					sto = codegen(tree->child[i]);
+					printf("leaq %s, %%rax\n", sto);
+				}
+				printf("subq $%d, %%rsp\n", membsiz);
+				printf("leaq 0(%%rsp), %%rbx\n");
+				printf("movq %%rbx, %%rdi	# argument 0 to ___mymemcpy\n");
+				printf("movq %%rax, %%rsi	# argument 1 to ___mymemcpy\n");
+				printf("movq $%d, %%rdx		# argument 2 to ___mymemcpy\n", membsiz);
+				printf("call ___mymemcpy\n");
+				
+				total_struct_bytes += membsiz;
 			} else {
 				sto = registerize(codegen(tree->child[i]));
 				arg_temp_mem[i] = get_temp_mem();
@@ -3008,8 +3021,7 @@ char* codegen(exp_tree_t* tree)
 				free_temp_reg(sto);
 			}
 
-			if (callee_argtyp)
-				offset += type2siz(callee_argtyp[i]);
+
 		}
 
 		/*
@@ -3020,10 +3032,12 @@ char* codegen(exp_tree_t* tree)
 	
 		/* 
 		 * Move the argument values held in temporary stack to the 
-		 * final calling registers 
+		 * final calling registers (for non-large/non-struct arguments)
 		 */
 		for (i = 0; i < tree->child_count; ++i) {
-			printf("movq %s, %s\n", arg_temp_mem[i], amd64_calling_registers[i]);
+			if (!callee_argtyp ||type2siz(callee_argtyp[i]) <= 8) {
+				printf("movq %s, %s\n", arg_temp_mem[i], amd64_calling_registers[i]);
+			}
 		}
 
 		/* 
@@ -3064,6 +3078,10 @@ char* codegen(exp_tree_t* tree)
 					temp_reg[TEMP_REGISTERS - (i + 1)]);
 
 		printf("addq $%d, %%rsp\n", TEMP_REGISTERS * 8);
+
+		if (total_struct_bytes) {
+			printf("addq $%d, %%rsp\n", total_struct_bytes);
+		}
 
 		memcpy(ts_used, my_ts_used, TEMP_REGISTERS);
 
@@ -3262,6 +3280,7 @@ char* codegen(exp_tree_t* tree)
 					#endif
 				}
 
+
 				/* Obtain and store argument type data */
 				argtyp[i] = tree_typeof(argl->child[i]);
 
@@ -3269,9 +3288,16 @@ char* codegen(exp_tree_t* tree)
 				if (argtyp[i].ty == TO_UNK)
 					argtyp[i].ty = INT_DECL;
 
-				/* Calculate byte offsets */
-				argsiz[i] = type2siz(argtyp[i]);
-				argbytes += argsiz[i];
+				/*
+				 * Special amd64 hack, consider offsets only for large arguments
+				 */
+				if (type2siz(tree_typeof(argl->child[i])) > 8) {
+					/* Calculate byte offsets */
+					argsiz[i] = type2siz(argtyp[i]);
+					argbytes += argsiz[i];
+				} else {
+					argsiz[i] = 0;
+				}
 
 			}
 			proc_args[i] = NULL;

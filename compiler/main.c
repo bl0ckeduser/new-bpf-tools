@@ -311,16 +311,24 @@ int main(int argc, char** argv)
 
 	/*
 	 * `wcc' (wannabe C compiler) command
-	 * for unixlikes running x86: the outputs
-	 * are redirected to a temporary .s files,
-	 * then assembled using gcc.
+	 * for unixlikes running x86 (or amd64):
+	 * the outputs are redirected to a temporary 
+	 * .s files, then assembled using gcc.
 	 * (then remove the temporary .s files)
  	 */
 	#ifdef WCC
 		#ifdef MINGW_BUILD
-			sprintf(cmd, "gcc -m32 %s %s", wcc_sfiles, opt);
+			#ifdef TARGET_AMD64 
+				sprintf(cmd, "gcc %s %s", wcc_sfiles, opt);
+			#else
+				sprintf(cmd, "gcc -m32 %s %s", wcc_sfiles, opt);
+			#endif
 		#else
-			sprintf(cmd, "gcc -m32 %s -lc %s", wcc_sfiles, opt);
+			#ifdef TARGET_AMD64
+				sprintf(cmd, "gcc %s -lc %s", wcc_sfiles, opt);
+			#else
+				sprintf(cmd, "gcc -m32 %s -lc %s", wcc_sfiles, opt);
+			#endif
 		#endif
 		if (system(cmd) == -1)
 			fail("Failed to assemble. Do you have gcc installed ?");
