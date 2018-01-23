@@ -932,9 +932,11 @@ typedesc_t sym_lookup_type(token_t* tok)
 	int i = 0;
 
 	/* Try arguments */
+	/*
 	for (i = 0; i < arg_syms; i++)
 		if (!strcmp(arg_symtab[i], s))
 			return argtyp[i];
+	*/
 
 	/* Try stack locals */
 	for (i = 0; i < syms; i++)
