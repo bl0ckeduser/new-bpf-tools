@@ -71,7 +71,7 @@ char* temp_reg[TEMP_REGISTERS];
 #define AMD64_NUMBER_OF_CALLING_REGISTERS 6
 char *amd64_calling_registers[AMD64_NUMBER_OF_CALLING_REGISTERS];
 
-#define TEMP_MEM 16
+#define TEMP_MEM 32
 char* temp_mem[TEMP_MEM];
 
 char symstack_buf[128];
