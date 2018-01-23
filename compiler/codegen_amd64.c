@@ -1612,7 +1612,7 @@ void create_jump_tables(exp_tree_t* tree)
 		 * Write out the jump table
 		 */
 		printf("########## jump table for `switch' %-4d #########\n", switch_count);
-		printf("jt%d: .long ", switch_count);
+		printf("jt%d: .quad ", switch_count);
 		fflush(stdout);
 		for (i = 0; i <= maxlab; ++i) {
 			if (i) {
