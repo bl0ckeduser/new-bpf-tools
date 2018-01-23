@@ -14,7 +14,7 @@
 
 int main(int argc, char **argv)
 {
-	char *my_argv[] = {"foobar.elf", "-d", "10"};
+	char *my_argv[] = {"foobar.elf", "-d", "1000"};
 	old_main(3, my_argv);
 }
 
@@ -163,10 +163,14 @@ int main(int argc, char** argv)
 
 	if (!strcmp(argv[1], "-d")) {
 		require(argc > 2, "-d argument");
-		sscanf(argv[2], "%d", &d);
+		/* 
+		 * very sneaky bug here where %ld must be used in lieu of %d
+	 	 * if we are using 64-bit int
+		 */
+		sscanf(argv[2], "%ld", &d);
 		n = bruteforce_terms(d);
 	} else {
-		sscanf(argv[1], "%d", &n);
+		sscanf(argv[1], "%ld", &n);
 	}
 	require(n > 3, "n > 3");
 

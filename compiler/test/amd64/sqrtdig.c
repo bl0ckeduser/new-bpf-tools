@@ -93,8 +93,9 @@ int main(int argc, char** argv)
 	}
 	*/
 
-	sscanf("2", "%d", &s);
-	sscanf("50", "%d", &d);
+	/* sneaky bug with %ld for 64-bit int here again */
+	sscanf("2", "%ld", &s);
+	sscanf("50", "%ld", &d);
 
 	bignum_nset(one, 1);
 

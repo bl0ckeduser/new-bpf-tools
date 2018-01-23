@@ -1462,10 +1462,52 @@ void run_codegen(exp_tree_t *tree)
 	deal_with_procs(tree);
 	proc_ok = 0;	/* no further procedures shall be allowed */
 
-
-	/*
-	 * XXX TODO ___mymemcpy for amd64 
-	 */
+	#ifndef MINGW_BUILD
+		puts(".type ___mymemcpy, @function");
+	#endif
+	puts("___mymemcpy:");
+	puts(".globl ___mymemcpy");
+	puts("# set up stack space");
+	puts("pushq %rbp");
+	puts("movq %rsp, %rbp");
+	puts("subq $144, %rsp");
+	puts("");
+	puts("# >>> compiled code for '___mymemcpy'");
+	puts("_tco____mymemcpy:");
+	puts("movq %rdi, -144(%rbp)");
+	puts("movq %rsi, -152(%rbp)");
+	puts("movq %rdx, -160(%rbp)");
+	puts("movq -144(%rbp), %rsi");
+	puts("movq %rsi, %rdi");
+	puts("movq %rdi, -8(%rbp)");
+	puts("MYMEMCPY_IL0: ");
+	puts("movq -160(%rbp), %rsi");
+	puts("decq -160(%rbp)");
+	puts("movq $0, %rdi");
+	puts("cmpq %rsi, %rdi");
+	puts("je MYMEMCPY_IL1");
+	puts("movq -144(%rbp), %rsi");
+	puts("addl $1, -144(%rbp)");
+	puts("movq %rsi, %rax");
+	puts("movq -152(%rbp), %rsi");
+	puts("addl $1, -152(%rbp)");
+	puts("movq %rsi, %rbx");
+	puts("movsbq (%rbx), %rbx");
+	puts("movq %rbx, %rbx");
+	puts("movb %bl, (%rax) #ptra");
+	puts("jmp MYMEMCPY_IL0");
+	puts("MYMEMCPY_IL1: ");
+	puts("# return value");
+	puts("movq -8(%rbp), %rsi");
+	puts("movq %rsi, %rax # ret");
+	puts("jmp _ret____mymemcpy");
+	puts("");
+	puts("# clean up stack and return");
+	puts("_ret____mymemcpy:");
+	puts("addq $168, %rsp");
+	puts("movq %rbp, %rsp");
+	puts("popq %rbp");
+	puts("ret");
 
 	/*
 	 * Test/debug the type analyzer
@@ -2954,33 +2996,9 @@ char* codegen(exp_tree_t* tree)
 			 */
 			if (membsiz > 8) { 
 				/*
-				 * Big thinks like big structs
-			 	 * need special handling
-				 */
-				#ifdef DEBUG
-					fprintf(stderr, "big arg: %d, %d bytes\n", i, membsiz);
-				#endif
-				if (check_proc_call(tree->child[i]) || tree->child[i]->head_type == ARRAY) {
-					/* procedure calls already give pointers */
-					sto = codegen(tree->child[i]);
-					printf("movq %s, %%rax\n", sto);
-				} else if (tree->child[i]->head_type == DEREF
-					|| tree->child[i]->head_type == DEREF_STRUCT_MEMB) {
-					sto = codegen(tree->child[i]->child[0]);
-					printf("movq %s, %%rax\n", sto);
-				} else {
-					sto = codegen(tree->child[i]);
-					printf("leaq %s, %%rax\n", sto);
-				}
-				printf("leaq %d(%%rsp), %%rbx\n", offset);
-				printf("subq $12, %%rsp\n");
-				printf("movq %%rbx, 0(%%rsp)	# argument 0 to ___mymemcpy\n");
-				printf("movq %%rax, 8(%%rsp)	# argument 1 to ___mymemcpy\n");
-				printf("movq $%d, %%rsi\n", membsiz);
-				printf("movq %%rsi, 16(%%rsp)	# argument 2 to ___mymemcpy\n");
-				printf("call ___mymemcpy\n");
-				printf("addq $24, %%rsp		# throw off args\n");
-				printf("leaq __return_buffer, %%rax\n");
+				 * XXX this needs to be redone properly for AMD64
+ 				 */
+
 			} else {
 				sto = registerize(codegen(tree->child[i]));
 				arg_temp_mem[i] = get_temp_mem();
@@ -2990,7 +3008,6 @@ char* codegen(exp_tree_t* tree)
 					i, get_tok_str(*(tree->tok)));
 				free_temp_reg(sto);
 			}
-
 
 			if (callee_argtyp)
 				offset += type2siz(callee_argtyp[i]);
@@ -3402,14 +3419,24 @@ char* codegen(exp_tree_t* tree)
 				sto = codegen(tree->child[0]);	
 				printf("leaq %s, %%rax\n", sto);
 			}
-			printf("leaq __return_buffer, %%rbx\n");
-			printf("subq $12, %%rsp\n");
-			printf("movq %%rbx, 0(%%rsp)	# argument 0 to ___mymemcpy\n");
-			printf("movq %%rax, 8(%%rsp)	# argument 1 to ___mymemcpy\n");
-			printf("movq $%d, %%rsi\n", type2siz(tree_typeof(tree->child[0])));
-			printf("movq %%rsi, 16(%%rsp)	# argument 2 to ___mymemcpy\n");
+			printf("subq $48, %%rsp\n");
+			printf("pushq %%rax\n");
+			printf("pushq %%rbx\n");
+			printf("pushq %%rcx\n");
+			printf("pushq %%rdx\n");
+			printf("pushq %%rsi\n");
+			printf("pushq %%rdi\n");
+			printf("leaq __return_buffer, %%rdi	# argument 0 to ___mymemcpy\n");
+			printf("movq %%rax, %%rsi	# argument 1 to ___mymemcpy\n");
+			printf("movq $%d, %%rdx		# argument 2 to ___mymemcpy\n", type2siz(tree_typeof(tree->child[0])));
 			printf("call ___mymemcpy\n");
-			printf("addq $24, %%rsp		# throw off args\n");
+			printf("popq %%rdi\n");
+			printf("popq %%rsi\n");
+			printf("popq %%rdx\n");
+			printf("popq %%rcx\n");
+			printf("popq %%rbx\n");
+			printf("popq %%rax\n");
+			printf("addq $48, %%rsp\n");
 			printf("leaq __return_buffer, %%rax\n");
 		} else {
 			/* code the return expression (if there is one) */

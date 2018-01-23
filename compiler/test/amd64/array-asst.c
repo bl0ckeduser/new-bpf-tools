@@ -1,7 +1,7 @@
 main()
 {
 	char buf[512];
-	int derp[512];
+	long derp[512];
 	char *ptr1, *ptr2;
 	int i;
 	char c_index;
