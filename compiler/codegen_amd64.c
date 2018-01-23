@@ -1466,7 +1466,6 @@ void run_codegen(exp_tree_t *tree)
 		puts(".type ___mymemcpy, @function");
 	#endif
 	puts("___mymemcpy:");
-	puts(".globl ___mymemcpy");
 	puts("# set up stack space");
 	puts("pushq %rbp");
 	puts("movq %rsp, %rbp");
