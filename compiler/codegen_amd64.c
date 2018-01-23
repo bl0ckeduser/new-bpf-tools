@@ -1138,6 +1138,7 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args, exp_tree_t *argl)
 	char buf[1024];
 	char *buf2;
 	int i;
+	int stackoffs[64];
 
 	/* If syms is set to 0, funny things happen */
 	syms = 1;
@@ -1187,35 +1188,15 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args, exp_tree_t *argl)
 	printf(".globl %s\n", name);
 #endif
 
-	/* 
-	 * Do the usual x86 function entry process,
-	 * moving down the stack pointer to make
-	 * space for the local variables 
-	 */
-
-	printf("# set up stack space\n");
-	printf("pushq %%rbp\n");
-	printf("movq %%rsp, %%rbp\n");
-	printf("subq $%d, %%rsp\n", symbytes);
-	printf("\n# >>> compiled code for '%s'\n", name);
-
-	printf("_tco_%s:\n", name);	/* hook for TCO */
-
 	/*
-	 * Copy the argument symbols to the *main* symbol table
-	 * and copy them from the registers into local stack
-	 * (special hack for AMD64) 
-	 * exception: large (presumably struct) arguments do
-	 * end up on the stack
+	 * special hack for AMD64
 	 */
 	for (i = 0; i < argl->child_count && args[i]; ++i) {
 		if (strlen(args[i]) >= SYMLEN)
 			compiler_fail("argument name too long", findtok(tree), 0, 0);
 
 
-		if (!(type2siz(tree_typeof(argl->child[i])) > 8)) {
-			printf("movq %s, %s\n", amd64_calling_registers[i], symstack(symbytes));
-		} else {
+		if (type2siz(tree_typeof(argl->child[i])) > 8) {
 			strcpy(arg_symtab[arg_syms], args[i]);
 			++arg_syms;
 			expandBuffers();
@@ -1232,6 +1213,8 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args, exp_tree_t *argl)
 			dump_td(symtyp[syms]);
 		*/
 
+		stackoffs[i] = symbytes;
+
 		/* If no type specified, default to int */
 		if (symtyp[syms].ty == TO_UNK)
 			symtyp[syms].ty = INT_DECL;
@@ -1243,6 +1226,26 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args, exp_tree_t *argl)
 		++syms;
 
 		expandBuffers();
+	}
+
+	/* 
+	 * Do the usual x86 function entry process,
+	 * moving down the stack pointer to make
+	 * space for the local variables 
+	 */
+
+	printf("# set up stack space\n");
+	printf("pushq %%rbp\n");
+	printf("movq %%rsp, %%rbp\n");
+	printf("subq $%d, %%rsp\n", symbytes);
+	printf("\n# >>> compiled code for '%s'\n", name);
+
+	printf("_tco_%s:\n", name);	/* hook for TCO */
+
+	for (i = 0; i < argl->child_count && args[i]; ++i) {
+		if (!(type2siz(tree_typeof(argl->child[i])) > 8)) {
+			printf("movq %s, %s\n", amd64_calling_registers[i], symstack(stackoffs[i]));
+		}
 	}
 
 	/* 
@@ -1460,7 +1463,7 @@ void run_codegen(exp_tree_t *tree)
 	puts("# set up stack space");
 	puts("pushq %rbp");
 	puts("movq %rsp, %rbp");
-	puts("subq $144, %rsp");
+	puts("subq $168, %rsp");
 	puts("");
 	puts("# >>> compiled code for '___mymemcpy'");
 	puts("_tco____mymemcpy:");
