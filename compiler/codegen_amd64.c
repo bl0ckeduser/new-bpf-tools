@@ -2180,9 +2180,9 @@ void setup_symbols_iter(exp_tree_t *tree, int symty, int first_pass)
 							/* XXX: change .long for types other than `int' */
 
 							if (dc->child_count == 2) {
-								printf(".long %s\n", init_str);
+								printf(".quad %s\n", init_str);
 							} else {
-								printf(".long 0\n");
+								printf(".quad 0\n");
 							}
 
 							printf(".globl %s\n\n",
