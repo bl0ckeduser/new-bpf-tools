@@ -94,7 +94,11 @@ int type2siz(typedesc_t ty)
 	 * 4 bytes (32-bit word), otherwise it's the size 
  	 * of the base type
 	 */
+#ifdef TARGET_AMD64
+	return ty.ptr || ty.arr ? 8 : decl2siz(ty.ty);
+#else
 	return ty.ptr || ty.arr ? 4 : decl2siz(ty.ty);
+#endif
 }
 
 /*
@@ -302,7 +306,11 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 	 */
 	if (check_array(dc) && array_base_type->ptr == 0
 		&& array_base_type->ty == CHAR_DECL) {
+#ifdef TARGET_AMD64
+		*objsiz *= 8;
+#else
 		*objsiz *= 4;
+#endif
 		array_base_type->ty = INT_DECL;
 	}
 
@@ -475,12 +483,22 @@ int struct_tag_offs(typedesc_t stru, char *tag_name)
 
 /* 
  * INT_DECL => 4 because "int" is 4 bytes, etc.
- * 
- * XXX: this is x86-specific ! maybe move this
- * to "x86-types.c" or something like that
  */
 int decl2siz(int bt)
 {
+#ifdef TARGET_AMD64
+	switch (bt) {
+		case LONG_DECL:
+		case INT_DECL:
+			return 8;
+		case CHAR_DECL:
+			return 1;
+		case VOID_DECL:
+			return 0;
+		default:
+			return 0;
+	}
+#else
 	switch (bt) {
 		case LONG_DECL:
 		case INT_DECL:
@@ -492,6 +510,7 @@ int decl2siz(int bt)
 		default:
 			return 0;
 	}
+#endif
 }
 
 /*

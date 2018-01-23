@@ -4,7 +4,10 @@ a compiler for a subset of C, targeting 32-bit x86 (via GNU assembler).
 This 32-bit x86 compiler is tested on FreeBSD, GNU / Linux, and Windows
 (via the MinGW toolchain).
 
-It can compile itself !
+There is now very rough and still buggy support for amd64 code generation,
+presently only tested on GNU/Linux (new as of January 2018).
+
+The 32-bit x86 version can compile itself !
 
 I started this in highschool in 2012 and the code has turned into a mess.
 I am now attending a CS program, since 2013, & if I started this project
