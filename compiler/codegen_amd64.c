@@ -3069,6 +3069,10 @@ char* codegen(exp_tree_t* tree)
 		 */
 		printf("movq %%rax, %s\n", sto);
 
+		if (total_struct_bytes) {
+			printf("addq $%d, %%rsp\n", total_struct_bytes);
+		}
+
 		/* 
 		 * Restore the registers as they were
 		 * prior to the call -- pop them in 
@@ -3080,10 +3084,6 @@ char* codegen(exp_tree_t* tree)
 					temp_reg[TEMP_REGISTERS - (i + 1)]);
 
 		printf("addq $%d, %%rsp\n", TEMP_REGISTERS * 8);
-
-		if (total_struct_bytes) {
-			printf("addq $%d, %%rsp\n", total_struct_bytes);
-		}
 
 		memcpy(ts_used, my_ts_used, TEMP_REGISTERS);
 
