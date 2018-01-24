@@ -134,11 +134,11 @@ int get_arr_dim(exp_tree_t *decl, int n)
 {
 	int array = 0;
 	int i;
-	int r;
+	long r;
 	for (i = 0; i < decl->child_count; ++i)
 		if (decl->child[i]->head_type == ARRAY_DIM)
 			if (array++ == n) {
-				sscanf(get_tok_str(*(decl->child[i]->tok)), "%d", &r);
+				sscanf(get_tok_str(*(decl->child[i]->tok)), "%ld", &r);
 				return r;
 			}
 	return -1;

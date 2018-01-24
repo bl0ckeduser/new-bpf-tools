@@ -18,7 +18,7 @@ extern char* current_file;
 typedef struct {
 	char *name;		/* e.g. DONALD */
 	char *body;		/* e.g. x+y */
-	char argc;		/* e.g. 2 */
+	int argc;		/* e.g. 2 */
 	char *argv[32];	/* e.g. &{"x","y"} */
 } parameterized_macro_entry_t;
 
@@ -40,7 +40,7 @@ extensible_buffer_t* new_extensible_buffer(void)
 	return eb;
 }
 
-void extensible_buffer_putchar(extensible_buffer_t* eb, char c)
+void extensible_buffer_putchar(extensible_buffer_t* eb, int c)
 {
 	if (++eb->len >= eb->alloc) {
 		eb->alloc *= 2;
@@ -119,7 +119,7 @@ void read_defkey_token(char *dest, char **p)
 	*q = 0;
 }
 
-int identchar(char c)
+int identchar(int c)
 {
 	return (c >= 'a' && c <= 'z')
 		|| (c >= '0' && c <= '9')
@@ -549,7 +549,7 @@ int iterate_preprocess(hashtab_t *defines,
 				linemarker(new_src, 1, include_file);
 				for (;;) {
 					int c = fgetc(include_file_ptr);
-					if (c < 0)
+					if (feof(include_file_ptr))
 						break;
 					extensible_buffer_putchar(new_src, c);
 				}

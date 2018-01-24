@@ -1275,12 +1275,15 @@ exp_tree_t expr(void)
 			else
 				break;
 		}
-		if (len == 1)
+		if (len == 1) {
 			return *(seq.child[0]);
-		else
+		}
+		else {
 			return seq;
-	} else
+		}
+	} else {
 		return null_tree;
+	}
 }
 
 /*
@@ -1443,7 +1446,7 @@ exp_tree_t ternary_expr(void)
 }
 
 /* ccor_expr := ccand_expr ['||' ccand_expr] */
-void ccor_dispatch(char oper, exp_tree_t *dest)
+void ccor_dispatch(int oper, exp_tree_t *dest)
 {
 	switch (oper) {
 		case TOK_CC_OR:
@@ -1462,7 +1465,7 @@ exp_tree_t ccor_expr(void)
 }
 
 /* ccand_expr := bor_expr ['&&' bor_expr] */
-void ccand_dispatch(char oper, exp_tree_t *dest)
+void ccand_dispatch(int oper, exp_tree_t *dest)
 {
 	switch (oper) {
 		case TOK_CC_AND:
@@ -1482,7 +1485,7 @@ exp_tree_t ccand_expr(void)
 
 /* token: TOK_PIPE, node : BOR */
 /* bor_expr := bxor_expr ['|' bxor_expr] */
-void bor_dispatch(char oper, exp_tree_t *dest)
+void bor_dispatch(int oper, exp_tree_t *dest)
 {
 	switch (oper) {
 		case TOK_PIPE:
@@ -1501,7 +1504,7 @@ exp_tree_t bor_expr(void)
 
 /* token: TOK_CARET, node: BXOR */
 /* bxor_expr := band_expr ['^' band_expr] */
-void bxor_dispatch(char oper, exp_tree_t *dest)
+void bxor_dispatch(int oper, exp_tree_t *dest)
 {
 	switch (oper) {
 		case TOK_CARET:
@@ -1520,7 +1523,7 @@ exp_tree_t bxor_expr(void)
 
 /* token: TOK_ADDR, node: BAND */
 /* band_expr = comp_expr ['&' comp_expr] */
-void band_dispatch(char oper, exp_tree_t *dest)
+void band_dispatch(int oper, exp_tree_t *dest)
 {
 	switch (oper) {
 		case TOK_ADDR:
@@ -1538,7 +1541,7 @@ exp_tree_t band_expr(void)
 }
 
 /* comp_expr := sum_expr [comp-op sum_expr] */
-void comp_dispatch(char oper, exp_tree_t *dest)
+void comp_dispatch(int oper, exp_tree_t *dest)
 {
 	switch (oper) {
 		case TOK_GT:
@@ -1569,7 +1572,7 @@ exp_tree_t comp_expr(void)
 }
 
 /* shift_expr := sum_expr [shift-op sum_expr] */
-void shift_dispatch(char oper, exp_tree_t *dest)
+void shift_dispatch(int oper, exp_tree_t *dest)
 {
 	switch (oper) {
 		case TOK_LSHIFT:
@@ -1588,7 +1591,7 @@ exp_tree_t shift_expr(void)
 }
 
 /* sum_expr := mul_expr { add-op mul_expr } */
-void sum_dispatch(char oper, exp_tree_t *dest)
+void sum_dispatch(int oper, exp_tree_t *dest)
 {
 	switch (oper) {
 		case TOK_PLUS:
@@ -1607,7 +1610,7 @@ exp_tree_t sum_expr(void)
 }
 
 /* mul_expr := e1 { mul-op e1 } */
-void mul_dispatch(char oper, exp_tree_t *dest)
+void mul_dispatch(int oper, exp_tree_t *dest)
 {
 	switch (oper) {
 		case TOK_DIV:
@@ -1861,7 +1864,7 @@ multi_array_access:
  *	 	| e0_4 {'->' e0_4}
  *		| e0_4
  */
-void e0_3_dispatch(char oper, exp_tree_t *dest)
+void e0_3_dispatch(int oper, exp_tree_t *dest)
 {
 	switch (oper) {
 		case TOK_DOT:
@@ -1872,7 +1875,7 @@ void e0_3_dispatch(char oper, exp_tree_t *dest)
 		break;
 	}
 }
-int check_e0_3_op(char oper)
+int check_e0_3_op(int oper)
 {
 	return oper == TOK_DOT || oper == TOK_ARROW;
 }
@@ -2245,7 +2248,7 @@ int is_C_op(int code, int type)
 		default: return 0;
 	}
 }
-void tree_dispatch(int code, char oper, exp_tree_t *dest)
+void tree_dispatch(int code, int oper, exp_tree_t *dest)
 {
 	switch(code) {
 		case B_CCAND: return ccor_dispatch(oper, dest);

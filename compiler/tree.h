@@ -93,7 +93,7 @@ enum {		/* head_type */
 extern char** tree_nam;
 
 typedef struct exp_tree {
-	char head_type;
+	int head_type;
 	token_t* tok;
 	/*unsigned*/ int child_count;
 	/*unsigned*/ int child_alloc;

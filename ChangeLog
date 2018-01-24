@@ -1,3 +1,9 @@
+0.73 - 24 Jan 2018
+
+- amd64 support, which can self-host
+
+-----------------------------------------------------------------------
+
 0.72 - 1 Jan 2016
 - some fixes to the comments
 - new example code: anagrams.c

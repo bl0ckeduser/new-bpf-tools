@@ -1526,7 +1526,7 @@ void create_jump_tables(exp_tree_t* tree)
 	char *str;
 	int count = 0;
 	int i;
-	int lab;
+	long lab;
 	int maxlab = -1;
 	exp_tree_t decor;
 	token_t num;
@@ -1571,7 +1571,7 @@ void create_jump_tables(exp_tree_t* tree)
 				 * 	(PROC_CALL:foo))
 				 */
 				str = get_tok_str(*(tree->child[i]->tok));
-				sscanf(str, "%d", &lab);
+				sscanf(str, "%ld", &lab);
 				/*
 				 * XXX: a more sophisticated scheme
 				 * may address these range issues, but I'm
@@ -2377,7 +2377,7 @@ char* codegen(exp_tree_t* tree)
 	int do_deref;
 	int tlab;
 	int entries, fill;
-	int jumptab;
+	long jumptab;
 	int casenum;
 	int defset;
 	int offs;
@@ -2535,6 +2535,7 @@ char* codegen(exp_tree_t* tree)
 				fill = 0;
 				entries = tree->child[1]->child_count;
 			}
+
 			for (i = 0; i < entries; ++i) {
 				/* (ASGN (ARRAY (VARIABLE:arr) (NUMBER:i)) XXX) */	
 				sprintf(sbuf, "%d", i);
@@ -3496,7 +3497,7 @@ char* codegen(exp_tree_t* tree)
 		 * says which jump table number this has been
 		 * mapped to. (see function `create_jump_tables')
 		 */
-		sscanf(get_tok_str(*(tree->child[tree->child_count - 1]->tok)), "%d", &jumptab);
+		sscanf(get_tok_str(*(tree->child[tree->child_count - 1]->tok)), "%ld", &jumptab);
 		/*
 		 * then get rid of it
 		 */

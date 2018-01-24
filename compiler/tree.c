@@ -118,6 +118,7 @@ void init_tree(void)
 exp_tree_t *alloc_exptree(exp_tree_t et)
 {
 	exp_tree_t *p = malloc(sizeof(exp_tree_t));
+
 	if (!p)
 		fail("malloc et");
 	*p = et;
