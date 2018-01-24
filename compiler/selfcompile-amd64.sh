@@ -1,4 +1,4 @@
-if ! test -e wcc
+if ! test -e wcc64
 then
 	echo "please compile the standalone wcc command via ./build-wcc.sh"
 	exit 1
