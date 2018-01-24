@@ -105,7 +105,11 @@ enum {
 
 struct bpf_kw {
 	char *str;
-	char tok;
+	/*
+	 * note, making this int rather than char as a hack to avoid some
+	 * alignment problems on AMD64 when trying to self-host
+	 */
+	int tok;
 };
 
 extern char** tok_nam;
