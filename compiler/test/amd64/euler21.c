@@ -17,7 +17,7 @@ sumDivisors(i)
 
 main()
 {
-	int *done = malloc(10000 * 4);
+	int *done = malloc(10000 * sizeof(int));
 	int a = 1;
 	int b;
 	int theSum = 0;
