@@ -61,6 +61,7 @@ char* get_tok_str(token_t t);
 extern int arr_dim_prod(typedesc_t ty);
 extern void parse_array_info(typedesc_t *typedat, exp_tree_t *et);
 void create_jump_tables(exp_tree_t*);
+char *siz2suffix(int siz);
 
 /* ====================================================== */
 
@@ -486,6 +487,14 @@ char *fixreg(char *r, int siz)
 			&& r[1] == 'r' && r[3] == 'x') {
 			new = malloc(64);
 			sprintf(new, "%%%cl", r[2]);
+			return new;
+		} else if (!strcmp(r, "%rsi")) {
+			new = malloc(64);
+			sprintf(new, "%%sil");
+			return new;
+		} else if (!strcmp(r, "%rdi")) {
+			new = malloc(64);
+			sprintf(new, "%%dil");
 			return new;
 		}
 	}
@@ -1139,6 +1148,7 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args, exp_tree_t *argl)
 	char *buf2;
 	int i;
 	int stackoffs[64];
+	int stacksize[64];
 
 	/* If syms is set to 0, funny things happen */
 	syms = 1;
@@ -1211,7 +1221,7 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args, exp_tree_t *argl)
 			fprintf(stderr, "-----------> argument: %s\n", args[i]);
 			printout_tree(*(argl->child[i]));
 			dump_td(symtyp[syms]);
-		*/
+		*/		
 
 		stackoffs[i] = symbytes;
 
@@ -1221,6 +1231,27 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args, exp_tree_t *argl)
 
 		/* Calculate byte offsets */
 		symsiz[syms] = type2siz(symtyp[syms]);
+
+		stacksize[i] = type2siz(symtyp[syms]);
+		
+		/*
+		 * This is somewhat of a hack to deal with a very subtle problem.
+		 * The stack grows downwards (generally speaking), however if you
+		 * have a multi-byte register then that register's memory space,
+		 * specifically, grows forwards.
+		 * Now suppose you have small (say 1 byte) registers mixed
+		 * with large (say 8 bytes) registers and you assume everything
+		 * just goes downwards, things will start to get mixed up
+		 * if you don't pad accordingly.
+		 * Try compiling test/amd64/pass-char.c with and without this
+		 * for an example, look specifically at the function called
+		 * "mixed".
+		 */		
+		if (symsiz[syms] < 8) {
+			symsiz[syms] = 8;
+		}
+
+
 		symbytes += symsiz[syms];
 
 		++syms;
@@ -1244,7 +1275,10 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args, exp_tree_t *argl)
 
 	for (i = 0; i < argl->child_count && args[i]; ++i) {
 		if (!(type2siz(tree_typeof(argl->child[i])) > 8)) {
-			printf("movq %s, %s\n", amd64_calling_registers[i], symstack(stackoffs[i]));
+			printf("mov%s %s, %s\n", 
+				siz2suffix(stacksize[i]),
+				fixreg(amd64_calling_registers[i], stacksize[i]),
+				symstack(stackoffs[i]));
 		}
 	}
 
@@ -1726,7 +1760,7 @@ void deal_with_procs(exp_tree_t *tree)
  * Get a GAS (64-bit) X86 instruction suffix
  * from a type declaration code
  */
-char *decl2suffix(char ty)
+char *decl2suffix(int ty)
 {
 	switch (ty) {
 		case LONG_DECL:		/* 8 bytes */
@@ -1744,7 +1778,7 @@ char *decl2suffix(char ty)
  * Byte size of an integer object
  * =>	GAS instruction suffix
  */
-char *siz2suffix(char siz)
+char *siz2suffix(int siz)
 {
 	switch (siz) {
 		case 8:
@@ -3041,8 +3075,15 @@ char* codegen(exp_tree_t* tree)
 		 * final calling registers (for non-large/non-struct arguments)
 		 */
 		for (i = 0; i < tree->child_count; ++i) {
-			if (!callee_argtyp ||type2siz(callee_argtyp[i]) <= 8) {
-				printf("movq %s, %s\n", arg_temp_mem[i], amd64_calling_registers[i]);
+			if (!callee_argtyp || type2siz(callee_argtyp[i]) <= 8) {
+				int callee_argtyp_size = 8;
+				if (callee_argtyp) {
+					callee_argtyp_size = type2siz(callee_argtyp[i]);
+				}
+				printf("mov%s %s, %s\n", 
+					siz2suffix(callee_argtyp_size),
+					arg_temp_mem[i], 
+					fixreg(amd64_calling_registers[i], callee_argtyp_size));
 			}
 		}
 
