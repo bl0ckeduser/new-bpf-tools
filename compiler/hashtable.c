@@ -27,7 +27,7 @@
 	return hashtab_hash_mode(key, nbuck, 0, 0, 0);
 }
 
-/*unsigned*/ int hashtab_hash_char(int c, int prev, int nbuck, /*unsigned*/ int prev_hash)
+/*unsigned*/ int hashtab_hash_char(char c, int prev, int nbuck, /*unsigned*/ int prev_hash)
 {
 	return hashtab_hash_mode(&c, nbuck, 1, prev, prev_hash);
 }

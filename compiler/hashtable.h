@@ -16,7 +16,7 @@ hashtab_t* new_hashtab(void);
 void* hashtab_lookup(hashtab_t* htab, char* key);
 void hashtab_insert(hashtab_t* htab, char* key, void* val);
 void* hashtab_lookup_with_hash(hashtab_t* htab, char* key, /*unsigned*/ int hash);
-/*unsigned*/ int hashtab_hash_char(int c, int prev, int nbuck, /*unsigned*/ int prev_hash);
+/*unsigned*/ int hashtab_hash_char(char c, int prev, int nbuck, /*unsigned*/ int prev_hash);
 void hashtab_pseudo_delete(hashtab_t *htab, char* key);
 
 #endif

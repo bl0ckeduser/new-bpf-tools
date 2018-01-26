@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include "tree.h"
 #include "typedesc.h"
+#include "diagnostics.h"
+#include "general.h"
 
 extern char* get_tok_str(token_t t);
 extern int type2offs(typedesc_t ty);

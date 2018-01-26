@@ -197,7 +197,7 @@ int intl_label = 0; 		/* internal label numbering */
 
 char buf[1024];			/* general use */
 
-int switch_count = 0;		/* index of a switch statement */
+long switch_count = 0;		/* index of a switch statement */
 				/* (counts; used for building jump tables) */
 /*
  * Stuff for `break' (and `continue')
@@ -1638,8 +1638,8 @@ void create_jump_tables(exp_tree_t* tree)
 		/*
 		 * Write out the jump table
 		 */
-		printf("########## jump table for `switch' %-4d #########\n", switch_count);
-		printf("jt%d: .quad ", switch_count);
+		printf("########## jump table for `switch' %-4ld #########\n", switch_count);
+		printf("jt%ld: .quad ", switch_count);
 		fflush(stdout);
 		for (i = 0; i <= maxlab; ++i) {
 			if (i) {
@@ -1651,9 +1651,9 @@ void create_jump_tables(exp_tree_t* tree)
 				 * no match: jump to `default' label (which is made to
 				 * be the end of the switch if there is no `default' defined)
 			 	 */
-				printf("jt%d_def", switch_count);
+				printf("jt%ld_def", switch_count);
 			} else {
-				printf("jt%d_l%d", switch_count, caselab[i]);
+				printf("jt%ld_l%d", switch_count, caselab[i]);
 			}
 			fflush(stdout);
 		}
@@ -1673,7 +1673,7 @@ void create_jump_tables(exp_tree_t* tree)
 		str = malloc(64);
 		if (!str)
 			fail("i couldn't get my 64 bytes, i'm quite sad");
-		sprintf(str, "%d", switch_count);
+		sprintf(str, "%ld", switch_count);
 		num.start = str;
 		num.len = strlen(str);
 		num.from_line = 0;
@@ -3566,11 +3566,11 @@ char* codegen(exp_tree_t* tree)
 
 		printf("movq $%d, %s\n", switch_maxlab[jumptab], sto2);
 		printf("cmpq %s, %s\n", sto2, sto);
-		printf("jg jt%d_def\n", jumptab);
+		printf("jg jt%ld_def\n", jumptab);
 		
 		printf("movq $%d, %s\n", 0, sto2);
 		printf("cmpq %s, %s\n", sto2, sto);
-		printf("jl jt%d_def\n", jumptab);
+		printf("jl jt%ld_def\n", jumptab);
 
 		free_temp_reg(sto2);
 
@@ -3588,7 +3588,7 @@ char* codegen(exp_tree_t* tree)
 		 * into a register
 		 */
 		sto2 = get_temp_reg();
-		printf("movq $jt%d, %s\n", jumptab, sto2);
+		printf("movq $jt%ld, %s\n", jumptab, sto2);
 
 		/*
 		 * add index*8 to the jumptable pointer
@@ -3613,16 +3613,16 @@ char* codegen(exp_tree_t* tree)
 		defset = 0;
 		for (i = 1; i < tree->child_count; ++i) {
 			if (tree->child[i]->head_type == SWITCH_CASE) {
-				printf("jt%d_l%d:\n",
+				printf("jt%ld_l%d:\n",
 					jumptab, casenum++);
 			} else if (tree->child[i]->head_type == SWITCH_BREAK) {
-				printf("jmp jt%d_end\n", jumptab);
+				printf("jmp jt%ld_end\n", jumptab);
 			} else if (tree->child[i]->head_type == SWITCH_DEFAULT) {
 				if (defset)
 					compiler_fail("only one `default' per `switch' please",
 							findtok(tree->child[i]), 0, 0);
 				defset = 1;
-				printf("jt%d_def:\n", jumptab);
+				printf("jt%ld_def:\n", jumptab);
 			} else {
 				/*
 				 * Normal code -- statement,
@@ -3641,9 +3641,9 @@ char* codegen(exp_tree_t* tree)
 		--break_count;
 
 		if (!defset)
-			printf("jt%d_def:\n", jumptab);
+			printf("jt%ld_def:\n", jumptab);
 
-		printf("jt%d_end:\n", jumptab);
+		printf("jt%ld_end:\n", jumptab);
 		return NULL;
 	}
 
