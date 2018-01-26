@@ -4390,58 +4390,58 @@ char* codegen(exp_tree_t* tree)
 		sto = get_temp_mem();
 		sav1 = sav2 = NULL;
 		/* 
-		 * If EAX or EDX are in use, save them
+		 * If RAX or RDX are in use, save them
 		 * to temporary stack storage, restoring
 		 * when the division tree is done
 		 */
-		if (ts_used[0]) {	/* EAX in use ? */
+		if (ts_used[0]) {	/* RAX in use ? */
 			sav1 = get_temp_mem();
 			printf("movq %%rax, %s\n", sav1);
 		}
-		if (ts_used[3]) {	/* EDX in use ? */
+		if (ts_used[3]) {	/* RDX in use ? */
 			sav2 = get_temp_mem();
 			printf("movq %%rdx, %s\n", sav2);
 		}
 		ts_used[0] = ts_used[3] = 1;
 		/* code the dividend */
 		str = codegen(tree->child[0]);
-		/* put the 32-bit dividend in EAX */
+		/* put the 64-bit dividend in RAX */
 		printf("movq %s, %%rax\n", str);
 		free_temp_reg(str);
 		free_temp_mem(str);
-		/* clear EDX (higher 32 bits of 64-bit dividend) */
-		printf("xor %%rdx, %%rdx\n");
-		/* extend EAX sign to EDX */
+		/* clear RDX (higher 64 bits of 128-bit dividend) */
+		printf("xorq %%rdx, %%rdx\n");
+		/* extend RAX sign to RDX */
 		if (tree->head_type != MOD)
-			printf("cdq\n");
+			printf("cqo\n");
 		for (i = 1; i < tree->child_count; i++) {
 			/* (can't idivl directly by a number, eh ?) */
 			if(tree->child[i]->head_type == VARIABLE) {
 				sym_s = sym_lookup(tree->child[i]->tok);
 				printf("idivq %s\n", sym_s);
 				if (tree->head_type != MOD) {
-					printf("xor %%rdx, %%rdx\n");
-					printf("cdq\n");
+					printf("xorq %%rdx, %%rdx\n");
+					printf("cqo\n");
 				}
 			} else {
 				str = codegen(tree->child[i]);
 				printf("idivq %s\n", str);
 				if (tree->head_type != MOD) {
-					printf("xor %%rdx, %%rdx\n");
-					printf("cdq\n");
+					printf("xorq %%rdx, %%rdx\n");
+					printf("cqo\n");
 				}
 				free_temp_reg(str);
 				free_temp_mem(str);
 			}
 		}
 		/*
-		 * move result (in EAX or EDX depending on operation)
+		 * move result (in RAX or RDX depending on operation)
 		 * to some temporary storage 
 		 */
 		printf("movq %s, %s\n", 
 			tree->head_type == MOD ? "%rdx" : "%rax",
 			sto);
-		/* restore or free EAX and EDX */
+		/* restore or free RAX and RDX */
 		if (sav1)
 			printf("movq %s, %%rax\n", sav1);
 		else
