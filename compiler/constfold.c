@@ -7,6 +7,7 @@
  * (tree implementation, parser, tokenizer)
  */
 
+#include "tokenizer.h"
 #include "tokens.h"
 #include "tree.h"
 #include "general.h"
