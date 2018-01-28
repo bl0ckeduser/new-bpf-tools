@@ -1271,6 +1271,11 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args, exp_tree_t *argl)
 	 * space for the local variables 
 	 */
 
+	#ifdef __FreeBSD__
+		while (symbytes % 16)
+			++symbytes;
+	#endif
+
 	printf("# set up stack space\n");
 	printf("pushq %%rbp\n");
 	printf("movq %%rsp, %%rbp\n");
@@ -3049,6 +3054,10 @@ char* codegen(exp_tree_t* tree)
 					sto = codegen(tree->child[i]);
 					printf("leaq %s, %%rax\n", sto);
 				}
+				#ifdef __FreeBSD__
+					while (membsiz % 16)
+						++membsiz;
+				#endif
 				printf("subq $%d, %%rsp\n", membsiz);
 				printf("leaq 0(%%rsp), %%rbx\n");
 				printf("movq %%rbx, %%rdi	# argument 0 to ___mymemcpy\n");
@@ -3604,7 +3613,7 @@ char* codegen(exp_tree_t* tree)
 		/*
 		 * goto jump_table_pointer[index];
 		 */
-		printf("jmpq (%s)\n", sto2);
+		printf("jmp *(%s)\n", sto2);
 
 		free_temp_reg(sto);
 		free_temp_reg(sto2);

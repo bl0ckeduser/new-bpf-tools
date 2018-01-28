@@ -48,6 +48,7 @@ void bignum_shift(bignum_t* bn);
 void bignum_mul(bignum_t* a, bignum_t* b);
 int bignum_cmp(bignum_t* a, bignum_t* b);
 int do_sqrt(int s);
+void require(int e, char* msg);
 
 bignum_t* make_bignum()
 {
@@ -73,7 +74,7 @@ void require(int e, char* msg)
 int main(int argc, char** argv)
 {
 	int i;
-	int s;
+	long s;
 	int n;
 	/* float x; */
 	bignum_t* x = make_bignum();
@@ -81,7 +82,7 @@ int main(int argc, char** argv)
 	int c;
 	/* float max; */
 	bignum_t* max = make_bignum();
-	int d;
+	long d;
 
 	bignum_t* acc = make_bignum();
 	bignum_t* one = make_bignum();

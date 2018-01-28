@@ -5,7 +5,8 @@ This 32-bit x86 compiler is tested on FreeBSD, GNU / Linux, and Windows
 (via the MinGW toolchain).
 
 There is now very rough and still buggy support for amd64 code generation,
-presently only tested on GNU/Linux (new as of January 2018).
+presently only tested on GNU/Linux and FreeBSD (new as of January 2018).
+It does not presently work on Windows/mingw64.
 
 The 32-bit x86 version (and now also amd64 version) can compile itself !
 
