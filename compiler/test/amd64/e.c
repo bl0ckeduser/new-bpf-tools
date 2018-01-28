@@ -161,10 +161,10 @@ int main(int argc, char** argv)
 
 	if (!strcmp(argv[1], "-d")) {
 		require(argc > 2, "-d argument");
-		sscanf(argv[2], "%d", &d);
+		sscanf(argv[2], "%ld", &d);
 		n = bruteforce_terms(d);
 	} else {
-		sscanf(argv[1], "%d", &n);
+		sscanf(argv[1], "%ld", &n);
 	}
 	require(n > 3, "n > 3");
 
