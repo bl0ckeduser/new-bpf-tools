@@ -1,3 +1,9 @@
+0.74 - 28 Jan 2018
+
+- fix various bugs (mostly relating to amd64 support)
+
+-----------------------------------------------------------------------
+
 0.73 - 24 Jan 2018
 
 - amd64 support, which can self-host
