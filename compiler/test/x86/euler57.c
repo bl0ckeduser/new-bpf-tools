@@ -65,7 +65,7 @@ IncBigNum(char* bn)
 	doCarry(bn);
 }
 
-CreateBigNum()
+char* CreateBigNum()
 {
 	return malloc(DIGITS);
 }

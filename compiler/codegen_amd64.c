@@ -3604,7 +3604,7 @@ char* codegen(exp_tree_t* tree)
 		/*
 		 * goto jump_table_pointer[index];
 		 */
-		printf("jmp (%s)\n", sto2);
+		printf("jmpq (%s)\n", sto2);
 
 		free_temp_reg(sto);
 		free_temp_reg(sto2);

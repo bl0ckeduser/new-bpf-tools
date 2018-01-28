@@ -27,7 +27,7 @@ foo(u) {
 	}
 }
 
-bar(u) {
+void bar(u) {
 	switch(u) {
 		case 0:
 			printf("that's teh way\n");

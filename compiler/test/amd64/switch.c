@@ -4,7 +4,6 @@
  */
 
 foo(u) {
-	printf("foo %d\n", u);
 	switch(u) {
 		case 324:
 			printf("yes\n");
@@ -28,7 +27,7 @@ foo(u) {
 	}
 }
 
-bar(u) {
+void bar(u) {
 	switch(u) {
 		case 0:
 			printf("that's teh way\n");

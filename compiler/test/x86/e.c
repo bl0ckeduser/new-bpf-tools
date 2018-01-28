@@ -10,8 +10,6 @@
  * nearly half of it goes to the government, so don't fucking splurge!!!
  */
 
-#define unsigned /**/
-
 int main(int argc, char **argv)
 {
 	char *my_argv[] = {"foobar.elf", "-d", "1000"};
@@ -146,7 +144,7 @@ int main(int argc, char** argv)
 	bignum_t* acc = make_bignum();
 	bignum_t* acc2 = make_bignum();
 	bignum_t* sum = make_bignum();
-	unsigned int places;
+	int places;
 	bignum_t* ptab[10];
 
 	int n, d;
@@ -304,8 +302,8 @@ int bignum_len(bignum_t* a){
 void bignum_nmul(bignum_t* a, int n){
 	int max_len = a->length;
 	int i, j;
-	unsigned long carry = 0;
-	unsigned long dig;
+	long carry = 0;
+	long dig;
 
 	for(i = 0; i < max_len || carry; i++) {
 		/* make space for new digits if necessary */
@@ -372,7 +370,7 @@ int bignum_cmp(bignum_t* a, bignum_t* b){
 void bignum_sub(bignum_t* a, bignum_t* b){
 	int max_len = a->length > b->length ? a->length : b->length;
 	int i, j;
-	unsigned long borrow = 0;
+	long borrow = 0;
 
 	/* negative ? */
 	if (bignum_cmp(a, b) == +1) {
@@ -418,7 +416,7 @@ void bignum_sub(bignum_t* a, bignum_t* b){
 void bignum_add(bignum_t* a, bignum_t* b){
 	int max_len = a->length > b->length ? a->length : b->length;
 	int i, j;
-	unsigned long carry = 0;
+	long carry = 0;
 
 	for(i = 0; i < max_len || carry; i++) {
 		/* make space for new digits if necessary */

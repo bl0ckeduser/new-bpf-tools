@@ -268,7 +268,6 @@ int main(int argc, char** argv)
 				fflush(stdout);
 				strcat(wcc_sfiles, tempf);
 				strcat(wcc_sfiles, " ");
-				printf("%s\n", wcc_sfiles);
 			/* #define injection */
 			} else if (argv[i][0] && argv[i][0] == '-' && argv[i][1] == 'D') {
 				p = &argv[i][2];

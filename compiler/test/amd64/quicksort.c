@@ -28,7 +28,7 @@ int partition(int *arr, int start, int end)
 	return a;
 }
 
-int quicksort(int *arr, int start, int end)
+void quicksort(int *arr, int start, int end)
 {
 	int p;
 	if (end - start <= 1) {

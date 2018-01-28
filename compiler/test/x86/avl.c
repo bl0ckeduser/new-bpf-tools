@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
 long null = 0x0;	/* XXX: if real headers no more of this hack */
 
 typedef struct avl_node {
@@ -35,6 +36,11 @@ typedef struct avl_node {
 	struct avl_node* right;
 	struct avl_node* parent;
 } avl_node_t;
+
+void dump(avl_node_t* node, int depth);
+void right_rotate(avl_node_t *k2);
+void left_rotate(avl_node_t *k1);
+void insert(avl_node_t* root, int val);
 
 avl_node_t *root;
 
@@ -119,8 +125,6 @@ void insert(avl_node_t* root, int val)
 			break;
 
 	}
-
-	return 0;
 }
 
 void left_rotate(avl_node_t *k1)
