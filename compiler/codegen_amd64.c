@@ -8,6 +8,12 @@
  * and do 64-bit calculations, see test/amd64/slow/euler77.c for a "fun"
  * example
  *
+ * Note, in its present state this will not work on Windows/mingw4 because it
+ * uses a different call convention. this code generator uses
+ * the System V ABI call convention used by Linux, BSD, et al.
+ * I think to assemble correctly on mingw64 you also need some special
+ * directives for functions...
+ *
  * ------------------------------------------------------------------
  *
  * Syntax tree ==> 64-bit x86 assembly (GAS syntax) generator 
