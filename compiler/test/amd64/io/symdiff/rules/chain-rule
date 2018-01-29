@@ -1,0 +1,14 @@
+% This is what I believe to be a correct formulation
+% of the chain-rule for derivatives in the language
+% of this matching system. Note that it uses the
+% function-name-matching feature (accessed through
+% the '$' symbol), as well as the match for an expression
+% containing another but not equal to it ("::" symbol).
+
+D(@var, $func(e::var)) = D(e, func(e)) * D(var, e)
+
+% Chain-rule for powers...
+D(@var, e::var ^ #u) = u * e ^ (u - 1) * D(var, e)
+
+% Chain-rule for exponential
+D(@var, e^(u::var)) = D(u, e^u) * D(var, u)

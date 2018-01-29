@@ -1,0 +1,5 @@
+% Override simple numeric case
+D(?x, f / #n) = 1 / n * D(x, f)
+
+% Quotient rule for derivatives
+D(?x, f / g) = (g * D(x, f) - f * D(x, g) ) / (g * g)

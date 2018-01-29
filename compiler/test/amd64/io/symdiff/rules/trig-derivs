@@ -1,0 +1,9 @@
+% Basic trigonometric derivatives
+% Source: http://www.sosmath.com/calculus/diff/der03/img1.gif
+
+D(u, sin(u)) = cos(u)
+D(u, tan(u)) = sec(u) * sec(u)
+D(u, sec(u)) = sec(u) * tan(u)
+D(u, cos(u)) = -sin(u)
+D(u, cot(u)) = -csc(u) * csc(u)
+D(u, csc(u)) = -csc(u) * cot(u)

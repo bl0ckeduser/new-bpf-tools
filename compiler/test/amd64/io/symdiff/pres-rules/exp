@@ -1,0 +1,18 @@
+('e)^(log(x) * k) = x^k
+('e)^(log(x) * k + B) = x^k * e^B
+('e)^(log(x) * k + B + C) = x^k * e^B * e^C
+
+('e)^(k * log(x)) = x^k
+('e)^(k * log(x) + B + C) = x^k * e^B
+('e)^(k * log(x) + B + C) = x^k * e^B * e^C
+
+('e)^(log(x) / k) = x^(1/k)
+
+('e)^(log(u)) = u
+a^b/a=a^(b-1)
+u^1 = u
+
+(x ^ n) * (B / x) = x^(n-1) * B
+
+
+u ^ (-1) = 1/u

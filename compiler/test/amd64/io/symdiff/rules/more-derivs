@@ -1,0 +1,4 @@
+% Some more derivatives
+
+D(u, log(u)) = 1 / u
+D(u, ln(u)) = 1 / u

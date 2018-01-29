@@ -1,0 +1,29 @@
+D(x, x^#n) = n * x ^ (n - 1)
+D(a, (b|'e)^(@c)) = D(a, e^(log(b) * c))
+D(u, ('e)^u) = e^u
+
+log('e) = 1
+ln('e) = 1
+
+u|'e^(@x) = e^(log(u) * x)
+
+sqrt(u) ^ 2 = u
+
+(u^#n)^#n2 = u^(n * n2)
+
+% u^#n * u^#n2 = u^(n + n2)
+
+a ^ b / a = a^(b-1)
+
+A^1 = A
+A^0 = 1
+A^(-1) = 1 / A
+
+u^a * u^b = u^(a+b)
+
+E * (E^n) = E^(n+1)
+
+
+u ^ #n / u = u^(n-1)
+
+u^1 = u

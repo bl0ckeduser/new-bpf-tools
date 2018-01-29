@@ -1,0 +1,28 @@
+% ALGEBRAIC RULES 
+% (could be elaborated upon...)
+
+% Some basic cancelling-out
+A + -1 * A = 0
+A + -A = 0
+A - A = 0
+-A + A = 0
+A + -A = 0
+A / A = 1
+
+(A * B + C) / (A * A) = B/A + C/(A * A)
+
+1 / A * B = B / A
+
+(A + B * C) / C = A/C + B
+
+(A / B) / C = A / (B * C)
+
+0 / u = 0
+
+0 * u = 0
+
+u / 1 = u
+
+(x^n)*(b/x) = x^(n-1)*b
+
+#a * ((#b * C) / D) = (a * b * C) / D
