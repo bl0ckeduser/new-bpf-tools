@@ -2947,10 +2947,11 @@ char* codegen(exp_tree_t* tree)
 				printf("addl $12, %%esp		# throw off args\n");
 				printf("leal __return_buffer, %%eax\n");
 			} else {
-				sto = registerize(codegen(tree->child[i]));
-				/* XXX: use movb et al ? */
-				printf("movl %s, %d(%%esp)\t",
-					sto, offset);
+				sto = registerize_siz(codegen(tree->child[i]), membsiz);
+				printf("mov%s %s, %d(%%esp)\t",
+					siz2suffix(membsiz),
+					fixreg(sto, membsiz),
+					offset);
 				printf("# argument %d to %s\n",
 					i, get_tok_str(*(tree->tok)));
 				free_temp_reg(sto);
