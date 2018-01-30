@@ -332,6 +332,7 @@ void register_structs(exp_tree_t *tree)
 		strcpy(named_struct_name[named_structs],
 			get_tok_str(*(tree->tok)));
 		++named_structs;
+		expandBuffers();
 	}
 }
 
