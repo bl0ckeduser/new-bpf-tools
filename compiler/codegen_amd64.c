@@ -510,6 +510,14 @@ char *fixreg(char *r, int siz)
 			new = malloc(64);
 			sprintf(new, "%%dil");
 			return new;
+		} else if (!strcmp(r, "%r8")) {
+			new = malloc(64);
+			sprintf(new, "%%r8b");
+			return new;
+		} else if (!strcmp(r, "%r9")) {
+			new = malloc(64);
+			sprintf(new, "%%r9b");
+			return new;
 		}
 	} else if (siz == 4) {
 		if (!strcmp(r, "%r8")) {
@@ -4713,7 +4721,7 @@ char* codegen(exp_tree_t* tree)
 		printf("IL%d: \n", lab1);
 		sto = codegen(tree->child[0]);
 		/* branch if the conditional is false */
-		str = registerize(sto);
+		str = registerize_from(sto, type2siz(tree_typeof(tree->child[0])));
 		str2 = get_temp_reg_siz(8);
 		printf("movq $0, %s\n", str2);
 		printf("cmpq %s, %s\n", str, str2);
@@ -4846,8 +4854,10 @@ char* cheap_relational(exp_tree_t* tree, char *oppcheck)
 {
 	char *sto, *sto2, *sto3;
 	char *str, *str2;
-	str = registerize_freemem(codegen(tree->child[0]));
+	str  = registerize_freemem(codegen(tree->child[0]));
 	str2 = registerize_freemem(codegen(tree->child[1]));
+	str  = registerize_from(str, type2siz(tree_typeof(tree->child[0])));
+	str2 = registerize_from(str2, type2siz(tree_typeof(tree->child[1])));
 	printf("cmpq %s, %s\n", str2, str);
 	free_temp_reg(str);
 	free_temp_reg(str2);
