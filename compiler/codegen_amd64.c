@@ -3076,9 +3076,6 @@ char* codegen(exp_tree_t* tree)
 			/* 
 			 * XXX: might have to convert args to 
 			 * function's arg type
-			 *
-			 * XXX: uses big, inefficient memcpy call
-			 * for small-sized but high-indexed argument numbers
 			 */
 			if (membsiz > 8) { 
 
