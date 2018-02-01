@@ -420,8 +420,10 @@ struct_pass_iter:
 		 * (another sacrifice for the unfathomable 
 		 * microprocessor gods)
 		 */
-		while (tag_offs % 16)
-			++tag_offs;
+		#ifdef __FreeBSD__
+			while (tag_offs % 16)
+				++tag_offs;
+		#endif
 
 		/* 
 		 * Write tag data to struct description
