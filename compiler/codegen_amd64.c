@@ -887,10 +887,6 @@ int sym_stack_offs(token_t *tok)
 	int i = 0;
 
 	/* Try arguments */
-	/*
-	 * On AMD64 arguments are usually not passed on the stack
-	 * so this is commented-out.
-	 */
 	for (i = 0; i < arg_syms; i++)
 		if (!strcmp(arg_symtab[i], s))
 			return -2*8 - offs(argsiz, i);
@@ -1240,12 +1236,13 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args, exp_tree_t *argl)
 		if (strlen(args[i]) >= SYMLEN)
 			compiler_fail("argument name too long", findtok(tree), 0, 0);
 
-
-		if (type2siz(tree_typeof(argl->child[i])) > 8) {
+		if (type2siz(tree_typeof(argl->child[i])) > 8 || i >= AMD64_NUMBER_OF_CALLING_REGISTERS) {
 			strcpy(arg_symtab[arg_syms], args[i]);
-			++arg_syms;
-			expandBuffers();
+		} else {
+			strcpy(arg_symtab[arg_syms], "0000dummy");
 		}
+		++arg_syms;
+		expandBuffers();
 
 		strcpy(symtab[syms], args[i]);
 
@@ -1314,7 +1311,7 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args, exp_tree_t *argl)
 	printf("_tco_%s:\n", name);	/* hook for TCO */
 
 	for (i = 0; i < argl->child_count && args[i]; ++i) {
-		if (!(type2siz(tree_typeof(argl->child[i])) > 8)) {
+		if (!(type2siz(tree_typeof(argl->child[i])) > 8 || i >= AMD64_NUMBER_OF_CALLING_REGISTERS)) {
 			printf("mov%s %s, %s\n", 
 				siz2suffix(stacksize[i]),
 				fixreg(amd64_calling_registers[i], stacksize[i]),
@@ -2447,7 +2444,7 @@ char* codegen(exp_tree_t* tree)
 	int membsiz, offs_siz;
 	typedesc_t typedat;
 	typedesc_t *callee_argtyp = NULL;
-	int callee_argbytes;	
+	int callee_argbytes_high;	
 	int offset;
 	int stackstor;
 	exp_tree_t *argl, *codeblock;
@@ -2976,9 +2973,8 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == PROC_CALL 
 		|| tree->head_type == PROC_CALL_MEMCPY) {
 
-
 		char *arg_temp_mem[32];
-		int total_struct_bytes = 0;
+		int total_rsp_offset = 0;
 
 		memcpy(my_ts_used, ts_used, TEMP_REGISTERS);
 		
@@ -3030,17 +3026,32 @@ char* codegen(exp_tree_t* tree)
 					findtok(tree), 0, 0);
 			}
 			/* sizeof(int) = 8 on 64-bit x86 */
-			callee_argbytes = tree->child_count * 8;
+			if (tree->child_count > AMD64_NUMBER_OF_CALLING_REGISTERS) {
+				callee_argbytes_high = (tree->child_count - AMD64_NUMBER_OF_CALLING_REGISTERS) * 8;
+			} else {
+				callee_argbytes_high = 0;
+			}
 		}
 		else {
 			/* sum individual offsets */
-			callee_argbytes = 0;
-			for (i = 0; i < tree->child_count; ++i)
-				callee_argbytes += type2siz(callee_argtyp[i]);
+			callee_argbytes_high = 0;
+			for (i = 0; i < tree->child_count; ++i) {
+				if (type2siz(callee_argtyp[i]) <= 8 && i >= AMD64_NUMBER_OF_CALLING_REGISTERS) {
+					callee_argbytes_high += type2siz(callee_argtyp[i]);
+				}
+			}
 		}
 
 		/* 
-		 * Move the arguments into the appropriate registers (AMD64 special)
+		 * Move down the stack pointer for high-indexed arguments
+		 * (if necessary)
+		 */
+		if (callee_argbytes_high != 0) {
+			printf("subq $%d, %%rsp\n", callee_argbytes_high);
+		}
+
+		/* 
+		 * Move the arguments into the appropriate positions (AMD64 special)
 		 */
 		offset = 0;
 		for (i = 0; i < tree->child_count; ++i) {
@@ -3054,9 +3065,6 @@ char* codegen(exp_tree_t* tree)
 				typedat.ptr = typedat.arr = 0;
 				typedat.is_struct = 0;
 				typedat.is_struct_name_ref = 0;
-
-				/* offset = sizeof(int) * i */
-				offset = 8 * i;
 			} else {
 				/* load registered declaration */
 				typedat = callee_argtyp[i];
@@ -3068,6 +3076,9 @@ char* codegen(exp_tree_t* tree)
 			/* 
 			 * XXX: might have to convert args to 
 			 * function's arg type
+			 *
+			 * XXX: uses big, inefficient memcpy call
+			 * for small-sized but high-indexed argument numbers
 			 */
 			if (membsiz > 8) { 
 
@@ -3100,19 +3111,28 @@ char* codegen(exp_tree_t* tree)
 				printf("movq %%rax, %%rsi	# argument 1 to ___mymemcpy\n");
 				printf("movq $%d, %%rdx		# argument 2 to ___mymemcpy\n", membsiz);
 				printf("call ___mymemcpy\n");
-				
-				total_struct_bytes += membsiz;
-			} else {
-				sto = registerize(codegen(tree->child[i]));
-				arg_temp_mem[i] = get_temp_mem();
-				printf("movq %s, %s\t",
-					sto, arg_temp_mem[i]);
-				printf("# argument %d to %s\n",
-					i, get_tok_str(*(tree->tok)));
+
 				free_temp_reg(sto);
+				free_temp_mem(sto);		
+
+				total_rsp_offset += membsiz;
+			} else {
+				if (i >= AMD64_NUMBER_OF_CALLING_REGISTERS) {
+					sto = registerize(codegen(tree->child[i]));
+					printf("movq %s, %d(%%rsp)\n", sto, offset);
+					offset += membsiz;
+					total_rsp_offset += membsiz;
+					free_temp_reg(sto);
+				} else {
+					sto = registerize(codegen(tree->child[i]));
+					arg_temp_mem[i] = get_temp_mem();
+					printf("movq %s, %s\t",
+						sto, arg_temp_mem[i]);
+					printf("# argument %d to %s\n",
+						i, get_tok_str(*(tree->tok)));
+					free_temp_reg(sto);
+				}
 			}
-
-
 		}
 
 		/*
@@ -3123,9 +3143,9 @@ char* codegen(exp_tree_t* tree)
 	
 		/* 
 		 * Move the argument values held in temporary stack to the 
-		 * final calling registers (for non-large/non-struct arguments)
+		 * final calling registers (for non-large/non-struct/small-indexed arguments)
 		 */
-		for (i = 0; i < tree->child_count; ++i) {
+		for (i = 0; i < tree->child_count && i <= AMD64_NUMBER_OF_CALLING_REGISTERS - 1; ++i) {
 			if (!callee_argtyp || type2siz(callee_argtyp[i]) <= 8) {
 				int callee_argtyp_size = 8;
 				if (callee_argtyp) {
@@ -3152,6 +3172,15 @@ char* codegen(exp_tree_t* tree)
 		#endif
 
 		/* 
+		 * Throw off the high-indexed arguments (if any) from the stack
+		 */
+		if (callee_argbytes_high) {
+			printf("addq $%d, %%rsp\t# throw off high-indexed arg%s\n",
+				callee_argbytes_high,
+				tree->child_count > 1 ? "s" : "");
+		}
+
+		/* 
 		 * Move the return-value register (EAX)
 		 * to temporary stack-based storage
 		 */
@@ -3165,8 +3194,8 @@ char* codegen(exp_tree_t* tree)
 		 */
 		printf("movq %%rax, %s\n", sto);
 
-		if (total_struct_bytes) {
-			printf("addq $%d, %%rsp\n", total_struct_bytes);
+		if (total_rsp_offset) {
+			printf("addq $%d, %%rsp\n", total_rsp_offset);
 		}
 
 		/* 
@@ -3388,11 +3417,13 @@ char* codegen(exp_tree_t* tree)
 
 				/*
 				 * Special amd64 hack, consider offsets only for large arguments
+				 * OR if it's a high-indexed argument.
 				 */
-				if (type2siz(tree_typeof(argl->child[i])) > 8) {
+				if (type2siz(tree_typeof(argl->child[i])) > 8 
+				    || i >= AMD64_NUMBER_OF_CALLING_REGISTERS) {
 					/* Calculate byte offsets */
 					argsiz[i] = type2siz(argtyp[i]);
-					argbytes += argsiz[i];
+					argbytes += argsiz[i];	
 				} else {
 					argsiz[i] = 0;
 				}
