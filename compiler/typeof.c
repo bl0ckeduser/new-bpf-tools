@@ -308,10 +308,11 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 		&& array_base_type->ty == CHAR_DECL) {
 #ifdef TARGET_AMD64
 		*objsiz *= 8;
+		array_base_type->ty = LONG_DECL;
 #else
 		*objsiz *= 4;
-#endif
 		array_base_type->ty = INT_DECL;
+#endif
 	}
 
 	/* Add some padding; otherwise werid glitches happen */
@@ -489,8 +490,9 @@ int decl2siz(int bt)
 #ifdef TARGET_AMD64
 	switch (bt) {
 		case LONG_DECL:
-		case INT_DECL:
 			return 8;
+		case INT_DECL:
+			return 4;
 		case CHAR_DECL:
 			return 1;
 		case VOID_DECL:
@@ -637,6 +639,19 @@ typedesc_t tree_typeof(exp_tree_t *tp)
 	return td;
 }
 
+void fix_sizeof_nodes(exp_tree_t *e)
+{
+	int i;
+	if (e->head_type == SIZEOF) {
+		e->head_type   = NUMBER;
+		e->child_count = 0;
+		e->tok         = NULL;
+	}
+	for (i = 0; i < e->child_count; ++i) {
+		fix_sizeof_nodes(e->child[i]);
+	}
+}
+
 /*
  * The actual recursive loop part for trying to figure
  * out the type of an expression tree
@@ -736,8 +751,12 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	 * Anyway, it's an int, of course.
 	 */
 	if (tp->head_type == SIZEOF
-	     && tp->child[0]->head_type != CAST_TYPE) {
+	    && tp->child[0]->head_type != CAST_TYPE) {
+#ifdef TARGET_AMD64
+		td.ty = LONG_DECL;
+#else
 		td.ty = INT_DECL;
+#endif
 		td.ptr = 0;
 		td.arr = 0;
 		return td;
@@ -819,7 +838,11 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	 * to support e.g. long constants
 	 */
 	if (tp->head_type == NUMBER) {
+#ifdef TARGET_AMD64
+		td.ty = LONG_DECL;
+#else
 		td.ty = INT_DECL;
+#endif
 		return td;
 	}
 
@@ -910,9 +933,16 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 	 */
 	if (is_arith_op(tp->head_type)) {
 		/*
+		 * This is a hack to deal with problems
+		 * owed to an other hack made years ago
+		 */
+		tp = alloc_exptree(copy_tree(*tp));
+		fix_sizeof_nodes(tp);
+
+		/*
 		 * Initialize type with data from first member
 		 */
-		max_siz = decl2siz((ctd = tree_typeof(tp->child[0])).ty);
+		max_siz = type2siz((ctd = tree_typeof(tp->child[0])));
 		max_decl = ctd.ty;
 		max_ptr = ctd.arr + ctd.ptr;
 
@@ -920,7 +950,7 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 		 * Promote to pointer type if any
 		 */
 		for (i = 0; i < tp->child_count; ++i) {
-			if ((siz = decl2siz((ctd = tree_typeof(tp->child[i])).ty))
+			if ((siz = type2siz((ctd = tree_typeof(tp->child[i]))))
 				&& siz >= max_siz
 				&& (ctd.arr + ctd.ptr) > max_ptr) {
 				max_siz = siz;
@@ -942,16 +972,30 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
 		if (tp->head_type == SUB && td.ptr && tp->child_count == 2
 			&& (tree_typeof(tp->child[0]).ptr || tree_typeof(tp->child[0]).arr)
 			&& (tree_typeof(tp->child[1]).ptr || tree_typeof(tp->child[1]).arr)) {
-			td.ty = INT_DECL;	/* XXX: should be "ptrdiff_t" according
-						 * to K&R 2 */
+
+			/*
+			 * XXX: should be "ptrdiff_t" according
+			 * to K&R 2 
+			 */
+
+#ifdef TARGET_AMD64
+			td.ty = LONG_DECL;
+#else
+			td.ty = INT_DECL;
+#endif
 			td.arr = td.ptr = 0;
 		}
 
 		/*
 		 * Promote char to int
 		 */
-		if (td.ty == CHAR_DECL && td.arr == 0 && td.ptr == 0)
+		if (td.ty == CHAR_DECL && td.arr == 0 && td.ptr == 0) {
+#ifdef TARGET_AMD64
+			td.ty = LONG_DECL;
+#else
 			td.ty = INT_DECL;
+#endif
+		}
 
 		/*
 		 * Error on strange arithmetic
@@ -984,7 +1028,11 @@ typedesc_t tree_typeof_iter(typedesc_t td, exp_tree_t* tp)
  		 || tp->head_type == CC_OR
  		 || tp->head_type == CC_AND
 		 || tp->head_type == CC_NOT) {
+#ifdef TARGET_AMD64
+		td.ty = LONG_DECL;
+#else
 		td.ty = INT_DECL;
+#endif
 		td.ptr = td.arr = 0;
 		return td;
 	}

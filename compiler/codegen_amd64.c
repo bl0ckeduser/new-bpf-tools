@@ -10,9 +10,16 @@
  *
  * Note, in its present state this will not work on Windows/mingw4 because it
  * uses a different call convention. this code generator uses
- * the System V ABI call convention used by Linux, BSD, et al.
+ * the System V ABI call convention used by GNU/Linux, BSD, et al.
  * I think to assemble correctly on mingw64 you also need some special
  * directives for functions...
+ *
+ * This now uses 32-bit int and 64-bit long, which seems to be
+ * the existing convention, at least on GNU/Linux and BSD.
+ * There might still be subtle bugs in the code when you use
+ * int and/or mix int with long because the native default datatype
+ * is long (64-bit) and some parts of the code generator may not convert 
+ * gracefully if the provided operands are not long.
  *
  * ------------------------------------------------------------------
  *
@@ -72,7 +79,7 @@ char *siz2suffix(int siz);
 /* ====================================================== */
 
 
-#define TEMP_REGISTERS 6
+#define TEMP_REGISTERS 8
 char* temp_reg[TEMP_REGISTERS];
 
 #define AMD64_NUMBER_OF_CALLING_REGISTERS 6
@@ -411,10 +418,10 @@ typedesc_t func_ret_typ(char *func_nam)
 	/*
 	 * If the function is not found in the table,
 	 * it's probably an external one like printf().
-	 * Least insane behaviour is to default to int.
+	 * Least insane behaviour is to default to long. (64 bits)
 	 * XXX: search extern def table if any ever gets added
 	 */
-	return mk_typedesc(INT_DECL, 0, 0);
+	return mk_typedesc(LONG_DECL, 0, 0);
 }
 
 /*
@@ -504,6 +511,20 @@ char *fixreg(char *r, int siz)
 			sprintf(new, "%%dil");
 			return new;
 		}
+	} else if (siz == 4) {
+		if (!strcmp(r, "%r8")) {
+			new = malloc(64);
+			sprintf(new, "%%r8d");
+			return new;
+		} else if (!strcmp(r, "%r9")) {
+			new = malloc(64);
+			sprintf(new, "%%r9d");
+			return new;
+		} else {
+			new = malloc(64);
+			sprintf(new, "%%e%c%c", r[2], r[3]);
+			return new;
+		}
 	}
 	return r;
 }
@@ -529,13 +550,16 @@ char *move_conv_to_long(int membsiz)
 		case 1:
 			return "movsbq";
 		case 4:
-			return "movl";
+			return "movslq";
 		case 8:
 			return "movq";
 		default:
+			return "movq";	/* XXX */
+			/*
 			compiler_fail("data size mismatch -- something"
 				      " doesn't fit into something else",
 				findtok(codegen_current_tree), 0, 0);
+			*/
 	}
 }
 
@@ -972,7 +996,7 @@ typedesc_t sym_lookup_type(token_t* tok)
 	 * (in parallel with similar behaviour
 	 * in sym_lookup)
 	 */
-	return mk_typedesc(INT_DECL, 0, 0);
+	return mk_typedesc(LONG_DECL, 0, 0);
 
 /*
 	sprintf(buf, "unknown symbol `%s'", s);
@@ -1328,7 +1352,9 @@ void run_codegen(exp_tree_t *tree)
 		"%rcx",
 		"%rdx",
 		"%rsi",
-		"%rdi"
+		"%rdi",
+		"%r8",
+		"%r9"
 	};
 	for (i = 0; i < sizeof(temp_reg_tmp)/sizeof(char*); ++i)
 		temp_reg[i] = temp_reg_tmp[i];
@@ -1781,8 +1807,8 @@ char *decl2suffix(int ty)
 	switch (ty) {
 		case LONG_DECL:		/* 8 bytes */
 			return "q";
-		case INT_DECL:		/* 8 bytes */
-			return "q";
+		case INT_DECL:		/* 4 bytes */
+			return "l";
 		case CHAR_DECL:		/* 1 byte */
 			return "b";
 		default:		/* ??? */
@@ -2328,10 +2354,12 @@ char *registerize_from(char *stor, int fromsiz)
 	int i;
 	char* str;
 	
+	stor = registerize(stor);
 	str = get_temp_reg_siz(fromsiz);
 	printf("%s %s, %s\n", 
 		move_conv_to_long(fromsiz), 
 		fixreg(stor, fromsiz), str);
+	free_temp_reg(stor);
 	return str;
 }
 
@@ -2752,8 +2780,11 @@ char* codegen(exp_tree_t* tree)
 		free_temp_reg(sym_s);
 		printf("addq $%d, %s\n", offs, sto2);
 	
-		sto3 = registerize(codegen(tree->child[1]));
-		printf("movq %s, (%s)\n", sto3, sto2);
+		sto3 = registerize_siz(codegen(tree->child[1]), type2siz(tree_typeof(tree->child[0])));
+		printf("mov%s %s, (%s)\n",
+			siz2suffix(type2siz(tree_typeof(tree->child[0]))),
+			fixreg(sto3, type2siz(tree_typeof(tree->child[0]))),
+			sto2);
 		free_temp_reg(sto2);
 		return sto3;
 	}
@@ -4045,6 +4076,30 @@ char* codegen(exp_tree_t* tree)
 			printf("movq %s, %s\n", sto2, sym_s);
 			free_temp_reg(sto2);
 			return sym_s;
+		} else if (type2siz(tree_typeof(tree->child[0])) == 4) {
+			/* 
+			 * general case for 4-byte destination
+			 */
+			membsiz = type2siz(tree_typeof(tree->child[1]));
+			/*
+			 * Assigning an array ? well it gets
+			 * implicitly converted to a pointer,
+			 * so its size should be considered
+			 * 8 bytes.
+			 */
+			if (tree_typeof(tree->child[1]).arr)
+				membsiz = 8;
+			/* n.b. codegen() converts stuff to int */
+			sto = registerize_siz(codegen(tree->child[1]), membsiz);
+			compiler_debug("simple variable assignment -- "
+				       " looking for conversion suffix",
+					 findtok(tree), 0, 0);
+			sto2 = registerize_from(sto, membsiz);
+			sto3 = registerize_siz(sto2, 4);
+			printf("movl %s, %s\n", fixreg(sto3, 4), sym_s);
+			free_temp_reg(sto2);
+			free_temp_reg(sto3);
+			return sym_s;
 		} else if (type2siz(tree_typeof(tree->child[0])) == 1) {
 			/* 
 			 * general case for 1-byte destination
@@ -4119,7 +4174,7 @@ char* codegen(exp_tree_t* tree)
 
 		/* index expression */
 		str = codegen(tree->child[0]->child[1]);
-		sto2 = registerize_siz(str, membsiz);
+		sto2 = registerize_from(str, type2siz(tree_typeof(tree->child[0]->child[1])));
 
 		if (offs_siz != 1)
 			printf("imulq $%d, %s\n", offs_siz, sto2);
@@ -4154,15 +4209,13 @@ char* codegen(exp_tree_t* tree)
 		sym_s = codegen(tree->child[0]);
 
 		/* index expression */
-		str = codegen(tree->child[1]);
-		sto2 = registerize(str);
+		sto2 = registerize_from(codegen(tree->child[1]), type2siz(tree_typeof(tree->child[1])));
 		/* member size */
 		membsiz = type2siz(
 			deref_typeof(tree_typeof(tree->child[0])));
 		offs_siz = type2offs(
 			deref_typeof(tree_typeof(tree->child[0])));
 
-		sto = get_temp_reg_siz(membsiz);
 		/* multiply offset by member size */
 		if (offs_siz != 1)
 			printf("imulq $%d, %s\n", offs_siz, sto2);
@@ -4196,6 +4249,8 @@ char* codegen(exp_tree_t* tree)
 			do_deref = 0;
 		else
 			do_deref = 1;
+
+		sto = get_temp_reg_siz(membsiz);
 
 		/*
 		 * large things -> pointers
@@ -4402,7 +4457,7 @@ char* codegen(exp_tree_t* tree)
 			 * See K&R 2nd edition (ANSI C89) page 205, A7.7
 			 */
 			if (ptr_arith_mode && i != ptr_memb) {
-				str = registerize(codegen(tree->child[i]));
+				str = registerize_from(codegen(tree->child[i]), type2siz(tree_typeof(tree->child[i])));
 				if (obj_siz != 1)
 					printf("imulq $%d, %s\n", obj_siz, str);
 				printf("%s %s, %s\n", oper, str, sto);
@@ -4418,7 +4473,7 @@ char* codegen(exp_tree_t* tree)
 				}
 			} else {
 				/* general case */
-				str = registerize(codegen(tree->child[i]));
+				str = registerize_from(codegen(tree->child[i]), type2siz(tree_typeof(tree->child[i])));
 				str2 = registerize(sto);
 				printf("%s %s, %s\n", oper, str, str2);
 				if (stackstor) {
@@ -4479,14 +4534,30 @@ char* codegen(exp_tree_t* tree)
 			/* (can't idivl directly by a number, eh ?) */
 			if(tree->child[i]->head_type == VARIABLE) {
 				sym_s = sym_lookup(tree->child[i]->tok);
-				printf("idivq %s\n", sym_s);
+				if (type2siz(tree_typeof(tree->child[i])) == 8) {
+					printf("idivq %s\n", sym_s);
+				} else {
+					sto2 = registerize(sym_s);
+					sto = registerize_from(sto2, type2siz(tree_typeof(tree->child[i])));
+					printf("idivq %s\n", sto);
+					free_temp_reg(sto);
+					free_temp_reg(sto2);
+				}
 				if (tree->head_type != MOD) {
 					printf("xorq %%rdx, %%rdx\n");
 					printf("cqo\n");
 				}
 			} else {
 				str = codegen(tree->child[i]);
-				printf("idivq %s\n", str);
+				if (type2siz(tree_typeof(tree->child[i])) == 8) {
+					printf("idivq %s\n", str);
+				} else {
+					sto2 = registerize(str);
+					sto = registerize_from(sto2, type2siz(tree_typeof(tree->child[i])));
+					printf("idivq %s\n", sto);
+					free_temp_reg(sto);
+					free_temp_reg(sto2);
+				}
 				if (tree->head_type != MOD) {
 					printf("xorq %%rdx, %%rdx\n");
 					printf("cqo\n");
@@ -4782,8 +4853,8 @@ char* optimized_if(exp_tree_t* tree, char *oppcheck)
 	/* optimized conditional */
 	str = codegen(tree->child[0]->child[0]);
 	str2 = codegen(tree->child[0]->child[1]);
-	sto = registerize(str);
-	sto2 = registerize(str2);
+	sto = registerize_from(str, type2siz(tree_typeof(tree->child[0]->child[0])));
+	sto2 = registerize_from(str2, type2siz(tree_typeof(tree->child[0]->child[1])));
 	printf("cmpq %s, %s\n", sto2, sto);
 	free_temp_reg(sto);
 	free_temp_reg(sto2);
@@ -4823,8 +4894,8 @@ char* optimized_while(exp_tree_t* tree, char *oppcheck)
 	printf("IL%d: \n", lab1);
 	str = codegen(tree->child[0]->child[0]);
 	str2 = codegen(tree->child[0]->child[1]);
-	sto = registerize(str);
-	sto2 = registerize(str2);
+	sto = registerize_from(str, type2siz(tree_typeof(tree->child[0]->child[0])));
+	sto2 = registerize_from(str2, type2siz(tree_typeof(tree->child[0]->child[1])));
 	printf("cmpq %s, %s\n", sto2, sto);
 	free_temp_reg(sto);
 	free_temp_reg(sto2);

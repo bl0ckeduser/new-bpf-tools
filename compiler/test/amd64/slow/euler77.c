@@ -10,8 +10,8 @@
 #include <string.h>
 #include <math.h>
 
-/* note, this assumes a 64-bit compiler which uses 64-bit ints !!!! */
-typedef int largish_uint;
+/* note, this assumes a 64-bit compiler which uses 64-bit longs !!!! */
+typedef long largish_uint;
 
 /*static*/ int run_out = 0;
 
