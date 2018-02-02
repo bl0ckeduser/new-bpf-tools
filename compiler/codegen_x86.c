@@ -2631,8 +2631,11 @@ char* codegen(exp_tree_t* tree)
 		free_temp_reg(sym_s);
 		printf("addl $%d, %s\n", offs, sto2);
 	
-		sto3 = registerize(codegen(tree->child[1]));
-		printf("movl %s, (%s)\n", sto3, sto2);
+		sto3 = registerize_siz(codegen(tree->child[1]), type2siz(tree_typeof(tree->child[0])));
+		printf("mov%s %s, (%s)\n",
+			siz2suffix(type2siz(tree_typeof(tree->child[0]))),
+			fixreg(sto3, type2siz(tree_typeof(tree->child[0]))),
+			sto2);
 		free_temp_reg(sto2);
 		return sto3;
 	}

@@ -314,12 +314,6 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 		array_base_type->ty = INT_DECL;
 #endif
 	}
-
-	/* Add some padding; otherwise werid glitches happen */
-#ifndef TARGET_AMD64
-	if (*objsiz < 4 && !check_array(dc))
-		*objsiz = 4;
-#endif
 }
 
 /*
