@@ -3126,7 +3126,6 @@ char* codegen(exp_tree_t* tree)
 					sto = registerize(codegen(tree->child[i]));
 					printf("movq %s, %d(%%rsp)\n", sto, offset);
 					offset += membsiz;
-					total_rsp_offset += membsiz;
 					free_temp_reg(sto);
 				} else {
 					sto = registerize(codegen(tree->child[i]));
