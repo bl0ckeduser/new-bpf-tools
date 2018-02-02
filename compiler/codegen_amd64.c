@@ -448,7 +448,7 @@ int arith_depth(exp_tree_t *t)
  */
 int is_plain_int(typedesc_t td)
 {
-	return (td.ty == INT_DECL || td.ty == LONG_DECL)
+	return (td.ty == INT_DECL || td.ty == LONG_DECL ||td.ty == SHORT_DECL)
 		&& td.ptr == 0 
 		&& td.arr == 0;
 }
@@ -533,6 +533,29 @@ char *fixreg(char *r, int siz)
 			sprintf(new, "%%e%c%c", r[2], r[3]);
 			return new;
 		}
+	} else if (siz == 2) {
+		if (strlen(r) == 4 && r[0] == '%'
+			&& r[1] == 'r' && r[3] == 'x') {
+			new = malloc(64);
+			sprintf(new, "%%%cx", r[2]);
+			return new;
+		} else if (!strcmp(r, "%rsi")) {
+			new = malloc(64);
+			sprintf(new, "%%si");
+			return new;
+		} else if (!strcmp(r, "%rdi")) {
+			new = malloc(64);
+			sprintf(new, "%%di");
+			return new;
+		} else if (!strcmp(r, "%r8")) {
+			new = malloc(64);
+			sprintf(new, "%%r8w");
+			return new;
+		} else if (!strcmp(r, "%r9")) {
+			new = malloc(64);
+			sprintf(new, "%%r9w");
+			return new;
+		}
 	}
 	return r;
 }
@@ -557,6 +580,8 @@ char *move_conv_to_long(int membsiz)
 	switch (membsiz) {
 		case 1:
 			return "movsbq";
+		case 2:
+			return "movswq";
 		case 4:
 			return "movslq";
 		case 8:
@@ -1813,6 +1838,8 @@ char *decl2suffix(int ty)
 			return "q";
 		case INT_DECL:		/* 4 bytes */
 			return "l";
+		case SHORT_DECL:	/* 2 bytes */
+			return "w";
 		case CHAR_DECL:		/* 1 byte */
 			return "b";
 		default:		/* ??? */
@@ -1831,6 +1858,8 @@ char *siz2suffix(int siz)
 			return "q";
 		case 4:
 			return "l";
+		case 2:
+			return "w";
 		case 1:
 			return "b";
 		default:
@@ -1844,7 +1873,7 @@ char *siz2suffix(int siz)
 int int_type_decl(char ty)
 {
 	return ty == CHAR_DECL || ty == INT_DECL || ty == LONG_DECL
-		|| ty == VOID_DECL;
+		|| ty == VOID_DECL ||ty == SHORT_DECL;
 }
 
 /* 
@@ -4132,6 +4161,30 @@ char* codegen(exp_tree_t* tree)
 			sto2 = registerize_from(sto, membsiz);
 			sto3 = registerize_siz(sto2, 4);
 			printf("movl %s, %s\n", fixreg(sto3, 4), sym_s);
+			free_temp_reg(sto2);
+			free_temp_reg(sto3);
+			return sym_s;
+		} else if (type2siz(tree_typeof(tree->child[0])) == 2) {
+			/* 
+			 * general case for 4-byte destination
+			 */
+			membsiz = type2siz(tree_typeof(tree->child[1]));
+			/*
+			 * Assigning an array ? well it gets
+			 * implicitly converted to a pointer,
+			 * so its size should be considered
+			 * 8 bytes.
+			 */
+			if (tree_typeof(tree->child[1]).arr)
+				membsiz = 8;
+			/* n.b. codegen() converts stuff to int */
+			sto = registerize_siz(codegen(tree->child[1]), membsiz);
+			compiler_debug("simple variable assignment -- "
+				       " looking for conversion suffix",
+					 findtok(tree), 0, 0);
+			sto2 = registerize_from(sto, membsiz);
+			sto3 = registerize_siz(sto2, 2);
+			printf("movw %s, %s\n", fixreg(sto3, 2), sym_s);
 			free_temp_reg(sto2);
 			free_temp_reg(sto3);
 			return sym_s;

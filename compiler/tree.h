@@ -86,6 +86,7 @@ enum {		/* head_type */
 	EXTERN_DECL,
 	DOWHILE,
 	SUB_MASKED,
+	SHORT_DECL,
 	/* special */
 	NULL_TREE
 };

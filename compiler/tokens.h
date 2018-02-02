@@ -94,13 +94,14 @@ enum {
 	TOK_VOID,
 	TOK_ENUM,
 	TOK_EXTERN,
-	TOK_DO
+	TOK_DO,
+	TOK_SHORT
 };
 
 #ifdef BPF_VM_TARGET
-	#define KW_COUNT 29
+	#define KW_COUNT 30
 #else
-	#define KW_COUNT 21
+	#define KW_COUNT 22
 #endif
 
 struct bpf_kw {

@@ -315,6 +315,9 @@ int decl_dispatch(char type)
 		case TOK_CHAR:
 			return CHAR_DECL;
 		break;
+		case TOK_SHORT:
+			return SHORT_DECL;
+		break;
 	}
 }
 int decl_dedispatch(char type)
@@ -331,6 +334,9 @@ int decl_dedispatch(char type)
 		break;
 		case CHAR_DECL:
 			return TOK_CHAR;
+		break;
+		case SHORT_DECL:
+			return TOK_SHORT;
 		break;
 	}
 }

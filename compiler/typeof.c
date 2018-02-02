@@ -316,8 +316,10 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 	}
 
 	/* Add some padding; otherwise werid glitches happen */
+#ifndef TARGET_AMD64
 	if (*objsiz < 4 && !check_array(dc))
 		*objsiz = 4;
+#endif
 }
 
 /*
@@ -495,6 +497,8 @@ int decl2siz(int bt)
 			return 8;
 		case INT_DECL:
 			return 4;
+		case SHORT_DECL:
+			return 2;
 		case CHAR_DECL:
 			return 1;
 		case VOID_DECL:
@@ -507,6 +511,8 @@ int decl2siz(int bt)
 		case LONG_DECL:
 		case INT_DECL:
 			return 4;
+		case SHORT_DECL:
+			return 2;
 		case CHAR_DECL:
 			return 1;
 		case VOID_DECL:

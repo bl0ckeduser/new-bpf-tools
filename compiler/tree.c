@@ -106,6 +106,7 @@ void init_tree(void)
 		"EXTERN_DECL",
 		"DOWHILE",
 		"SUB_MAKSED",
+		"SHORT_DECL",
 		"NULL_TREE"
 	};
 
