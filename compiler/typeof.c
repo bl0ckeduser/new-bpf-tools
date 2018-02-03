@@ -298,22 +298,6 @@ void parse_type(exp_tree_t *dc, typedesc_t *typedat,
 
 	/* figure out size of the whole object in bytes */
 	*objsiz = type2offs(*typedat);
-
-	/* 
-	 * Use 4 bytes instead of 1 for chars in char arrays.
-	 * unfortunately, parts of the code still expect this. 
-	 * XXX: find a better fix to this problem
-	 */
-	if (check_array(dc) && array_base_type->ptr == 0
-		&& array_base_type->ty == CHAR_DECL) {
-#ifdef TARGET_AMD64
-		*objsiz *= 8;
-		array_base_type->ty = LONG_DECL;
-#else
-		*objsiz *= 4;
-		array_base_type->ty = INT_DECL;
-#endif
-	}
 }
 
 /*
