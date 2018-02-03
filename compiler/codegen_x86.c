@@ -3589,7 +3589,7 @@ char* codegen(exp_tree_t* tree)
 		 */
 		printf("movl $0, %s\n", sto2);
 		for (i = 0; i < tree->child_count; ++i) {
-			sto = codegen(tree->child[i]);
+			sto = registerize_freemem(codegen(tree->child[i]));
 			printf("cmpl %s, %s\n", sto, sto2);
 			printf("je cc%d\n", my_ccid);
 			free_temp_reg(sto);
@@ -3610,7 +3610,7 @@ char* codegen(exp_tree_t* tree)
 		 */
 		printf("movl $0, %s\n", sto2);
 		for (i = 0; i < tree->child_count; ++i) {
-			sto = codegen(tree->child[i]);
+			sto = registerize_freemem(codegen(tree->child[i]));
 			printf("cmpl %s, %s\n", sto, sto2);
 			printf("jne cc%d\n", my_ccid);
 			free_temp_reg(sto);
