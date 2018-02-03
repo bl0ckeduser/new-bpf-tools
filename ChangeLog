@@ -1,3 +1,13 @@
+0.75 - 3 Feb 2018
+
+- x86/amd64: various bug fixes and cleanups
+- x86/amd64: rough support for bitshifts (<< and >> operators)
+- amd64: support 16-bit short
+- amd64: support calling functions with >6 arguments
+- amd64: use 32-bit int (but still 64-bit long)
+
+-----------------------------------------------------------------------
+
 0.74 - 28 Jan 2018
 
 - fix various bugs (mostly relating to amd64 support)
