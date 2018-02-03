@@ -4166,7 +4166,7 @@ char* codegen(exp_tree_t* tree)
 			return sym_s;
 		} else if (type2siz(tree_typeof(tree->child[0])) == 2) {
 			/* 
-			 * general case for 4-byte destination
+			 * general case for 2-byte destination
 			 */
 			membsiz = type2siz(tree_typeof(tree->child[1]));
 			/*
