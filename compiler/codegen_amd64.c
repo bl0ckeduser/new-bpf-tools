@@ -3157,7 +3157,7 @@ char* codegen(exp_tree_t* tree)
 					offset += membsiz;
 					free_temp_reg(sto);
 				} else {
-					sto = registerize(codegen(tree->child[i]));
+					sto = registerize_freemem(codegen(tree->child[i]));
 					arg_temp_mem[i] = get_temp_mem();
 					printf("movq %s, %s\t",
 						sto, arg_temp_mem[i]);
@@ -3188,6 +3188,7 @@ char* codegen(exp_tree_t* tree)
 					siz2suffix(callee_argtyp_size),
 					arg_temp_mem[i], 
 					fixreg(amd64_calling_registers[i], callee_argtyp_size));
+				free_temp_mem(arg_temp_mem[i]);
 			}
 		}
 
@@ -3819,7 +3820,7 @@ char* codegen(exp_tree_t* tree)
 		 */
 		printf("movq $0, %s\n", sto2);
 		for (i = 0; i < tree->child_count; ++i) {
-			sto = codegen(tree->child[i]);
+			sto = registerize_freemem(codegen(tree->child[i]));
 			printf("cmpq %s, %s\n", sto, sto2);
 			printf("je cc%d\n", my_ccid);
 			free_temp_reg(sto);
@@ -3840,7 +3841,7 @@ char* codegen(exp_tree_t* tree)
 		 */
 		printf("movq $0, %s\n", sto2);
 		for (i = 0; i < tree->child_count; ++i) {
-			sto = codegen(tree->child[i]);
+			sto = registerize_freemem(codegen(tree->child[i]));
 			printf("cmpq %s, %s\n", sto, sto2);
 			printf("jne cc%d\n", my_ccid);
 			free_temp_reg(sto);
