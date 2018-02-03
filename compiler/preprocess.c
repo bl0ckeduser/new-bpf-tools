@@ -2,6 +2,13 @@
  * Preprocessor routine.
  */
 
+/* 
+ * XXX
+ *  - there are buffer overflows in here 
+ *  - doesn't work with multi-line defines
+ */
+
+
 #include <string.h>
 #include <stdio.h>
 #include "hashtable.h"
@@ -431,15 +438,6 @@ int iterate_preprocess(hashtab_t *defines,
 				readlinetoken(define_val, &p);
 				/*
 				 * But wait, is it a parameterized define ?
-				 *
-				 * On an unrelated note: about a month back, I went to the
-				 * grillades restaurant, and after I had gazed 
-				 * at the interesting kitchen instruments (there's a stove, 
-				 * rotating meat brochette things, and like these flames in 
-				 * the stove, and these pipes that are carrying what I suppose
-				 * must be gas for the stove) for several minutes, 
-				 * a man said: ``your sandwich is ready''. It was a good
-				 * sandwich.
 				 */
 				if (strstr(define_key, "(") && strstr(define_key, ")")) {
 					/*
