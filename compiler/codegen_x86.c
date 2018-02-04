@@ -1185,6 +1185,11 @@ void codegen_proc(char *name, exp_tree_t *tree, char **args)
 	 * space for the local variables 
 	 */
 
+	#ifdef MINGW_BUILD
+		while (symbytes % 16)
+			++symbytes;
+	#endif
+
 	printf("# set up stack space\n");
 	printf("pushl %%ebp\n");
 	printf("movl %%esp, %%ebp\n");
