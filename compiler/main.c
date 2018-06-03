@@ -34,7 +34,7 @@ char* buf, *nbuf;
 #ifdef WCC
 	char *inf = NULL;
 	char opt[1024];
-	char *tempf;
+	char tempf[1024];
 	char cmd[1024];
 #endif
 
@@ -258,8 +258,11 @@ int main(int argc, char** argv)
 			/* source file(s) */
 			} else if(strstr(argv[i], ".c")) {
 				current_file = inf = argv[i];
+				/*
 				tempf = tempnam("/tmp", "wcc");
 				strcat(tempf, ".s");
+				*/
+				sprintf(tempf, "wcctemp%02d.s", i);
 				if (!freopen(tempf, "w", stdout))
 					fail("stdout redirection");
 				if (!freopen(inf, "r", stdin))
