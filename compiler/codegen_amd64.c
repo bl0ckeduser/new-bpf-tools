@@ -1523,7 +1523,6 @@ void run_codegen(exp_tree_t *tree)
 	 * some space for big struct-typed return values
 	 * 1024 bytes maximum
 	 */
-	printf("__ret_buf_ptr:\n");
 	printf(".comm __return_buffer,1024,32\n");
 	setup_symbols(tree, SYMTYPE_GLOBALS);
 	printf(".section .text\n");
@@ -3633,7 +3632,7 @@ char* codegen(exp_tree_t* tree)
 			printf("pushq %%rdx\n");
 			printf("pushq %%rsi\n");
 			printf("pushq %%rdi\n");
-			printf("leaq __ret_buf_ptr(%%rip), %%rdi	# argument 0 to ___mymemcpy\n");
+			printf("leaq __return_buffer(%%rip), %%rdi	# argument 0 to ___mymemcpy\n");
 			printf("movq %%rax, %%rsi	# argument 1 to ___mymemcpy\n");
 			printf("movq $%d, %%rdx		# argument 2 to ___mymemcpy\n", type2siz(tree_typeof(tree->child[0])));
 			printf("call ___mymemcpy\n");
@@ -3644,7 +3643,7 @@ char* codegen(exp_tree_t* tree)
 			printf("popq %%rbx\n");
 			printf("popq %%rax\n");
 			printf("addq $48, %%rsp\n");
-			printf("leaq __ret_buf_ptr(%%rip), %%rax\n");
+			printf("leaq __return_buffer(%%rip), %%rax\n");
 		} else {
 			/* code the return expression (if there is one) */
 			if (tree->child_count)
