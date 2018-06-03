@@ -1,3 +1,13 @@
+0.76 - 3 Jun 2018
+
+- amd64: fix some leaks
+- x86: fix some leaks
+- cleanup/update comments in preprocessor
+- fix stack alignment for mingw/x86
+- fix x86 and amd64 builds, including self-host, for recent Linux
+
+-----------------------------------------------------------------------
+
 0.75 - 3 Feb 2018
 
 - x86/amd64: various bug fixes and cleanups
