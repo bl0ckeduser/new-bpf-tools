@@ -99,6 +99,7 @@ typedef struct exp_tree {
 	/*unsigned*/ int child_count;
 	/*unsigned*/ int child_alloc;
 	struct exp_tree **child;
+	int is_extern;
 } exp_tree_t;
 
 extern exp_tree_t null_tree;

@@ -172,6 +172,7 @@ typedef struct {
 	typedesc_t ret_typ;
 	char name[SYMLEN];
 	int argc;
+	int is_extern;
 } func_desc_t;
 
 func_desc_t *func_desc;
@@ -947,6 +948,7 @@ char* sym_lookup(token_t* tok)
 	char buf[1024];
 	char *s = get_tok_str(*tok);
 	int i = 0;
+	char *tmp;
 
 	/* Try arguments */
 	for (i = 0; i < arg_syms; i++)
@@ -964,8 +966,11 @@ char* sym_lookup(token_t* tok)
 	 * by locals and arguments 
 	 */
 	for (i = 0; i < globs; ++i)
-		if (!strcmp(globtab[i], s))
-			return globtab[i];
+		if (!strcmp(globtab[i], s)) {
+			tmp = malloc(64);
+			sprintf(tmp, "%s(%%rip)", globtab[i]);
+			return tmp;
+		}
 
 	/*
 	 * If it isn't anywhere, just assume
@@ -982,7 +987,9 @@ char* sym_lookup(token_t* tok)
 	 * to the assembler.
 	 */
 	compiler_warn("assuming symbol is external", tok, 0, 0);
-	return s;
+	tmp = malloc(64);
+	sprintf(tmp, "%s(%%rip)", s);
+	return tmp;
 
 /*
 	sprintf(buf, "unknown symbol `%s'", s);
@@ -1516,6 +1523,7 @@ void run_codegen(exp_tree_t *tree)
 	 * some space for big struct-typed return values
 	 * 1024 bytes maximum
 	 */
+	printf("__ret_buf_ptr:\n");
 	printf(".comm __return_buffer,1024,32\n");
 	setup_symbols(tree, SYMTYPE_GLOBALS);
 	printf(".section .text\n");
@@ -2886,7 +2894,7 @@ char* codegen(exp_tree_t* tree)
 	/* string constant, e.g. "bob123" */
 	if (tree->head_type == STR_CONST) {
 		sto = get_temp_reg_siz(8);
-		printf("movq $_str_const_%d, %s\n",
+		printf("leaq _str_const_%d(%%rip), %s\n",
 			str_const_lookup(tree->tok),
 			sto);
 		return sto;
@@ -3011,6 +3019,7 @@ char* codegen(exp_tree_t* tree)
 
 		char *arg_temp_mem[32];
 		int total_rsp_offset = 0;
+		int is_extern = 0;
 
 		memcpy(my_ts_used, ts_used, TEMP_REGISTERS);
 		
@@ -3033,6 +3042,7 @@ char* codegen(exp_tree_t* tree)
 		for (i = 0; i < funcdefs; ++i) {
 			if (!strcmp(func_desc[i].name,
 				get_tok_str(*(tree->tok)))) {
+					is_extern     = func_desc[i].is_extern;
 					callee_argtyp = func_desc[i].argtyp;
 					/*
 					 * Check for arg count mismatch
@@ -3060,6 +3070,7 @@ char* codegen(exp_tree_t* tree)
 				compiler_warn("no declaration found, "
 					      "assuming all arguments are 64-bit int",
 					findtok(tree), 0, 0);
+				is_extern = 1;
 			}
 			/* sizeof(int) = 8 on 64-bit x86 */
 			if (tree->child_count > AMD64_NUMBER_OF_CALLING_REGISTERS) {
@@ -3202,7 +3213,11 @@ char* codegen(exp_tree_t* tree)
 				printf("call _%s\n", get_tok_str(*(tree->tok)));
 			}
 		#else
-			printf("call %s\n", get_tok_str(*(tree->tok)));
+			printf("call %s", get_tok_str(*(tree->tok)));
+			if (is_extern) {
+				printf("@PLT");
+			}
+			printf("\n");
 		#endif
 
 		/* 
@@ -3364,6 +3379,8 @@ char* codegen(exp_tree_t* tree)
 			func_desc[funcdefs].argc = 0;
 		}
 
+		func_desc[funcdefs].is_extern = tree->is_extern;
+
 		funcdefs++;
 
 		/*
@@ -3505,6 +3522,8 @@ char* codegen(exp_tree_t* tree)
 			func_desc[funcdefs].argc = 0;
 		}
 
+		func_desc[funcdefs].is_extern = 0;
+
 		funcdefs++;
 
 		/*
@@ -3614,7 +3633,7 @@ char* codegen(exp_tree_t* tree)
 			printf("pushq %%rdx\n");
 			printf("pushq %%rsi\n");
 			printf("pushq %%rdi\n");
-			printf("leaq __return_buffer, %%rdi	# argument 0 to ___mymemcpy\n");
+			printf("leaq __ret_buf_ptr(%%rip), %%rdi	# argument 0 to ___mymemcpy\n");
 			printf("movq %%rax, %%rsi	# argument 1 to ___mymemcpy\n");
 			printf("movq $%d, %%rdx		# argument 2 to ___mymemcpy\n", type2siz(tree_typeof(tree->child[0])));
 			printf("call ___mymemcpy\n");
@@ -3625,7 +3644,7 @@ char* codegen(exp_tree_t* tree)
 			printf("popq %%rbx\n");
 			printf("popq %%rax\n");
 			printf("addq $48, %%rsp\n");
-			printf("leaq __return_buffer, %%rax\n");
+			printf("leaq __ret_buf_ptr(%%rip), %%rax\n");
 		} else {
 			/* code the return expression (if there is one) */
 			if (tree->child_count)
@@ -3704,7 +3723,7 @@ char* codegen(exp_tree_t* tree)
 		 * into a register
 		 */
 		sto2 = get_temp_reg();
-		printf("movq $jt%ld, %s\n", jumptab, sto2);
+		printf("leaq jt%ld(%%rip), %s\n", jumptab, sto2);
 
 		/*
 		 * add index*8 to the jumptable pointer

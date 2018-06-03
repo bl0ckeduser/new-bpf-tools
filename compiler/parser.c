@@ -880,6 +880,7 @@ is_proc:
 		if (peek().type == TOK_SEMICOLON) {
 			adv();
 			tree.head_type = PROTOTYPE;
+			tree.is_extern = is_extern;
 			return tree;
 		} else if (must_be_proto) {
 			/* 
