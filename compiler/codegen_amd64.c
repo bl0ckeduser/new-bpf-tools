@@ -3810,13 +3810,8 @@ char* codegen(exp_tree_t* tree)
 	/* ! -- logical not (0 if X is not 1) */
 	if (tree->head_type == CC_NOT) {
 		my_ccid = ccid++;
-		sto = codegen(tree->child[0]);
+		sto = registerize_from(codegen(tree->child[0]), type2siz(tree_typeof(tree->child[0])));
 		sto2 = get_temp_reg_siz(8);
-		/* 
-		 * XXX: assumes codegen() always
-		 * returns int, which atm it does,
-		 * but perhaps shouldn't
-		 */
 		printf("movq $0, %s\n", sto2);
 		printf("cmp %s, %s\n", sto, sto2);
 		printf("movq $1, %s\n", sto2);
