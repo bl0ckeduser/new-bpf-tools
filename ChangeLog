@@ -1,3 +1,9 @@
+0.77 - 1 Jul 2020
+
+- amd64: fix a size conversion bug in the ! operator coding
+
+-----------------------------------------------------------------------
+
 0.76 - 3 Jun 2018
 
 - amd64: fix some leaks
