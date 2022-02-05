@@ -10,5 +10,5 @@ then
 fi
 
 
-./wcc3 -DWCC -g -o wcc4 tokenizer.c general.c tokens.c hashtable.c diagnostics.c main.c optimize.c tree.c preprocess.c escapes.c typeof.c codegen_x86.c parser.c constfold.c global_initializer.c
-./wcc3 -g -o wcc4b tokenizer.c general.c tokens.c hashtable.c diagnostics.c main.c optimize.c tree.c preprocess.c escapes.c typeof.c codegen_x86.c parser.c constfold.c global_initializer.c
+./wcc3 -w -DWCC -g -o wcc4 tokenizer.c general.c tokens.c hashtable.c diagnostics.c main.c optimize.c tree.c preprocess.c escapes.c typeof.c codegen_x86.c parser.c constfold.c global_initializer.c
+./wcc3 -w -g -o wcc4b tokenizer.c general.c tokens.c hashtable.c diagnostics.c main.c optimize.c tree.c preprocess.c escapes.c typeof.c codegen_x86.c parser.c constfold.c global_initializer.c

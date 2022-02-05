@@ -4,5 +4,5 @@ then
 	exit 1
 fi
 
-./wcc64 -DWCC -DTARGET_AMD64 -o wcc64_2 tokenizer.c general.c tokens.c hashtable.c diagnostics.c main.c optimize.c tree.c preprocess.c escapes.c typeof.c codegen_amd64.c parser.c constfold.c global_initializer.c
+./wcc64 -w -DWCC -DTARGET_AMD64 -o wcc64_2 tokenizer.c general.c tokens.c hashtable.c diagnostics.c main.c optimize.c tree.c preprocess.c escapes.c typeof.c codegen_amd64.c parser.c constfold.c global_initializer.c
 

@@ -10,5 +10,5 @@ then
 fi
 
 
-./wcc64_3 -DTARGET_AMD64 -DWCC -o wcc64_4 tokenizer.c general.c tokens.c hashtable.c diagnostics.c main.c optimize.c tree.c preprocess.c escapes.c typeof.c codegen_amd64.c parser.c constfold.c global_initializer.c
-./wcc64_3 -DTARGET_AMD64 -o wcc64_4b tokenizer.c general.c tokens.c hashtable.c diagnostics.c main.c optimize.c tree.c preprocess.c escapes.c typeof.c codegen_amd64.c parser.c constfold.c global_initializer.c
+./wcc64_3 -w -DTARGET_AMD64 -DWCC -o wcc64_4 tokenizer.c general.c tokens.c hashtable.c diagnostics.c main.c optimize.c tree.c preprocess.c escapes.c typeof.c codegen_amd64.c parser.c constfold.c global_initializer.c
+./wcc64_3 -w -DTARGET_AMD64 -o wcc64_4b tokenizer.c general.c tokens.c hashtable.c diagnostics.c main.c optimize.c tree.c preprocess.c escapes.c typeof.c codegen_amd64.c parser.c constfold.c global_initializer.c
