@@ -7,6 +7,18 @@
  * September 2014
  */
 
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int checkboard(int *board, int N);
+int checkqueenhorz(int *board, int N, int row, int col);
+int checkqueenvert(int *board, int N, int row, int col);
+int checkqueendiag(int *board, int N, int row, int col);
+int checkdiaghelper(int *board, int N, int row, int col, int other_row, int other_col);
+void printboard(int *b, int N);
+int range(int a, int b);
+
 int nqueens(int *board, int N, int row) {
 	int col;
 
@@ -16,8 +28,7 @@ int nqueens(int *board, int N, int row) {
 	for (col = 0; col < N; ++col) {
 		board[N * row + col] = 1;
 		
-		if (checkboard(board)
-		    && nqueens(board, N, row + 1)) {
+		if (nqueens(board, N, row + 1)) {
 			return 1;
 		} else {
 			board[N * row + col] = 0;
@@ -112,7 +123,7 @@ void printboard(int *b, int N) {
 	}
 }
 
-main(int argc, char **argv) {
+int main(int argc, char **argv) {
 	/* if (argc < 2) {
 		printf("usage: %s N\n", *argv);
 		return 1;
