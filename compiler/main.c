@@ -29,7 +29,7 @@
 #include "preprocess.h"
 #include <unistd.h>	/* XXX: for dup2; i guess windows might choke on it */
 
-char* buf, *nbuf;
+char* buf_main, *nbuf;
 
 #ifdef WCC
 	char *inf = NULL;
@@ -69,7 +69,7 @@ exp_tree_t run_core_tasks(void)
 	 * Default mode: read code from stdin
 	 * into a variable-sized buffer
 	 */
-	if (!(buf = malloc(alloc)))
+	if (!(buf_main = malloc(alloc)))
 		fail("alloc program buffer");
 	for (i = 0 ;; ++i) {
 		c = getchar();	
@@ -78,18 +78,18 @@ exp_tree_t run_core_tasks(void)
 		 * problem when attempting to self-host on amd64
 		 */
 		if (feof(stdin)) {
-			buf[i] = 0;
+			buf_main[i] = 0;
 			break;
 		}
 		if (i >= alloc) {
 			alloc += 1024;
-			nbuf = realloc(buf, alloc);
+			nbuf = realloc(buf_main, alloc);
 			if (!nbuf)
 				fail("realloc failed");
 			else
-				buf = nbuf;
+				buf_main = nbuf;
 		}
-		buf[i] = c;
+		buf_main[i] = c;
 	}
 
 	#ifdef WCC
@@ -132,13 +132,13 @@ exp_tree_t run_core_tasks(void)
 	 * Run preprocessor, and collect
 	 * defines in `cpp_defines' hash table.
 	 */
-	preprocess(&buf, cpp_defines);
+	preprocess(&buf_main, cpp_defines);
 
 	/*
 	 * Tokenize the inputted code
 	 */
 	setup_tokenizer();
-	tokens = tokenize(buf);
+	tokens = tokenize(buf_main);
 
 	#ifdef DEBUG
 		/*
@@ -215,7 +215,7 @@ void compile_one_file(void)
 	run_codegen(&tree);
 	print_code();
 
-	free(buf);
+	free(buf_main);
 }
 
 int main(int argc, char** argv)
