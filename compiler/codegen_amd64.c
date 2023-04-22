@@ -3826,14 +3826,9 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == CC_AND) {
 		my_ccid = ccid++;
 		sto2 = get_temp_reg_siz(8);
-		/* 
-		 * XXX: assumes codegen() always
-		 * returns int, which atm it does,
-		 * but perhaps shouldn't
-		 */
 		printf("movq $0, %s\n", sto2);
 		for (i = 0; i < tree->child_count; ++i) {
-			sto = registerize_freemem(codegen(tree->child[i]));
+			sto = registerize_from(codegen(tree->child[i]), type2siz(tree_typeof(tree->child[i])));
 			printf("cmpq %s, %s\n", sto, sto2);
 			printf("je cc%d\n", my_ccid);
 			free_temp_reg(sto);
@@ -3847,14 +3842,9 @@ char* codegen(exp_tree_t* tree)
 	if (tree->head_type == CC_OR) {
 		my_ccid = ccid++;
 		sto2 = get_temp_reg_siz(8);
-		/* 
-		 * XXX: assumes codegen() always
-		 * returns int, which atm it does,
-		 * but perhaps shouldn't
-		 */
 		printf("movq $0, %s\n", sto2);
 		for (i = 0; i < tree->child_count; ++i) {
-			sto = registerize_freemem(codegen(tree->child[i]));
+			sto = registerize_from(codegen(tree->child[i]), type2siz(tree_typeof(tree->child[i])));
 			printf("cmpq %s, %s\n", sto, sto2);
 			printf("jne cc%d\n", my_ccid);
 			free_temp_reg(sto);
